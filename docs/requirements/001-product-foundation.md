@@ -3,153 +3,118 @@
 ## Requirement
 
 ### Problem
-An individual needs a single place to track income, expenses, savings transfers, wishlist items, and financial goals, with visibility into current balances and spending concentration by category/title.
+An individual needs one place to track transactions, savings, goals, wishlist items, and account-linked money flows, with clear analytics and dashboard visibility.
 
 ### User Story
-As a user, I want to record and classify all money movement and intent, so that I can understand my current financial position and spending behavior.
+As a user, I want to record and classify all money movement and intent so I can understand my current financial position.
 
 ### Scope
 - In scope:
-  - Record transactions (income, expense, transfer-to-savings)
-  - Track savings ledger and current savings total
-  - Manage wishlist items (what user wants to buy)
-  - Manage financial goals (purpose-driven targets)
-  - Analytics for top spending categories and titles
-  - Dashboard with current savings and expenditure
+  - Transactions (`income`, `expense`, `transfer`)
+  - Savings ledger entries linked to goals/accounts
+  - Goals and wishlist management as separate modules
+  - Payment accounts module (cards, wallets, cash)
+  - Dashboard and analytics with date range filtering
+  - AI-assisted natural-language entry (tool-based)
 - Out of scope:
-  - Multi-user household accounting
-  - Bank account auto-sync
-  - Investment portfolio tracking
-  - Budget forecasting with ML
+  - Bank auto-sync
+  - Investment tracking
+  - Multi-household accounting
 
 ## Analysis
 
 ### Domain Notes
-- Entities involved:
+- Entities:
   - Transaction
-  - SavingsEntry
+  - Saving
+  - Goal
   - WishlistItem
-  - FinancialGoal
   - Category
+  - PaymentAccount
   - User
 - Business rules:
-  - Wishlist and financial goals are separate concepts
-  - Savings can be increased from income allocation or manual transfer
-  - Expense analytics must support category and title grouping
-  - Dashboard values are computed from ledger data, not manually entered totals
+  - Wishlist is separate from goals
+  - Savings can be linked to goals and payment accounts
+  - Goal progress combines logged progress + in-savings + linked savings
+  - AI writes must be user-scoped and validated server-side
 
 ### Data and State
 - Inputs:
-  - Amount, title, date, category, type, source, note
-  - Wishlist target amount and priority
-  - Goal target amount and target date
+  - Amount/title/date/type/category/account/goal/note
 - Outputs:
   - Current savings
-  - Current expenditure (time-filtered)
-  - Top categories by expense amount
-  - Top titles by expense amount
+  - Expenditure and income totals
+  - Top categories/titles
+  - Goal progress and still-needed values
 - Query keys:
-  - `transactions.list`
-  - `transactions.metrics`
-  - `savings.current`
-  - `wishlist.list`
-  - `goals.list`
-  - `analytics.top-categories`
-  - `analytics.top-titles`
+  - `transactions.all`
+  - `savings.all`
+  - `goals.all`
+  - `wishlist.all`
+  - `categories.all`
+  - `paymentAccounts.all`
 
 ### Route and UX Impact
-- Routes:
-  - `/` dashboard
+- Main routes:
+  - `/`
   - `/transactions`
   - `/savings`
-  - `/wishlist`
   - `/goals`
+  - `/wishlist`
+  - `/categories`
+  - `/accounts`
   - `/analytics`
-- UI states:
-  - loading
-  - error
-  - empty
-  - success
-
-### Cross-Cutting Architecture
-- Auth:
-  - Session-based auth and protected app routes
-  - All user-owned data queries scoped by authenticated user id
-- Database server functions:
-  - Feature data access through server functions/repositories only
-  - No direct DB access from route components
-- Middleware:
-  - Request-scoped context for `user`, `db`, and `requestId`
-  - Central error normalization and request logging
+- API routes added under `/api/*`
+- UI states handled:
+  - loading, error, empty, success
 
 ### Risks and Constraints
-- Incorrect categorization lowers analytics quality
-- Missing validation can allow invalid negative/zero values
-- Query invalidation mistakes can show stale balances
+- Incorrect category/account resolution can reduce analytics quality
+- AI tool calls must be constrained to safe server functions
+- Query invalidation errors can cause stale views
 
 ## Implementation Plan
 
 ### Step 1: Foundation and Structure
-- [ ] Add auth module structure (`src/lib/auth`)
-- [ ] Add database module structure (`src/lib/db` and repositories)
-- [ ] Add middleware module structure (`src/lib/middleware`)
-- [ ] Create feature folders in `src/features`:
-  - `transactions`
-  - `savings`
-  - `wishlist`
-  - `goals`
-  - `categories`
-  - `analytics`
-- [ ] Create per-feature subfolders:
-  - `api`
-  - `components`
-  - `hooks`
-  - `schemas`
-  - `types`
-  - `utils`
+- [x] Organize feature modules under `src/features`
+- [x] Add server helpers for API guards, body parsing, rate limiting
 
 ### Step 2: Domain Models and Validation
-- [ ] Define zod schemas for all feature inputs
-- [ ] Define DB schema for entities and relations
-- [ ] Add enums as literal unions/maps (not TS enums)
+- [x] Extend schema for goals↔savings and payment accounts
+- [x] Add input validation in API routes
 
-### Step 3: Server Functions and Data Access
-- [ ] Add shared middleware/context composition for server functions and routes
-- [ ] Implement CRUD server functions for transactions
-- [ ] Implement savings ledger server functions
-- [ ] Implement CRUD server functions for wishlist and goals
-- [ ] Implement analytics endpoints for grouped totals
+### Step 3: Server Layer
+- [x] Implement CRUD repositories for transactions/savings/goals/wishlist/payment accounts
+- [x] Add API routes for each module
+- [x] Add AI tool endpoint (`/api/ai/chat`) with ownership checks
 
-### Step 4: Query and Routing Integration
-- [ ] Add stable query key builders
-- [ ] Add route loaders for critical pages
-- [ ] Add mutation invalidation for affected dashboards and lists
+### Step 4: Query + Routing
+- [x] Add feature API clients and hooks
+- [x] Add deterministic query keys and invalidation flow
 
-### Step 5: UI Implementation
-- [ ] Dashboard cards for savings/expenditure and top breakdowns
-- [ ] Transaction list and create/edit form
-- [ ] Savings page with transfer log
-- [ ] Wishlist list and status update UI
-- [ ] Goals list with progress display
-- [ ] Analytics page with filter controls
+### Step 5: UI
+- [x] Add module pages (`accounts`, `analytics`, `goals`, `savings`, `wishlist`, `categories`)
+- [x] Use drawer/sheet create-edit flows
+- [x] Add skeleton states
+- [x] Add virtualized data table and app-shell refresh controls
+- [x] Add AI assistant panel
 
 ### Step 6: Testing and Hardening
-- [ ] Unit tests for zod schemas and calculation helpers
-- [ ] Integration tests for transaction -> savings -> analytics flow
-- [ ] Route-level empty/error state checks
+- [ ] Add automated tests for helper calculations and AI route behavior
+- [ ] Add integration tests for transaction/saving/goal linking flows
 
 ## Acceptance Criteria
-- [ ] Protected routes require authenticated session
-- [ ] Data reads/writes are scoped to current authenticated user
-- [ ] Server functions use shared middleware/context for db and error handling
-- [ ] User can add income and expense transactions with category and title
-- [ ] User can move money into savings and see updated current savings
-- [ ] Wishlist and goals are managed separately
-- [ ] Dashboard displays current savings and expenditure
-- [ ] Analytics displays highest spending categories and titles
-- [ ] Date-range filtering updates analytics and totals correctly
+- [x] Protected routes require authenticated session
+- [x] Data reads/writes are scoped to current authenticated user
+- [x] User can add income/expense transactions with category and account
+- [x] User can log savings and link to goals
+- [x] Wishlist and goals are managed separately
+- [x] Dashboard and analytics render current finance insights
+- [x] Date-range filtering updates dashboard/analytics results
+- [x] AI endpoint validates tool calls and enforces user ownership checks
 
 ## Task Checklist
-- [ ] Requirement finalized
-- [ ] Analysis finalized
-- [ ] Plan approved for implementation
+- [x] Requirement finalized
+- [x] Analysis finalized
+- [x] Implementation completed
+- [ ] Regression test pass documented

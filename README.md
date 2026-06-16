@@ -1,63 +1,25 @@
 # Money Diary
 
-A TanStack Start application for personal money tracking with clear separation between:
-- daily transactions (income and expenses)
-- savings movements
-- wishlist items
-- financial goals
-- analytics by category/title/date range
+Money Diary is a TanStack Start app for personal finance tracking across transactions, savings, goals, wishlist items, and analytics.
 
-## Product Scope
+## What It Supports
 
-This app helps one person track:
-- money received and money spent
-- what portion is moved into savings
-- wishlist items (things to buy)
-- financial goals (purpose-driven money targets, separate from wishlist)
-- category and title based spending patterns (e.g. Netflix, game, AI subscriptions)
-
-Core views:
-- current savings
-- current expenditure
-- top spending categories
-- top spending titles
-
-Architectural approach:
-- Client-side first for product features and interactions
-- TanStack Start remains the centralized routing/platform layer
-- Public pages (marketing/help) can be added as standard routes (e.g. landing page, FAQ)
+- Transactions (`income`, `expense`, `transfer`)
+- Savings ledger entries (optionally linked to goals and accounts)
+- Goals with combined progress (`logged + in-savings + linked savings`)
+- Wishlist tracking (separate from goals)
+- Payment accounts (cards, wallets, cash)
+- Dashboard and analytics with date-range filters
+- AI assistant panel for natural-language entry (transaction/saving/goal/wishlist)
 
 ## Tech Stack
 
-- TanStack Start (Router-first full-stack framework)
-- TanStack Router
-- TanStack Query
+- TanStack Start + TanStack Router + TanStack Query
 - React + TypeScript
-- Drizzle + PostgreSQL
+- Drizzle ORM + PostgreSQL
 - Tailwind CSS + shadcn/ui
-
-## Requirements Workflow
-
-All new features must start in `docs` before coding:
-
-1. Create or update a feature requirement doc in `docs/requirements/`
-2. Fill sections in this order:
-   - Requirement
-   - Analysis
-   - Implementation Plan
-   - Acceptance Criteria
-   - Task Checklist
-3. Implement only after the doc has explicit scope boundaries
-
-Use the template in `docs/requirements/_template.md`.
-
-## Report Export (PDF)
-
-- Templates:
-  - `docs/pdf/report-template.md`
-  - `docs/pdf/report-template.html`
-- Export guide:
-  - `docs/pdf/README.md`
+- Recharts
+- Ollama (optional, for local AI assistant)
 
 ## Getting Started
 
@@ -68,13 +30,15 @@ pnpm dev
 
 ## Environment Setup
 
-1. Copy env values:
-   ```bash
-   cp .env.example .env.local
-   ```
-2. Update database and auth values in `.env.local`
+1. Copy env file:
 
-## Database via Docker (PostgreSQL only)
+```bash
+cp .env.example .env.local
+```
+
+2. Configure DB/auth values in `.env.local`.
+
+## Database via Docker (PostgreSQL)
 
 ```bash
 docker compose up -d postgres
@@ -85,6 +49,24 @@ Default local connection:
 ```text
 postgresql://postgres:postgres@localhost:5432/money_diary
 ```
+
+## AI Assistant (Optional)
+
+The app includes `/api/ai/chat` for tool-based AI writes.
+
+To use local Ollama:
+
+```bash
+ollama serve
+ollama pull gemma4:latest
+```
+
+AI write security model:
+
+- API is session-protected (`requireUserContext`)
+- Tool calls are validated with Zod
+- Account/category/goal ownership is checked per user
+- `userId` always comes from session, never from model output
 
 ## Scripts
 
@@ -102,22 +84,11 @@ pnpm db:push
 pnpm db:studio
 ```
 
-## Feature Breakdown
+## UX Notes
 
-Planned feature modules under `src/features`:
-- `transactions`
-- `savings`
-- `wishlist`
-- `goals`
-- `categories`
-- `analytics`
-
-Route groups:
-- `/transactions`
-- `/savings`
-- `/wishlist`
-- `/goals`
-- `/analytics`
+- Create/edit operations use drawer/sheet flows on major finance pages
+- Data tables use TanStack Virtual row virtualization with internal scroll containers
+- Loading states use skeletons for primary pages
 
 ## References
 
