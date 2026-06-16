@@ -1,4 +1,4 @@
-import { index, integer, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { user } from './auth-schema'
 
 export const todos = pgTable('todos', {
@@ -24,6 +24,26 @@ export const categories = pgTable('categories', {
   createdAtIdx: index('categories_created_at_idx').on(table.createdAt),
 }))
 
+export const paymentAccounts = pgTable('payment_accounts', {
+  id: serial().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+  name: text().notNull(),
+  institutionSlug: text('institution_slug'),
+  accountType: text('account_type').notNull(),
+  lastFour: text('last_four'),
+  note: text(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('payment_accounts_user_id_idx').on(table.userId),
+  accountTypeIdx: index('payment_accounts_account_type_idx').on(table.accountType),
+}))
+
 export const transactions = pgTable('transactions', {
   id: serial().primaryKey(),
   userId: text('user_id')
@@ -38,6 +58,9 @@ export const transactions = pgTable('transactions', {
   exchangeRate: text('exchange_rate').notNull().default('1'),
   type: text().notNull(),
   categoryId: integer('category_id').notNull(),
+  paymentAccountId: integer('payment_account_id').references(() => paymentAccounts.id, {
+    onDelete: 'set null',
+  }),
   source: text(),
   note: text(),
   happenedAt: timestamp('happened_at').defaultNow().notNull(),
@@ -49,10 +72,83 @@ export const transactions = pgTable('transactions', {
   userIdIdx: index('transactions_user_id_idx').on(table.userId),
   sourceCurrencyIdx: index('transactions_source_currency_idx').on(table.sourceCurrency),
   categoryIdIdx: index('transactions_category_id_idx').on(table.categoryId),
+  paymentAccountIdIdx: index('transactions_payment_account_id_idx').on(table.paymentAccountId),
   typeIdx: index('transactions_type_idx').on(table.type),
   categoryHappenedAtIdx: index('transactions_category_happened_at_idx').on(
     table.categoryId,
     table.happenedAt,
   ),
   typeHappenedAtIdx: index('transactions_type_happened_at_idx').on(table.type, table.happenedAt),
+}))
+
+export const goals = pgTable('goals', {
+  id: serial().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+  title: text().notNull(),
+  targetAmount: text('target_amount').notNull(),
+  currentAmount: text('current_amount').notNull().default('0'),
+  savingsAmount: text('savings_amount').notNull().default('0'),
+  targetDate: timestamp('target_date'),
+  status: text().notNull().default('active'),
+  note: text(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('goals_user_id_idx').on(table.userId),
+  statusIdx: index('goals_status_idx').on(table.status),
+  targetDateIdx: index('goals_target_date_idx').on(table.targetDate),
+  createdAtIdx: index('goals_created_at_idx').on(table.createdAt),
+}))
+
+export const savings = pgTable('savings', {
+  id: serial().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+  goalId: integer('goal_id').references(() => goals.id, {
+    onDelete: 'set null',
+  }),
+  paymentAccountId: integer('payment_account_id').references(() => paymentAccounts.id, {
+    onDelete: 'set null',
+  }),
+  title: text().notNull(),
+  amount: text().notNull(),
+  note: text(),
+  savedAt: timestamp('saved_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('savings_user_id_idx').on(table.userId),
+  goalIdIdx: index('savings_goal_id_idx').on(table.goalId),
+  paymentAccountIdIdx: index('savings_payment_account_id_idx').on(table.paymentAccountId),
+  savedAtIdx: index('savings_saved_at_idx').on(table.savedAt),
+  createdAtIdx: index('savings_created_at_idx').on(table.createdAt),
+}))
+
+export const wishlistItems = pgTable('wishlist_items', {
+  id: serial().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+  title: text().notNull(),
+  targetAmount: text('target_amount').notNull(),
+  currentAmount: text('current_amount').notNull().default('0'),
+  priority: text().notNull().default('medium'),
+  status: text().notNull().default('active'),
+  note: text(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('wishlist_items_user_id_idx').on(table.userId),
+  statusIdx: index('wishlist_items_status_idx').on(table.status),
+  priorityIdx: index('wishlist_items_priority_idx').on(table.priority),
+  createdAtIdx: index('wishlist_items_created_at_idx').on(table.createdAt),
 }))

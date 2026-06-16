@@ -15,6 +15,76 @@
       "when": 1781594978496,
       "tag": "0001_violet_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781595000000,
+      "tag": "0002_categories_scope_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781595100000,
+      "tag": "0003_transactions_user_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781595200000,
+      "tag": "0004_user_currency",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781595300000,
+      "tag": "0005_transactions_currency",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781595400000,
+      "tag": "0006_user_currency_default_pkr",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781595500000,
+      "tag": "0007_finance_modules",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781595600000,
+      "tag": "0008_charity_categories_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781595700000,
+      "tag": "0009_category_kind_charity",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781595800000,
+      "tag": "0010_goal_savings_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781595900000,
+      "tag": "0011_payment_accounts",
+      "breakpoints": true
     }
   ]
 }
