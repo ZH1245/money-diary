@@ -10,6 +10,7 @@ export interface TransactionDto {
   exchangeRate: string
   type: 'income' | 'expense' | 'transfer'
   categoryId: number
+  paymentAccountId: number | null
   source: string | null
   note: string | null
   happenedAt: string
@@ -25,7 +26,22 @@ export interface CreateTransactionInput {
   exchangeRate?: string
   type: 'income' | 'expense' | 'transfer'
   categoryId: number
+  paymentAccountId?: number | null
   source?: string
   note?: string
+  happenedAt?: string
+}
+
+/**
+ * Payload accepted by the update transaction API.
+ */
+export interface UpdateTransactionInput {
+  title?: string
+  amount?: string
+  type?: 'income' | 'expense' | 'transfer'
+  categoryId?: number
+  paymentAccountId?: number | null
+  source?: string | null
+  note?: string | null
   happenedAt?: string
 }

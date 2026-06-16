@@ -4,6 +4,7 @@ import {
   createUserCategory,
   getVisibleCategoriesForUser,
 } from '#/features/categories/server/categories-repository'
+import { CATEGORY_KINDS } from '#/features/categories/types/category'
 import {
   buildOptionsResponse,
   guardApiRequest,
@@ -14,7 +15,7 @@ import {
 const createCategorySchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
-  kind: z.enum(['need', 'want', 'subscription', 'other']),
+  kind: z.enum(CATEGORY_KINDS),
 })
 
 export const Route = createFileRoute('/api/categories')({

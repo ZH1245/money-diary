@@ -1,5 +1,5 @@
 import type { ApiListResponse } from '#/types/api'
-import type { CreateTransactionInput, TransactionDto } from '../types/transaction'
+import type { CreateTransactionInput, TransactionDto, UpdateTransactionInput } from '../types/transaction'
 
 /**
  * Loads transactions for the active user context.
@@ -34,4 +34,37 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
   }
 
   return json.data
+}
+
+/**
+ * Updates an existing transaction entry.
+ */
+export async function updateTransaction(id: number, input: UpdateTransactionInput): Promise<TransactionDto> {
+  const response = await fetch(`/api/transactions/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+
+  const json = (await response.json()) as { success: boolean; data: TransactionDto; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to update transaction')
+  }
+
+  return json.data
+}
+
+/**
+ * Deletes a transaction entry.
+ */
+export async function deleteTransaction(id: number): Promise<void> {
+  const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+  const json = (await response.json()) as { success: boolean; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to delete transaction')
+  }
 }

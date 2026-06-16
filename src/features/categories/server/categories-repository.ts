@@ -1,12 +1,13 @@
 import { desc, eq, isNull, or } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { categories } from '#/db/schema'
+import type { CategoryKind } from '#/features/categories/types/category'
 
 interface CreateUserCategoryParams {
   userId: string
   name: string
   slug: string
-  kind: 'need' | 'want' | 'subscription' | 'other'
+  kind: CategoryKind
 }
 
 /**

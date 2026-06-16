@@ -13,7 +13,11 @@ const openApiSpec = {
   tags: [
     { name: 'auth', description: 'Authentication endpoints' },
     { name: 'categories', description: 'Category endpoints' },
+    { name: 'goals', description: 'Goal endpoints' },
+    { name: 'payment-accounts', description: 'Payment account endpoints' },
+    { name: 'savings', description: 'Savings endpoints' },
     { name: 'transactions', description: 'Transaction endpoints' },
+    { name: 'wishlist', description: 'Wishlist endpoints' },
   ],
   paths: {
     '/api/auth/{path}': {
@@ -85,7 +89,7 @@ const openApiSpec = {
                 properties: {
                   name: { type: 'string' },
                   slug: { type: 'string' },
-                  kind: { type: 'string', enum: ['need', 'want', 'subscription', 'other'] },
+                  kind: { type: 'string', enum: ['need', 'want', 'subscription', 'charity', 'other'] },
                 },
               },
             },
@@ -122,6 +126,7 @@ const openApiSpec = {
                   amount: { type: 'string' },
                   type: { type: 'string', enum: ['income', 'expense', 'transfer'] },
                   categoryId: { type: 'integer' },
+                  paymentAccountId: { type: 'integer', nullable: true },
                   source: { type: 'string' },
                   note: { type: 'string' },
                   happenedAt: { type: 'string', format: 'date-time' },
@@ -134,6 +139,380 @@ const openApiSpec = {
           '201': { description: 'Transaction created' },
           '400': { description: 'Validation error' },
           '404': { description: 'Category not found' },
+          '413': { description: 'Payload too large' },
+        },
+      },
+    },
+    '/api/transactions/{id}': {
+      patch: {
+        tags: ['transactions'],
+        summary: 'Update transaction',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  amount: { type: 'string' },
+                  type: { type: 'string', enum: ['income', 'expense', 'transfer'] },
+                  categoryId: { type: 'integer' },
+                  paymentAccountId: { type: 'integer', nullable: true },
+                  source: { type: 'string', nullable: true },
+                  note: { type: 'string', nullable: true },
+                  happenedAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Transaction updated' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Transaction not found' },
+        },
+      },
+      delete: {
+        tags: ['transactions'],
+        summary: 'Delete transaction',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+          },
+        ],
+        responses: {
+          '200': { description: 'Transaction deleted' },
+          '404': { description: 'Transaction not found' },
+        },
+      },
+    },
+    '/api/savings': {
+      get: {
+        tags: ['savings'],
+        summary: 'List savings',
+        responses: {
+          '200': {
+            description: 'Savings list',
+          },
+        },
+      },
+      post: {
+        tags: ['savings'],
+        summary: 'Create saving',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['title', 'amount'],
+                properties: {
+                  title: { type: 'string' },
+                  amount: { type: 'string' },
+                  note: { type: 'string' },
+                  savedAt: { type: 'string', format: 'date-time' },
+                  goalId: { type: 'integer', nullable: true },
+                  paymentAccountId: { type: 'integer', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Saving created' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+          '413': { description: 'Payload too large' },
+        },
+      },
+    },
+    '/api/savings/{id}': {
+      patch: {
+        tags: ['savings'],
+        summary: 'Update saving',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  amount: { type: 'string' },
+                  note: { type: 'string', nullable: true },
+                  savedAt: { type: 'string', format: 'date-time' },
+                  goalId: { type: 'integer', nullable: true },
+                  paymentAccountId: { type: 'integer', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Saving updated' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Saving not found' },
+        },
+      },
+      delete: {
+        tags: ['savings'],
+        summary: 'Delete saving',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Saving deleted' },
+          '404': { description: 'Saving not found' },
+        },
+      },
+    },
+    '/api/payment-accounts': {
+      get: {
+        tags: ['payment-accounts'],
+        summary: 'List payment accounts',
+        responses: {
+          '200': { description: 'Payment account list' },
+        },
+      },
+      post: {
+        tags: ['payment-accounts'],
+        summary: 'Create payment account',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name', 'accountType'],
+                properties: {
+                  name: { type: 'string' },
+                  institutionSlug: { type: 'string', nullable: true },
+                  accountType: {
+                    type: 'string',
+                    enum: ['debit', 'credit', 'paypak', 'wallet', 'cash', 'other'],
+                  },
+                  lastFour: { type: 'string', nullable: true },
+                  note: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Payment account created' },
+          '400': { description: 'Validation error' },
+        },
+      },
+    },
+    '/api/payment-accounts/{id}': {
+      patch: {
+        tags: ['payment-accounts'],
+        summary: 'Update payment account',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  institutionSlug: { type: 'string', nullable: true },
+                  accountType: {
+                    type: 'string',
+                    enum: ['debit', 'credit', 'paypak', 'wallet', 'cash', 'other'],
+                  },
+                  lastFour: { type: 'string', nullable: true },
+                  note: { type: 'string', nullable: true },
+                  isActive: { type: 'boolean' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Payment account updated' },
+          '404': { description: 'Payment account not found' },
+        },
+      },
+      delete: {
+        tags: ['payment-accounts'],
+        summary: 'Delete payment account',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Payment account deleted' },
+          '404': { description: 'Payment account not found' },
+        },
+      },
+    },
+    '/api/wishlist': {
+      get: {
+        tags: ['wishlist'],
+        summary: 'List wishlist items',
+        responses: {
+          '200': {
+            description: 'Wishlist list',
+          },
+        },
+      },
+      post: {
+        tags: ['wishlist'],
+        summary: 'Create wishlist item',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['title', 'targetAmount'],
+                properties: {
+                  title: { type: 'string' },
+                  targetAmount: { type: 'string' },
+                  currentAmount: { type: 'string' },
+                  priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+                  status: { type: 'string', enum: ['active', 'paused', 'completed'] },
+                  note: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Wishlist item created' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+          '413': { description: 'Payload too large' },
+        },
+      },
+    },
+    '/api/wishlist/{id}': {
+      patch: {
+        tags: ['wishlist'],
+        summary: 'Update wishlist item',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  targetAmount: { type: 'string' },
+                  currentAmount: { type: 'string' },
+                  priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+                  status: { type: 'string', enum: ['active', 'paused', 'completed'] },
+                  note: { type: 'string', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Wishlist item updated' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Wishlist item not found' },
+        },
+      },
+      delete: {
+        tags: ['wishlist'],
+        summary: 'Delete wishlist item',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Wishlist item deleted' },
+          '404': { description: 'Wishlist item not found' },
+        },
+      },
+    },
+    '/api/goals': {
+      get: {
+        tags: ['goals'],
+        summary: 'List goals',
+        responses: {
+          '200': {
+            description: 'Goals list',
+          },
+        },
+      },
+      post: {
+        tags: ['goals'],
+        summary: 'Create goal',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['title', 'targetAmount'],
+                properties: {
+                  title: { type: 'string' },
+                  targetAmount: { type: 'string' },
+                  currentAmount: { type: 'string' },
+                  savingsAmount: { type: 'string' },
+                  status: { type: 'string', enum: ['active', 'paused', 'completed'] },
+                  targetDate: { type: 'string', format: 'date-time' },
+                  note: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Goal created' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+          '413': { description: 'Payload too large' },
+        },
+      },
+    },
+    '/api/goals/{id}': {
+      patch: {
+        tags: ['goals'],
+        summary: 'Update goal',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  targetAmount: { type: 'string' },
+                  currentAmount: { type: 'string' },
+                  savingsAmount: { type: 'string' },
+                  status: { type: 'string', enum: ['active', 'paused', 'completed'] },
+                  targetDate: { type: 'string', format: 'date-time', nullable: true },
+                  note: { type: 'string', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Goal updated' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Goal not found' },
+        },
+      },
+      delete: {
+        tags: ['goals'],
+        summary: 'Delete goal',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Goal deleted' },
+          '404': { description: 'Goal not found' },
         },
       },
     },

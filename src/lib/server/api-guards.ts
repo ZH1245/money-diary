@@ -1,6 +1,7 @@
 import { auth } from '#/lib/auth'
 import { AUTH_ROLES } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { enforceRateLimit } from '#/lib/server/rate-limit'
 import { enforceSameOrigin } from '#/lib/server/same-origin'
 
 interface AuthenticatedUserContext {
@@ -13,7 +14,10 @@ interface AuthenticatedUserContext {
  * Runs shared request protections for API handlers.
  */
 export function guardApiRequest(request: Request): Response | null {
-  return enforceSameOrigin(request)
+  const sameOriginResponse = enforceSameOrigin(request)
+  if (sameOriginResponse) return sameOriginResponse
+
+  return enforceRateLimit(request)
 }
 
 /**
@@ -24,7 +28,7 @@ export async function requireUserContext(request: Request): Promise<Authenticate
     headers: request.headers,
   })
 
-  const user = session?.user as { id?: string; currency?: string } | undefined
+  const user = session?.user as { id?: string; currency?: string; role?: string } | undefined
   if (!user?.id) {
     return Response.json(
       { success: false, error: 'Unauthorized' },
@@ -67,7 +71,24 @@ export function resolveTargetUserId({
   requester: AuthenticatedUserContext
   requestedUserId?: string | null
 }) {
-  if (!requestedUserId) return requester.id
+  if (!requestedUserId || requestedUserId === requester.id) return requester.id
   if (requester.role !== AUTH_ROLES.admin) return requester.id
+  return requestedUserId
+}
+
+/**
+ * Resolves target user id and rejects non-admin cross-user access.
+ */
+export function assertTargetUserId({
+  requester,
+  requestedUserId,
+}: {
+  requester: AuthenticatedUserContext
+  requestedUserId?: string | null
+}): string | Response {
+  if (!requestedUserId || requestedUserId === requester.id) return requester.id
+  if (requester.role !== AUTH_ROLES.admin) {
+    return Response.json({ success: false, error: 'Forbidden' }, { status: 403 })
+  }
   return requestedUserId
 }

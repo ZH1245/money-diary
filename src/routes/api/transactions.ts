@@ -5,12 +5,14 @@ import {
   getUserTransactions,
   isCategoryAccessibleByUser,
 } from '#/features/transactions/server/transactions-repository'
+import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/server/payment-accounts-repository'
 import {
   buildOptionsResponse,
   guardApiRequest,
   requireUserContext,
   resolveTargetUserId,
 } from '#/lib/server/api-guards'
+import { parseJsonBody } from '#/lib/server/request-body'
 
 const createTransactionSchema = z.object({
   title: z.string().min(1),
@@ -19,6 +21,7 @@ const createTransactionSchema = z.object({
   exchangeRate: z.string().trim().min(1).optional(),
   type: z.enum(['income', 'expense', 'transfer']),
   categoryId: z.number().int().positive(),
+  paymentAccountId: z.number().int().positive().nullable().optional(),
   source: z.string().optional(),
   note: z.string().optional(),
   happenedAt: z.string().datetime().optional(),
@@ -47,7 +50,8 @@ export const Route = createFileRoute('/api/transactions')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
-        const body = await request.json().catch(() => null)
+        const body = await parseJsonBody(request)
+        if (body instanceof Response) return body
         const parsed = createTransactionSchema.safeParse(body)
 
         if (!parsed.success) {
@@ -86,6 +90,17 @@ export const Route = createFileRoute('/api/transactions')({
           return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
         }
 
+        let paymentAccountId: number | null = parsed.data.paymentAccountId ?? null
+        if (paymentAccountId) {
+          const canUseAccount = await isPaymentAccountAccessibleByUser({
+            userId: userContext.id,
+            paymentAccountId,
+          })
+          if (!canUseAccount) {
+            return Response.json({ success: false, error: 'Payment account not found' }, { status: 404 })
+          }
+        }
+
         const row = await createUserTransaction({
           userId: userContext.id,
           title: parsed.data.title,
@@ -95,6 +110,7 @@ export const Route = createFileRoute('/api/transactions')({
           exchangeRate: parsedExchangeRate.toString(),
           type: parsed.data.type,
           categoryId: parsed.data.categoryId,
+          paymentAccountId,
           source: parsed.data.source ?? null,
           note: parsed.data.note ?? null,
           happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
