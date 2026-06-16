@@ -9,12 +9,66 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as SwaggerRouteImport } from './routes/swagger'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
+import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
+import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SwaggerRoute = SwaggerRouteImport.update({
+  id: '/swagger',
+  path: '/swagger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
+  id: '/api/transactions',
+  path: '/api/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
+  id: '/api/categories',
+  path: '/api/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSettingsCurrencyRoute = ApiSettingsCurrencyRouteImport.update({
+  id: '/api/settings/currency',
+  path: '/api/settings/currency',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOpenapiJsonRoute = ApiOpenapiJsonRouteImport.update({
+  id: '/api/openapi/json',
+  path: '/api/openapi/json',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -25,37 +79,170 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/swagger': typeof SwaggerRoute
+  '/transactions': typeof TransactionsRoute
+  '/api/categories': typeof ApiCategoriesRoute
+  '/api/transactions': typeof ApiTransactionsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/openapi/json': typeof ApiOpenapiJsonRoute
+  '/api/settings/currency': typeof ApiSettingsCurrencyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/swagger': typeof SwaggerRoute
+  '/transactions': typeof TransactionsRoute
+  '/api/categories': typeof ApiCategoriesRoute
+  '/api/transactions': typeof ApiTransactionsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/openapi/json': typeof ApiOpenapiJsonRoute
+  '/api/settings/currency': typeof ApiSettingsCurrencyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/swagger': typeof SwaggerRoute
+  '/transactions': typeof TransactionsRoute
+  '/api/categories': typeof ApiCategoriesRoute
+  '/api/transactions': typeof ApiTransactionsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/openapi/json': typeof ApiOpenapiJsonRoute
+  '/api/settings/currency': typeof ApiSettingsCurrencyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/sign-in'
+    | '/sign-up'
+    | '/swagger'
+    | '/transactions'
+    | '/api/categories'
+    | '/api/transactions'
+    | '/api/auth/$'
+    | '/api/openapi/json'
+    | '/api/settings/currency'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$'
-  id: '__root__' | '/' | '/api/auth/$'
+  to:
+    | '/'
+    | '/settings'
+    | '/sign-in'
+    | '/sign-up'
+    | '/swagger'
+    | '/transactions'
+    | '/api/categories'
+    | '/api/transactions'
+    | '/api/auth/$'
+    | '/api/openapi/json'
+    | '/api/settings/currency'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/sign-in'
+    | '/sign-up'
+    | '/swagger'
+    | '/transactions'
+    | '/api/categories'
+    | '/api/transactions'
+    | '/api/auth/$'
+    | '/api/openapi/json'
+    | '/api/settings/currency'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
+  SwaggerRoute: typeof SwaggerRoute
+  TransactionsRoute: typeof TransactionsRoute
+  ApiCategoriesRoute: typeof ApiCategoriesRoute
+  ApiTransactionsRoute: typeof ApiTransactionsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
+  ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/transactions': {
+      id: '/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/swagger': {
+      id: '/swagger'
+      path: '/swagger'
+      fullPath: '/swagger'
+      preLoaderRoute: typeof SwaggerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/transactions': {
+      id: '/api/transactions'
+      path: '/api/transactions'
+      fullPath: '/api/transactions'
+      preLoaderRoute: typeof ApiTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/categories': {
+      id: '/api/categories'
+      path: '/api/categories'
+      fullPath: '/api/categories'
+      preLoaderRoute: typeof ApiCategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/settings/currency': {
+      id: '/api/settings/currency'
+      path: '/api/settings/currency'
+      fullPath: '/api/settings/currency'
+      preLoaderRoute: typeof ApiSettingsCurrencyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/openapi/json': {
+      id: '/api/openapi/json'
+      path: '/api/openapi/json'
+      fullPath: '/api/openapi/json'
+      preLoaderRoute: typeof ApiOpenapiJsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -70,7 +257,16 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
+  SwaggerRoute: SwaggerRoute,
+  TransactionsRoute: TransactionsRoute,
+  ApiCategoriesRoute: ApiCategoriesRoute,
+  ApiTransactionsRoute: ApiTransactionsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
+  ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

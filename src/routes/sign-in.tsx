@@ -2,7 +2,7 @@ import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
 import { FormField } from '#/components/forms/form-field'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -19,11 +19,24 @@ const signInSchema = z.object({
 
 function SignInPage() {
   const navigate = useNavigate()
+  const { data: session, isPending: isSessionPending } = authClient.useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  if (isSessionPending) {
+    return (
+      <main className="p-8">
+        <p>Loading session...</p>
+      </main>
+    )
+  }
+
+  if (session?.user) {
+    return <Navigate to="/" />
+  }
 
   function getFieldError(field: 'email' | 'password', value: string): string {
     const schema = signInSchema.shape[field]
@@ -77,8 +90,12 @@ function SignInPage() {
       email,
       password,
     })
+    const submitPromise = requestPromise.then((result) => {
+      if (result.error) throw new Error(result.error.message ?? 'Unable to sign in')
+      return result
+    })
 
-    toast.promise(requestPromise, {
+    toast.promise(submitPromise, {
       loading: 'Signing in...',
       success: 'Signed in successfully',
       error: 'Unable to sign in',

@@ -2,7 +2,15 @@ import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
 import { FormField } from '#/components/forms/form-field'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
+import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
+import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -16,18 +24,33 @@ const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  currency: z.string().trim().length(3, 'Select a valid currency'),
 })
 
 function SignUpPage() {
   const navigate = useNavigate()
+  const { data: session, isPending: isSessionPending } = authClient.useSession()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function getFieldError(field: 'name' | 'email' | 'password', value: string): string {
+  if (isSessionPending) {
+    return (
+      <main className="p-8">
+        <p>Loading session...</p>
+      </main>
+    )
+  }
+
+  if (session?.user) {
+    return <Navigate to="/" />
+  }
+
+  function getFieldError(field: 'name' | 'email' | 'password' | 'currency', value: string): string {
     const schema = signUpSchema.shape[field]
     const parsed = schema.safeParse(value)
     if (parsed.success) return ''
@@ -61,12 +84,21 @@ function SignUpPage() {
     }))
   }
 
+  function handleCurrencyChange(nextValue: string) {
+    setCurrency(nextValue)
+    setErrorMessage(null)
+    setFieldErrors((previous) => ({
+      ...previous,
+      currency: getFieldError('currency', nextValue),
+    }))
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage(null)
     setFieldErrors({})
 
-    const parsed = signUpSchema.safeParse({ name, email, password })
+    const parsed = signUpSchema.safeParse({ name, email, password, currency })
 
     if (!parsed.success) {
       const nextErrors: Record<string, string> = {}
@@ -88,9 +120,14 @@ function SignUpPage() {
       name,
       email,
       password,
+      currency,
+    } as Parameters<typeof authClient.signUp.email>[0])
+    const submitPromise = requestPromise.then((result) => {
+      if (result.error) throw new Error(result.error.message ?? 'Unable to create account')
+      return result
     })
 
-    toast.promise(requestPromise, {
+    toast.promise(submitPromise, {
       loading: 'Creating account...',
       success: 'Account created successfully',
       error: 'Unable to create account',
@@ -146,6 +183,32 @@ function SignUpPage() {
               error={fieldErrors.password}
               isDisabled={isSubmitting}
             />
+            <div>
+              <label htmlFor="currency" className="mb-1 block text-sm font-medium">
+                Preferred currency
+              </label>
+              <Select
+                value={currency}
+                onValueChange={handleCurrencyChange}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="currency" className="h-10 w-full">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((currencyOption) => (
+                    <SelectItem key={currencyOption.code} value={currencyOption.code}>
+                      {currencyOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.currency ? (
+                <p className="mt-1 text-xs text-red-600 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {fieldErrors.currency}
+                </p>
+              ) : null}
+            </div>
 
             {errorMessage ? <InlineError message={errorMessage} /> : null}
 
