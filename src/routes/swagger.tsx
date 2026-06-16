@@ -1,3 +1,4 @@
+import { PageContentSkeleton } from '#/components/feedback/page-state'
 import { authClient } from '#/lib/auth-client'
 import { AUTH_ROLES } from '#/lib/auth-roles'
 import { createFileRoute } from '@tanstack/react-router'
@@ -14,7 +15,7 @@ function SwaggerPage() {
     return (
       <main className="page-wrap py-6">
         <section className="island-shell rounded-2xl p-4 md:p-6">
-          <p className="text-sm opacity-80">Loading...</p>
+          <PageContentSkeleton tableRows={8} tableColumns={3} />
         </section>
       </main>
     )

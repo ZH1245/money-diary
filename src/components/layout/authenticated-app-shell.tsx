@@ -2,15 +2,19 @@ import type { AppShellUser } from '#/components/types/app-shell'
 import { authClient } from '#/lib/auth-client'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
+  BarChart3,
   ChevronUp,
   CircleDollarSign,
   Goal,
   LayoutDashboard,
   LogOut,
+  Plus,
   ReceiptText,
   Settings,
   Shield,
-  UserRound,
+  Sparkles,
+  Star,
+  Tags,
   WalletCards,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -40,7 +44,10 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from '#/components/ui/sidebar'
-import { Separator } from '#/components/ui/separator'
+import { DashboardDateRangeFilter } from '#/components/layout/dashboard-date-range-filter'
+import { QueryRefreshButton } from '#/components/feedback/query-refresh-button'
+import { AiTransactionPanel } from '#/components/ai/ai-transaction-panel'
+import { useState } from 'react'
 
 interface AuthenticatedAppShellProps {
   children: ReactNode
@@ -49,7 +56,7 @@ interface AuthenticatedAppShellProps {
 
 interface SidebarItem {
   title: string
-  to?: '/' | '/transactions' | '/settings' | '/swagger'
+  to?: '/' | '/transactions' | '/accounts' | '/savings' | '/wishlist' | '/goals' | '/analytics' | '/categories' | '/settings' | '/swagger'
   icon: ReactNode
   show?: boolean
   isSoon?: boolean
@@ -61,11 +68,13 @@ interface SidebarSection {
 }
 
 export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellProps) {
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const fallbackText = user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
   const pageTitle = getWorkspacePageTitle(pathname)
+  const isDashboard = pathname === '/' || pathname === '/analytics'
   const sidebarSections: SidebarSection[] = [
     {
       label: 'Overview',
@@ -74,6 +83,11 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
           title: 'Dashboard',
           to: '/',
           icon: <LayoutDashboard />,
+        },
+        {
+          title: 'Analytics',
+          to: '/analytics',
+          icon: <BarChart3 />,
         },
       ],
     },
@@ -86,14 +100,29 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
           icon: <ReceiptText />,
         },
         {
-          title: 'Savings',
+          title: 'Categories',
+          to: '/categories',
+          icon: <Tags />,
+        },
+        {
+          title: 'Cards & accounts',
+          to: '/accounts',
           icon: <WalletCards />,
-          isSoon: true,
+        },
+        {
+          title: 'Savings',
+          to: '/savings',
+          icon: <CircleDollarSign />,
         },
         {
           title: 'Goals',
+          to: '/goals',
           icon: <Goal />,
-          isSoon: true,
+        },
+        {
+          title: 'Wishlist',
+          to: '/wishlist',
+          icon: <Star />,
         },
       ],
     },
@@ -121,7 +150,7 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
   ]
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarMenu>
@@ -251,22 +280,77 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className="min-w-0 overflow-x-hidden">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <SidebarInset className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
           <SidebarTrigger />
           <p className="text-sm font-semibold uppercase tracking-wide">{pageTitle}</p>
-          <Separator orientation="vertical" className="mx-1 h-4" />
           <p className="text-sm font-medium">Welcome{user.name ? `, ${user.name}` : ''}!</p>
+          <div className="ml-auto flex items-center gap-2">
+            {isDashboard ? <DashboardDateRangeFilter /> : null}
+            <QueryRefreshButton />
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiPanelOpen(true)}>
+              <Sparkles className="size-4 text-primary" />
+              AI
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <Plus className="size-4" />
+                  Create
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link to="/transactions" className="text-foreground no-underline hover:text-foreground">
+                    <ReceiptText />
+                    <span>Create transaction</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/savings" className="text-foreground no-underline hover:text-foreground">
+                    <WalletCards />
+                    <span>Add saving</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/wishlist" className="text-foreground no-underline hover:text-foreground">
+                    <Star />
+                    <span>Add wishlist item</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/categories" className="text-foreground no-underline hover:text-foreground">
+                    <Tags />
+                    <span>Add category</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/goals" className="text-foreground no-underline hover:text-foreground">
+                    <Goal />
+                    <span>Add goal</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
-        <div className="min-w-0 flex-1 overflow-x-hidden">{children}</div>
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">{children}</div>
       </SidebarInset>
+
+      <AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
     </SidebarProvider>
   )
 }
 
 function getWorkspacePageTitle(pathname: string): string {
   if (pathname === '/') return 'Dashboard'
+  if (pathname.startsWith('/analytics')) return 'Analytics'
   if (pathname.startsWith('/transactions')) return 'Transactions'
+  if (pathname.startsWith('/categories')) return 'Categories'
+  if (pathname.startsWith('/accounts')) return 'Cards & accounts'
+  if (pathname.startsWith('/savings')) return 'Savings'
+  if (pathname.startsWith('/wishlist')) return 'Wishlist'
+  if (pathname.startsWith('/goals')) return 'Goals'
   if (pathname.startsWith('/settings')) return 'Settings'
   if (pathname.startsWith('/swagger')) return 'API Docs'
   return 'Workspace'

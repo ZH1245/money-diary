@@ -1,5 +1,6 @@
 import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
+import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { FormField } from '#/components/forms/form-field'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
 import {
@@ -39,11 +40,7 @@ function SignUpPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (isSessionPending) {
-    return (
-      <main className="p-8">
-        <p>Loading session...</p>
-      </main>
-    )
+    return <SessionLoadingSkeleton />
   }
 
   if (session?.user) {

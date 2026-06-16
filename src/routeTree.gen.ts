@@ -9,18 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SwaggerRouteImport } from './routes/swagger'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SavingsRouteImport } from './routes/savings'
+import { Route as GoalsRouteImport } from './routes/goals'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiWishlistRouteImport } from './routes/api/wishlist'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
+import { Route as ApiSavingsRouteImport } from './routes/api/savings'
+import { Route as ApiPaymentAccountsRouteImport } from './routes/api/payment-accounts'
+import { Route as ApiGoalsRouteImport } from './routes/api/goals'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as ApiWishlistIdRouteImport } from './routes/api/wishlist/$id'
+import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions/$id'
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
+import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
+import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
+import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transaction'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -46,9 +68,39 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SavingsRoute = SavingsRouteImport.update({
+  id: '/savings',
+  path: '/savings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoalsRoute = GoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountsRoute = AccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWishlistRoute = ApiWishlistRouteImport.update({
+  id: '/api/wishlist',
+  path: '/api/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
@@ -56,118 +108,282 @@ const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
   path: '/api/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSavingsRoute = ApiSavingsRouteImport.update({
+  id: '/api/savings',
+  path: '/api/savings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPaymentAccountsRoute = ApiPaymentAccountsRouteImport.update({
+  id: '/api/payment-accounts',
+  path: '/api/payment-accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoalsRoute = ApiGoalsRouteImport.update({
+  id: '/api/goals',
+  path: '/api/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
   id: '/api/categories',
   path: '/api/categories',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWishlistIdRoute = ApiWishlistIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiWishlistRoute,
+} as any)
+const ApiTransactionsIdRoute = ApiTransactionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiTransactionsRoute,
 } as any)
 const ApiSettingsCurrencyRoute = ApiSettingsCurrencyRouteImport.update({
   id: '/api/settings/currency',
   path: '/api/settings/currency',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSavingsIdRoute = ApiSavingsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiSavingsRoute,
+} as any)
+const ApiPaymentAccountsIdRoute = ApiPaymentAccountsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiPaymentAccountsRoute,
+} as any)
 const ApiOpenapiJsonRoute = ApiOpenapiJsonRouteImport.update({
   id: '/api/openapi/json',
   path: '/api/openapi/json',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoalsIdRoute = ApiGoalsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiGoalsRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiTransactionRoute = ApiAiTransactionRouteImport.update({
+  id: '/api/ai/transaction',
+  path: '/api/ai/transaction',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai/chat',
+  path: '/api/ai/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accounts': typeof AccountsRoute
+  '/analytics': typeof AnalyticsRoute
+  '/categories': typeof CategoriesRoute
+  '/goals': typeof GoalsRoute
+  '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
   '/transactions': typeof TransactionsRoute
+  '/wishlist': typeof WishlistRoute
   '/api/categories': typeof ApiCategoriesRoute
-  '/api/transactions': typeof ApiTransactionsRoute
+  '/api/goals': typeof ApiGoalsRouteWithChildren
+  '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
+  '/api/savings': typeof ApiSavingsRouteWithChildren
+  '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/api/wishlist': typeof ApiWishlistRouteWithChildren
+  '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
+  '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
+  '/api/transactions/$id': typeof ApiTransactionsIdRoute
+  '/api/wishlist/$id': typeof ApiWishlistIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accounts': typeof AccountsRoute
+  '/analytics': typeof AnalyticsRoute
+  '/categories': typeof CategoriesRoute
+  '/goals': typeof GoalsRoute
+  '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
   '/transactions': typeof TransactionsRoute
+  '/wishlist': typeof WishlistRoute
   '/api/categories': typeof ApiCategoriesRoute
-  '/api/transactions': typeof ApiTransactionsRoute
+  '/api/goals': typeof ApiGoalsRouteWithChildren
+  '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
+  '/api/savings': typeof ApiSavingsRouteWithChildren
+  '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/api/wishlist': typeof ApiWishlistRouteWithChildren
+  '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
+  '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
+  '/api/transactions/$id': typeof ApiTransactionsIdRoute
+  '/api/wishlist/$id': typeof ApiWishlistIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/accounts': typeof AccountsRoute
+  '/analytics': typeof AnalyticsRoute
+  '/categories': typeof CategoriesRoute
+  '/goals': typeof GoalsRoute
+  '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
   '/transactions': typeof TransactionsRoute
+  '/wishlist': typeof WishlistRoute
   '/api/categories': typeof ApiCategoriesRoute
-  '/api/transactions': typeof ApiTransactionsRoute
+  '/api/goals': typeof ApiGoalsRouteWithChildren
+  '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
+  '/api/savings': typeof ApiSavingsRouteWithChildren
+  '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/api/wishlist': typeof ApiWishlistRouteWithChildren
+  '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
+  '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
+  '/api/transactions/$id': typeof ApiTransactionsIdRoute
+  '/api/wishlist/$id': typeof ApiWishlistIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accounts'
+    | '/analytics'
+    | '/categories'
+    | '/goals'
+    | '/savings'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
     | '/transactions'
+    | '/wishlist'
     | '/api/categories'
+    | '/api/goals'
+    | '/api/payment-accounts'
+    | '/api/savings'
     | '/api/transactions'
+    | '/api/wishlist'
+    | '/api/ai/chat'
+    | '/api/ai/transaction'
     | '/api/auth/$'
+    | '/api/goals/$id'
     | '/api/openapi/json'
+    | '/api/payment-accounts/$id'
+    | '/api/savings/$id'
     | '/api/settings/currency'
+    | '/api/transactions/$id'
+    | '/api/wishlist/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accounts'
+    | '/analytics'
+    | '/categories'
+    | '/goals'
+    | '/savings'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
     | '/transactions'
+    | '/wishlist'
     | '/api/categories'
+    | '/api/goals'
+    | '/api/payment-accounts'
+    | '/api/savings'
     | '/api/transactions'
+    | '/api/wishlist'
+    | '/api/ai/chat'
+    | '/api/ai/transaction'
     | '/api/auth/$'
+    | '/api/goals/$id'
     | '/api/openapi/json'
+    | '/api/payment-accounts/$id'
+    | '/api/savings/$id'
     | '/api/settings/currency'
+    | '/api/transactions/$id'
+    | '/api/wishlist/$id'
   id:
     | '__root__'
     | '/'
+    | '/accounts'
+    | '/analytics'
+    | '/categories'
+    | '/goals'
+    | '/savings'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
     | '/transactions'
+    | '/wishlist'
     | '/api/categories'
+    | '/api/goals'
+    | '/api/payment-accounts'
+    | '/api/savings'
     | '/api/transactions'
+    | '/api/wishlist'
+    | '/api/ai/chat'
+    | '/api/ai/transaction'
     | '/api/auth/$'
+    | '/api/goals/$id'
     | '/api/openapi/json'
+    | '/api/payment-accounts/$id'
+    | '/api/savings/$id'
     | '/api/settings/currency'
+    | '/api/transactions/$id'
+    | '/api/wishlist/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountsRoute: typeof AccountsRoute
+  AnalyticsRoute: typeof AnalyticsRoute
+  CategoriesRoute: typeof CategoriesRoute
+  GoalsRoute: typeof GoalsRoute
+  SavingsRoute: typeof SavingsRoute
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   SwaggerRoute: typeof SwaggerRoute
   TransactionsRoute: typeof TransactionsRoute
+  WishlistRoute: typeof WishlistRoute
   ApiCategoriesRoute: typeof ApiCategoriesRoute
-  ApiTransactionsRoute: typeof ApiTransactionsRoute
+  ApiGoalsRoute: typeof ApiGoalsRouteWithChildren
+  ApiPaymentAccountsRoute: typeof ApiPaymentAccountsRouteWithChildren
+  ApiSavingsRoute: typeof ApiSavingsRouteWithChildren
+  ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
+  ApiWishlistRoute: typeof ApiWishlistRouteWithChildren
+  ApiAiChatRoute: typeof ApiAiChatRoute
+  ApiAiTransactionRoute: typeof ApiAiTransactionRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
@@ -175,6 +391,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wishlist': {
+      id: '/wishlist'
+      path: '/wishlist'
+      fullPath: '/wishlist'
+      preLoaderRoute: typeof WishlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transactions': {
       id: '/transactions'
       path: '/transactions'
@@ -210,11 +433,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/savings': {
+      id: '/savings'
+      path: '/savings'
+      fullPath: '/savings'
+      preLoaderRoute: typeof SavingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goals': {
+      id: '/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof GoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accounts': {
+      id: '/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/wishlist': {
+      id: '/api/wishlist'
+      path: '/api/wishlist'
+      fullPath: '/api/wishlist'
+      preLoaderRoute: typeof ApiWishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/transactions': {
@@ -224,12 +489,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/savings': {
+      id: '/api/savings'
+      path: '/api/savings'
+      fullPath: '/api/savings'
+      preLoaderRoute: typeof ApiSavingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payment-accounts': {
+      id: '/api/payment-accounts'
+      path: '/api/payment-accounts'
+      fullPath: '/api/payment-accounts'
+      preLoaderRoute: typeof ApiPaymentAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/goals': {
+      id: '/api/goals'
+      path: '/api/goals'
+      fullPath: '/api/goals'
+      preLoaderRoute: typeof ApiGoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/categories': {
       id: '/api/categories'
       path: '/api/categories'
       fullPath: '/api/categories'
       preLoaderRoute: typeof ApiCategoriesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/wishlist/$id': {
+      id: '/api/wishlist/$id'
+      path: '/$id'
+      fullPath: '/api/wishlist/$id'
+      preLoaderRoute: typeof ApiWishlistIdRouteImport
+      parentRoute: typeof ApiWishlistRoute
+    }
+    '/api/transactions/$id': {
+      id: '/api/transactions/$id'
+      path: '/$id'
+      fullPath: '/api/transactions/$id'
+      preLoaderRoute: typeof ApiTransactionsIdRouteImport
+      parentRoute: typeof ApiTransactionsRoute
     }
     '/api/settings/currency': {
       id: '/api/settings/currency'
@@ -238,12 +538,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSettingsCurrencyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/savings/$id': {
+      id: '/api/savings/$id'
+      path: '/$id'
+      fullPath: '/api/savings/$id'
+      preLoaderRoute: typeof ApiSavingsIdRouteImport
+      parentRoute: typeof ApiSavingsRoute
+    }
+    '/api/payment-accounts/$id': {
+      id: '/api/payment-accounts/$id'
+      path: '/$id'
+      fullPath: '/api/payment-accounts/$id'
+      preLoaderRoute: typeof ApiPaymentAccountsIdRouteImport
+      parentRoute: typeof ApiPaymentAccountsRoute
+    }
     '/api/openapi/json': {
       id: '/api/openapi/json'
       path: '/api/openapi/json'
       fullPath: '/api/openapi/json'
       preLoaderRoute: typeof ApiOpenapiJsonRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/goals/$id': {
+      id: '/api/goals/$id'
+      path: '/$id'
+      fullPath: '/api/goals/$id'
+      preLoaderRoute: typeof ApiGoalsIdRouteImport
+      parentRoute: typeof ApiGoalsRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -252,18 +573,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/transaction': {
+      id: '/api/ai/transaction'
+      path: '/api/ai/transaction'
+      fullPath: '/api/ai/transaction'
+      preLoaderRoute: typeof ApiAiTransactionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/chat': {
+      id: '/api/ai/chat'
+      path: '/api/ai/chat'
+      fullPath: '/api/ai/chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface ApiGoalsRouteChildren {
+  ApiGoalsIdRoute: typeof ApiGoalsIdRoute
+}
+
+const ApiGoalsRouteChildren: ApiGoalsRouteChildren = {
+  ApiGoalsIdRoute: ApiGoalsIdRoute,
+}
+
+const ApiGoalsRouteWithChildren = ApiGoalsRoute._addFileChildren(
+  ApiGoalsRouteChildren,
+)
+
+interface ApiPaymentAccountsRouteChildren {
+  ApiPaymentAccountsIdRoute: typeof ApiPaymentAccountsIdRoute
+}
+
+const ApiPaymentAccountsRouteChildren: ApiPaymentAccountsRouteChildren = {
+  ApiPaymentAccountsIdRoute: ApiPaymentAccountsIdRoute,
+}
+
+const ApiPaymentAccountsRouteWithChildren =
+  ApiPaymentAccountsRoute._addFileChildren(ApiPaymentAccountsRouteChildren)
+
+interface ApiSavingsRouteChildren {
+  ApiSavingsIdRoute: typeof ApiSavingsIdRoute
+}
+
+const ApiSavingsRouteChildren: ApiSavingsRouteChildren = {
+  ApiSavingsIdRoute: ApiSavingsIdRoute,
+}
+
+const ApiSavingsRouteWithChildren = ApiSavingsRoute._addFileChildren(
+  ApiSavingsRouteChildren,
+)
+
+interface ApiTransactionsRouteChildren {
+  ApiTransactionsIdRoute: typeof ApiTransactionsIdRoute
+}
+
+const ApiTransactionsRouteChildren: ApiTransactionsRouteChildren = {
+  ApiTransactionsIdRoute: ApiTransactionsIdRoute,
+}
+
+const ApiTransactionsRouteWithChildren = ApiTransactionsRoute._addFileChildren(
+  ApiTransactionsRouteChildren,
+)
+
+interface ApiWishlistRouteChildren {
+  ApiWishlistIdRoute: typeof ApiWishlistIdRoute
+}
+
+const ApiWishlistRouteChildren: ApiWishlistRouteChildren = {
+  ApiWishlistIdRoute: ApiWishlistIdRoute,
+}
+
+const ApiWishlistRouteWithChildren = ApiWishlistRoute._addFileChildren(
+  ApiWishlistRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountsRoute: AccountsRoute,
+  AnalyticsRoute: AnalyticsRoute,
+  CategoriesRoute: CategoriesRoute,
+  GoalsRoute: GoalsRoute,
+  SavingsRoute: SavingsRoute,
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   SwaggerRoute: SwaggerRoute,
   TransactionsRoute: TransactionsRoute,
+  WishlistRoute: WishlistRoute,
   ApiCategoriesRoute: ApiCategoriesRoute,
-  ApiTransactionsRoute: ApiTransactionsRoute,
+  ApiGoalsRoute: ApiGoalsRouteWithChildren,
+  ApiPaymentAccountsRoute: ApiPaymentAccountsRouteWithChildren,
+  ApiSavingsRoute: ApiSavingsRouteWithChildren,
+  ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
+  ApiWishlistRoute: ApiWishlistRouteWithChildren,
+  ApiAiChatRoute: ApiAiChatRoute,
+  ApiAiTransactionRoute: ApiAiTransactionRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,

@@ -1,56 +1,37 @@
-import { authClient } from '#/lib/auth-client'
+import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
+import { DashboardLoadingSkeleton, SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import { Calendar } from '#/components/ui/calendar'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
 import { useCategoriesQuery } from '#/features/categories/hooks/use-categories'
+import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
+import { buildTrendSeriesForDateRange, isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
+import { useGoalsQuery } from '#/features/goals/hooks/use-goals'
+import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
+import { useWishlistQuery } from '#/features/wishlist/hooks/use-wishlist'
+import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
-import { Wallet, TrendingUp, TrendingDown } from 'lucide-react'
+import { chartColors } from '#/lib/chart-colors'
+import { Wallet, TrendingUp, TrendingDown, Target, Star, WalletCards } from 'lucide-react'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { useStore } from '@tanstack/react-store'
 
 export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
-  const [trendRange, setTrendRange] = useState('6w')
   const { data: session, isPending } = authClient.useSession()
-  const {
-    data: transactions = [],
-    isPending: isTransactionsPending,
-    isError: isTransactionsError,
-    error: transactionsError,
-  } = useTransactionsQuery()
-  const {
-    data: categories = [],
-    isPending: isCategoriesPending,
-    isError: isCategoriesError,
-    error: categoriesError,
-  } = useCategoriesQuery()
 
   if (isPending) {
-    return (
-      <div className="p-8">
-        <p>Loading session...</p>
-      </div>
-    )
+    return <SessionLoadingSkeleton />
   }
 
   if (!session?.user) {
     return <Navigate to="/sign-in" />
   }
 
-  const trendBucketCount = getTrendBucketCount(trendRange)
-  const stats = buildDashboardStats({ transactions, categories, trendBucketCount })
-  const isStatsPending = isTransactionsPending || isCategoriesPending
-  const statsError = isTransactionsError ? transactionsError : isCategoriesError ? categoriesError : null
   const userCurrency = ((session.user as { currency?: string }).currency ?? DEFAULT_CURRENCY).toUpperCase()
 
   return (
@@ -63,14 +44,104 @@ function Home() {
         currency: (session.user as { currency?: string }).currency,
       }}
     >
-      <main className="p-6 md:p-8">
+      <HomeContent userCurrency={userCurrency} />
+    </AuthenticatedAppShell>
+  )
+}
+
+function HomeContent({ userCurrency }: { userCurrency: string }) {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  const dateRange = useStore(dashboardDateRangeStore, (state) => state)
+  const {
+    data: transactions = [],
+    isPending: isTransactionsPending,
+    isError: isTransactionsError,
+    error: transactionsError,
+  } = useTransactionsQuery()
+  const {
+    data: categories = [],
+    isPending: isCategoriesPending,
+    isError: isCategoriesError,
+    error: categoriesError,
+  } = useCategoriesQuery()
+  const { data: savings = [], isError: isSavingsError, error: savingsError } = useSavingsQuery()
+  const { data: wishlist = [], isError: isWishlistError, error: wishlistError } = useWishlistQuery()
+  const { data: goals = [], isError: isGoalsError, error: goalsError } = useGoalsQuery()
+
+  const filteredTransactions = useMemo(
+    () => transactions.filter((transaction) => isDateInRange(transaction.happenedAt, dateRange.from, dateRange.to)),
+    [transactions, dateRange.from, dateRange.to],
+  )
+  const filteredSavings = useMemo(
+    () => savings.filter((saving) => isDateInRange(saving.savedAt, dateRange.from, dateRange.to)),
+    [savings, dateRange.from, dateRange.to],
+  )
+  const stats = useMemo(
+    () =>
+      buildDashboardStats({
+        transactions: filteredTransactions,
+        categories,
+        savings: filteredSavings,
+        wishlist,
+        goals,
+        dateRange,
+      }),
+    [filteredTransactions, categories, filteredSavings, wishlist, goals, dateRange],
+  )
+
+  const isStatsPending = isTransactionsPending || isCategoriesPending
+  const statsError = isTransactionsError ? transactionsError : isCategoriesError ? categoriesError : null
+  const secondaryDataError = isSavingsError
+    ? savingsError
+    : isWishlistError
+      ? wishlistError
+      : isGoalsError
+        ? goalsError
+        : null
+
+  const recentTransactionColumns = useMemo<ColumnDef<RecentTransactionRow>[]>(
+    () => [
+      {
+        accessorKey: 'title',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+      },
+      {
+        accessorKey: 'happenedAt',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
+        cell: ({ row }) => row.original.happenedAtLabel,
+        sortingFn: (first, second) =>
+          new Date(first.original.happenedAt).getTime() - new Date(second.original.happenedAt).getTime(),
+      },
+      {
+        accessorKey: 'type',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+        cell: ({ row }) => <span className="capitalize">{row.original.type}</span>,
+      },
+      {
+        id: 'amount',
+        accessorFn: (row) => Number(row.amount),
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Amount" className="w-full justify-end" />
+        ),
+        meta: { cellClassName: 'text-right font-medium' },
+        cell: ({ row }) => formatCurrency(parseAmount(row.original.amount), userCurrency),
+      },
+    ],
+    [userCurrency],
+  )
+
+  return (
+    <main className="p-6 md:p-8">
         <section className="space-y-6">
-          {isStatsPending ? <p className="text-sm">Loading stats...</p> : null}
+          {isStatsPending ? <DashboardLoadingSkeleton /> : null}
           {statsError ? <p className="text-sm text-red-600">{statsError.message}</p> : null}
+          {secondaryDataError ? (
+            <p className="text-sm text-amber-700">Some dashboard data could not be loaded: {secondaryDataError.message}</p>
+          ) : null}
 
           {!isStatsPending && !statsError ? (
             <>
-              <div className="grid auto-rows-min gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <InsightMiniCard
                   icon={<Wallet className="size-4 text-slate-600" />}
                   label="Total Balance"
@@ -91,25 +162,28 @@ function Home() {
                   label="Transactions"
                   value={String(stats.transactionCount)}
                 />
+                <InsightMiniCard
+                  icon={<WalletCards className="size-4 text-indigo-600" />}
+                  label="Saved"
+                  value={formatCurrency(stats.totalSaved, userCurrency)}
+                />
+                <InsightMiniCard
+                  icon={<Star className="size-4 text-amber-600" />}
+                  label="Wishlist"
+                  value={formatCurrency(stats.totalWishlistTarget, userCurrency)}
+                />
+                <InsightMiniCard
+                  icon={<Target className="size-4 text-rose-600" />}
+                  label="Goals"
+                  value={formatCurrency(stats.totalGoalTarget, userCurrency)}
+                />
               </div>
 
               <div className="grid items-start gap-4 xl:grid-cols-[2fr_1fr]">
                 <div className="feature-card rounded-2xl border border-border p-5 xl:min-h-[460px]">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xl font-semibold">Money Insight</p>
-                      <p className="mt-1 text-xs opacity-70">Income vs expenses trend</p>
-                    </div>
-                    <Select value={trendRange} onValueChange={setTrendRange}>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Select range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="4w">Last 4 weeks</SelectItem>
-                        <SelectItem value="6w">Last 6 weeks</SelectItem>
-                        <SelectItem value="12w">Last 12 weeks</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div>
+                    <p className="text-xl font-semibold">Money Insight</p>
+                    <p className="mt-1 text-xs opacity-70">Income vs expenses for selected range</p>
                   </div>
 
                   <div className="mt-4 h-72 w-full xl:h-[340px]">
@@ -117,12 +191,12 @@ function Home() {
                       <AreaChart data={stats.weeklyTrend}>
                         <defs>
                           <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.35} />
-                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0.03} />
+                            <stop offset="5%" stopColor={chartColors.income} stopOpacity={0.35} />
+                            <stop offset="95%" stopColor={chartColors.income} stopOpacity={0.03} />
                           </linearGradient>
                           <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.35} />
-                            <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.03} />
+                            <stop offset="5%" stopColor={chartColors.expense} stopOpacity={0.35} />
+                            <stop offset="95%" stopColor={chartColors.expense} stopOpacity={0.03} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -143,19 +217,19 @@ function Home() {
                             formatCurrency(Number(value ?? 0), userCurrency),
                             String(name) === 'income' ? 'Income' : 'Expense',
                           ]}
-                          labelFormatter={(label) => `Week ${label}`}
+                          labelFormatter={(label) => String(label)}
                         />
                         <Area
                           type="monotone"
                           dataKey="income"
-                          stroke="#16a34a"
+                          stroke={chartColors.income}
                           strokeWidth={2}
                           fill="url(#incomeFill)"
                         />
                         <Area
                           type="monotone"
                           dataKey="expense"
-                          stroke="#8b5cf6"
+                          stroke={chartColors.expense}
                           strokeWidth={2}
                           fill="url(#expenseFill)"
                         />
@@ -180,28 +254,30 @@ function Home() {
 
               <div className="feature-card rounded-2xl border border-border p-5">
                 <p className="text-xs font-medium uppercase tracking-wide opacity-60">Recent transactions</p>
-                {stats.recentTransactions.length ? (
-                  <ul className="mt-3 space-y-2">
-                    {stats.recentTransactions.map((transaction) => (
-                      <li key={transaction.id} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
-                        <div>
-                          <p className="text-sm font-medium">{transaction.title}</p>
-                          <p className="text-xs opacity-70">{transaction.type}</p>
-                        </div>
-                        <p className="text-sm font-medium">{formatCurrency(parseAmount(transaction.amount), userCurrency)}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm opacity-70">No transactions yet.</p>
-                )}
+                <div className="mt-3">
+                  <DataTable
+                    columns={recentTransactionColumns}
+                    data={stats.recentTransactions}
+                    showToolbar={false}
+                    emptyMessage="No transactions yet."
+                    initialSorting={[{ id: 'happenedAt', desc: true }]}
+                  />
+                </div>
               </div>
             </>
           ) : null}
         </section>
       </main>
-    </AuthenticatedAppShell>
   )
+}
+
+interface RecentTransactionRow {
+  id: number
+  title: string
+  amount: string
+  type: string
+  happenedAt: string
+  happenedAtLabel: string
 }
 
 interface DashboardStatsInput {
@@ -211,13 +287,27 @@ interface DashboardStatsInput {
     amount: string
     type: string
     categoryId: number
+    happenedAt: string
   }>
   categories: Array<{
     id: number
     name: string
     userId?: string | null
   }>
-  trendBucketCount: number
+  savings: Array<{
+    amount: string
+    savedAt: string
+  }>
+  wishlist: Array<{
+    targetAmount: string
+  }>
+  goals: Array<{
+    targetAmount: string
+  }>
+  dateRange: {
+    from: string
+    to: string
+  }
 }
 
 interface DashboardStatsOutput {
@@ -225,6 +315,9 @@ interface DashboardStatsOutput {
   totalIncome: number
   totalExpense: number
   transactionCount: number
+  totalSaved: number
+  totalWishlistTarget: number
+  totalGoalTarget: number
   categoryCount: number
   personalCategoryCount: number
   globalCategoryCount: number
@@ -235,6 +328,8 @@ interface DashboardStatsOutput {
     title: string
     amount: string
     type: string
+    happenedAt: string
+    happenedAtLabel: string
   }>
   weeklyTrend: Array<{
     week: string
@@ -267,7 +362,14 @@ function InsightMiniCard({ icon, label, value }: InsightMiniCardProps) {
 /**
  * Builds aggregate metrics for the dashboard view.
  */
-function buildDashboardStats({ transactions, categories, trendBucketCount }: DashboardStatsInput): DashboardStatsOutput {
+function buildDashboardStats({
+  transactions,
+  categories,
+  savings,
+  wishlist,
+  goals,
+  dateRange,
+}: DashboardStatsInput): DashboardStatsOutput {
   const totalIncome = transactions
     .filter((transaction) => transaction.type === 'income')
     .reduce((sum, transaction) => sum + parseAmount(transaction.amount), 0)
@@ -291,17 +393,23 @@ function buildDashboardStats({ transactions, categories, trendBucketCount }: Das
   const topExpenseCategory = categories.find((category) => category.id === topExpenseCategoryId)
 
   const recentTransactions = [...transactions]
+    .sort((first, second) => Number(new Date(second.happenedAt)) - Number(new Date(first.happenedAt)))
     .slice(0, 5)
     .map((transaction) => ({
       id: transaction.id,
       title: transaction.title,
       amount: transaction.amount,
       type: transaction.type,
+      happenedAt: transaction.happenedAt,
+      happenedAtLabel: formatTransactionDate(transaction.happenedAt),
     }))
 
   const personalCategoryCount = categories.filter((category) => Boolean(category.userId)).length
   const globalCategoryCount = categories.length - personalCategoryCount
-  const weeklyTrend = buildWeeklyTrendSeries(transactions, trendBucketCount)
+  const totalSaved = savings.reduce((sum, item) => sum + parseAmount(item.amount), 0)
+  const totalWishlistTarget = wishlist.reduce((sum, item) => sum + parseAmount(item.targetAmount), 0)
+  const totalGoalTarget = goals.reduce((sum, item) => sum + parseAmount(item.targetAmount), 0)
+  const weeklyTrend = buildTrendSeriesForDateRange(transactions, dateRange.from, dateRange.to, parseAmount)
   const calendar = {
     monthLabel: new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date()),
   }
@@ -311,6 +419,9 @@ function buildDashboardStats({ transactions, categories, trendBucketCount }: Das
     totalIncome,
     totalExpense,
     transactionCount: transactions.length,
+    totalSaved,
+    totalWishlistTarget,
+    totalGoalTarget,
     categoryCount: categories.length,
     personalCategoryCount,
     globalCategoryCount,
@@ -320,37 +431,6 @@ function buildDashboardStats({ transactions, categories, trendBucketCount }: Das
     weeklyTrend,
     calendar,
   }
-}
-
-/**
- * Aggregates transactions into the last six weekly buckets for charting.
- */
-function buildWeeklyTrendSeries(
-  transactions: Array<{ amount: string; type: string }>,
-  bucketCount: number
-): Array<{ week: string; income: number; expense: number }> {
-  const buckets = Array.from({ length: bucketCount }, (_, index) => ({
-    week: `W${index + 1}`,
-    income: 0,
-    expense: 0,
-  }))
-
-  if (!transactions.length) return buckets
-
-  transactions.forEach((transaction, index) => {
-    const bucketIndex = index % bucketCount
-    const amount = Math.max(parseAmount(transaction.amount), 0)
-    if (transaction.type === 'income') buckets[bucketIndex].income += amount
-    if (transaction.type === 'expense') buckets[bucketIndex].expense += amount
-  })
-
-  return buckets
-}
-
-function getTrendBucketCount(range: string): number {
-  if (range === '4w') return 4
-  if (range === '12w') return 12
-  return 6
 }
 
 /**
@@ -380,4 +460,11 @@ function compactAmount(amount: number, currency: string): string {
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(amount)
+}
+
+/**
+ * Formats transaction dates for dashboard table rows.
+ */
+function formatTransactionDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
 }

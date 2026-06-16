@@ -1,5 +1,6 @@
 import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
+import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { FormField } from '#/components/forms/form-field'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import {
@@ -58,11 +59,7 @@ function SettingsPage() {
   }, [session?.user, selectedCurrency, isCurrencySubmitting, currencyError])
 
   if (isSessionPending) {
-    return (
-      <main className="p-8">
-        <p>Loading session...</p>
-      </main>
-    )
+    return <SessionLoadingSkeleton />
   }
 
   if (!session?.user) {
