@@ -5,3 +5,132 @@ Use the latest version of Shadcn to install new components, like this command to
 ```bash
 pnpm dlx shadcn@latest add button
 ```
+
+When a new requirement or feature needs a missing UI primitive, install the exact shadcn component immediately before implementing UI:
+
+```bash
+pnpm dlx shadcn@latest add <component-name>
+```
+
+Shadcn usage rules:
+- Prefer shadcn components over custom raw UI for forms, overlays, navigation, tables, and feedback states
+- Build feature UIs by composing shadcn primitives inside feature components
+- Keep custom wrappers thin and feature-oriented (do not fork shadcn internals unless required)
+- If multiple components are needed, install all required components in one command
+- Keep component variants consistent with project warm theme tokens in `src/styles.css`
+
+# commit message instructions
+
+When generating git commit messages, follow Conventional Commit format and include a descriptive body.
+
+Required format:
+
+```text
+<type>(<optional-scope>): <short summary>
+
+<why this change is needed and what problem it solves>
+
+<optional bullet list for key changes>
+```
+
+Rules:
+- Use one of: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+- Keep subject line concise and imperative (about 50-72 chars when possible)
+- Always include a body with context (not only a one-line subject)
+- Prefer explaining "why" and impact, not just file-level "what"
+
+# react + tanstack engineering rules
+
+Stack assumptions for this repository:
+- TanStack Start + TanStack Router + TanStack Query + React + TypeScript
+- Server/client boundaries must stay explicit and type-safe
+
+Core implementation rules:
+- Use function components and named exports
+- Keep components focused; move data logic into hooks/services
+- Prefer route-level loaders and query prefetching for initial data
+- Use TanStack Query for remote async state; avoid duplicating server state in local state
+- Use search params for shareable filter/sort/pagination state
+- Co-locate route files with their UI and data dependencies
+- Validate all external input (URL params, forms, server functions) with zod
+- Use optimistic updates only when rollback is clearly implemented
+- Invalidate query keys intentionally after mutations (do not invalidate everything)
+- Keep query keys centralized and deterministic
+- Handle loading/error/empty/success states explicitly in UI
+
+Server/client boundary rules:
+- Put DB calls and secret-dependent logic in server-only modules
+- Never expose secrets to client code (`VITE_` vars are public)
+- Keep server functions small and composable
+- Return typed DTOs from server functions; avoid leaking DB internals
+
+Refactor rules:
+- Prefer small, isolated refactors per concern (UI, query, schema, routing)
+- Preserve behavior first; refactor with tests or type checks passing
+- Remove duplication by extracting pure helpers/hooks, not by creating deep abstractions
+- Keep files under ~250 lines when practical; split by responsibility when they grow
+- Avoid broad rewrites unless explicitly requested
+
+# domain-driven folder structure (money diary)
+
+Use feature folders in `src/features`:
+
+```text
+src/
+  features/
+    transactions/   # money in/out entries
+    savings/        # current savings, savings ledger, transfers to savings
+    wishlist/       # things user wants to buy
+    goals/          # financial goals (distinct from wishlist)
+    categories/     # game, netflix, ai-subscription, etc.
+    analytics/      # spending trends and category/title insights
+```
+
+Per-feature module shape:
+- `api/` server functions and data access adapters
+- `components/` feature UI components
+- `hooks/` feature hooks (query/mutation orchestration)
+- `schemas/` zod schemas and parsing
+- `types/` feature interfaces
+- `utils/` pure helpers
+
+Routing guidance:
+- `src/routes/transactions/*`
+- `src/routes/savings/*`
+- `src/routes/wishlist/*`
+- `src/routes/goals/*`
+- `src/routes/analytics/*`
+
+Money Diary business entities:
+- Transaction: amount, type (`income` | `expense` | `transfer`), title, category, date, notes, source
+- SavingsEntry: amount, sourceTransactionId, date, note
+- WishlistItem: title, targetAmount, priority, status
+- FinancialGoal: title, targetAmount, targetDate, status, progress
+- Category: name, slug, kind (`need` | `want` | `subscription` | `other`)
+
+Product behavior expectations:
+- User can log income and expense entries
+- User can mark what portion of income moved into savings
+- Wishlist is separate from financial goals
+- Dashboard can show: current savings, current expenditure, top spending categories/titles
+- Analytics supports filtering by date range, category, and title
+
+Code quality gates for generated changes:
+- Add/update zod schema for any new input surface
+- Add/update query keys for new server data dependencies
+- Add/update route loader dependencies when data is required at navigation time
+- Keep empty/error states present in UI screens
+
+# api-first delivery rules
+
+Implementation order for each feature:
+1. Define/update DB schema
+2. Build API/server routes + validation
+3. Update OpenAPI (`/api/openapi/json`)
+4. Build UI pages that consume the API
+
+API rules:
+- Do not create feature pages before corresponding API endpoints exist
+- Every new API endpoint must be documented in OpenAPI in the same change
+- Use zod validation for request payloads and query params
+- Return consistent JSON shape for success and error responses
