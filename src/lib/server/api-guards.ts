@@ -1,10 +1,12 @@
 import { auth } from '#/lib/auth'
+import { AUTH_ROLES } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { enforceSameOrigin } from '#/lib/server/same-origin'
 
 interface AuthenticatedUserContext {
   id: string
   currency: string
+  role: string
 }
 
 /**
@@ -33,6 +35,7 @@ export async function requireUserContext(request: Request): Promise<Authenticate
   return {
     id: user.id,
     currency: (user.currency ?? DEFAULT_CURRENCY).toUpperCase(),
+    role: user.role ?? AUTH_ROLES.user,
   }
 }
 
@@ -52,4 +55,19 @@ export function buildOptionsResponse(request: Request): Response {
   const blockedResponse = guardApiRequest(request)
   if (blockedResponse) return blockedResponse
   return new Response(null, { status: 204 })
+}
+
+/**
+ * Resolves the target user id while allowing admin overrides.
+ */
+export function resolveTargetUserId({
+  requester,
+  requestedUserId,
+}: {
+  requester: AuthenticatedUserContext
+  requestedUserId?: string | null
+}) {
+  if (!requestedUserId) return requester.id
+  if (requester.role !== AUTH_ROLES.admin) return requester.id
+  return requestedUserId
 }

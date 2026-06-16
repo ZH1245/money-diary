@@ -2,11 +2,17 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { updateUserCurrency } from '#/features/settings/server/settings-repository'
 import { SUPPORTED_CURRENCIES } from '#/lib/currency'
-import { buildOptionsResponse, guardApiRequest, requireUserContext } from '#/lib/server/api-guards'
+import {
+  buildOptionsResponse,
+  guardApiRequest,
+  requireUserContext,
+  resolveTargetUserId,
+} from '#/lib/server/api-guards'
 
 const supportedCurrencyCodes = SUPPORTED_CURRENCIES.map((currency) => currency.code)
 
 const updateCurrencySchema = z.object({
+  userId: z.string().trim().min(1).optional(),
   currency: z
     .string()
     .trim()
@@ -34,8 +40,13 @@ export const Route = createFileRoute('/api/settings/currency')({
           )
         }
 
+        const targetUserId = resolveTargetUserId({
+          requester: userContext,
+          requestedUserId: parsed.data.userId,
+        })
+
         const updatedUser = await updateUserCurrency({
-          userId: userContext.id,
+          userId: targetUserId,
           currency: parsed.data.currency,
         })
 

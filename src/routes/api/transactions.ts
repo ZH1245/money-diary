@@ -9,7 +9,7 @@ import {
   buildOptionsResponse,
   guardApiRequest,
   requireUserContext,
-  requireUserId,
+  resolveTargetUserId,
 } from '#/lib/server/api-guards'
 
 const createTransactionSchema = z.object({
@@ -30,10 +30,15 @@ export const Route = createFileRoute('/api/transactions')({
       GET: async ({ request }) => {
         const blockedResponse = guardApiRequest(request)
         if (blockedResponse) return blockedResponse
-        const userId = await requireUserId(request)
-        if (userId instanceof Response) return userId
+        const userContext = await requireUserContext(request)
+        if (userContext instanceof Response) return userContext
+        const requestedUserId = new URL(request.url).searchParams.get('userId')
+        const targetUserId = resolveTargetUserId({
+          requester: userContext,
+          requestedUserId,
+        })
 
-        const rows = await getUserTransactions(userId)
+        const rows = await getUserTransactions(targetUserId)
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {

@@ -4,7 +4,12 @@ import {
   createUserCategory,
   getVisibleCategoriesForUser,
 } from '#/features/categories/server/categories-repository'
-import { buildOptionsResponse, guardApiRequest, requireUserId } from '#/lib/server/api-guards'
+import {
+  buildOptionsResponse,
+  guardApiRequest,
+  requireUserContext,
+  resolveTargetUserId,
+} from '#/lib/server/api-guards'
 
 const createCategorySchema = z.object({
   name: z.string().min(1),
@@ -19,17 +24,27 @@ export const Route = createFileRoute('/api/categories')({
         const blockedResponse = guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
-        const userId = await requireUserId(request)
-        if (userId instanceof Response) return userId
+        const userContext = await requireUserContext(request)
+        if (userContext instanceof Response) return userContext
+        const requestedUserId = new URL(request.url).searchParams.get('userId')
+        const targetUserId = resolveTargetUserId({
+          requester: userContext,
+          requestedUserId,
+        })
 
-        const rows = await getVisibleCategoriesForUser(userId)
+        const rows = await getVisibleCategoriesForUser(targetUserId)
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
         const blockedResponse = guardApiRequest(request)
         if (blockedResponse) return blockedResponse
-        const userId = await requireUserId(request)
-        if (userId instanceof Response) return userId
+        const userContext = await requireUserContext(request)
+        if (userContext instanceof Response) return userContext
+        const requestedUserId = new URL(request.url).searchParams.get('userId')
+        const targetUserId = resolveTargetUserId({
+          requester: userContext,
+          requestedUserId,
+        })
 
         const body = await request.json().catch(() => null)
         const parsed = createCategorySchema.safeParse(body)
@@ -42,7 +57,7 @@ export const Route = createFileRoute('/api/categories')({
         }
 
         const row = await createUserCategory({
-          userId,
+          userId: targetUserId,
           name: parsed.data.name,
           slug: parsed.data.slug,
           kind: parsed.data.kind,
