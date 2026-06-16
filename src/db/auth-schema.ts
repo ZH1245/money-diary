@@ -13,6 +13,7 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   role: text("role").default("user"),
+  currency: text("currency").default("PKR").notNull(),
 });
 
 export const session = pgTable(

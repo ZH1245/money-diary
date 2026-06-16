@@ -1,0 +1,2 @@
+ALTER TABLE "user"
+ALTER COLUMN "currency" SET DEFAULT 'PKR';
