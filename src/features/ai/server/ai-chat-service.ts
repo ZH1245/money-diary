@@ -1,3 +1,4 @@
+import { buildLegalPolicyAnswer, isPrimarilyLegalQuestion } from '#/features/legal/utils/legal-knowledge'
 import { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
 import {
   buildSecureSystemPrompt,
@@ -149,6 +150,15 @@ export async function runAiChat({
     }
   }
 
+  const lastUserMessage = messages.filter((message) => message.role === 'user').at(-1)
+  if (lastUserMessage && isPrimarilyLegalQuestion(lastUserMessage.content)) {
+    return {
+      success: true,
+      action: 'clarification',
+      message: buildLegalPolicyAnswer(lastUserMessage.content),
+    }
+  }
+
   const today = new Date().toISOString().split('T')[0]
   const aiSettings = await getUserAiSettingsForRuntime({ userId })
   const isOllamaProvider = aiSettings?.provider == null || aiSettings.provider === 'ollama'
@@ -212,7 +222,11 @@ export async function runAiChat({
       return {
         success: true,
         action: 'clarification',
-        message: reply || 'I did not understand. Please try again.',
+        message:
+          reply ||
+          (lastUserMessage && isPrimarilyLegalQuestion(lastUserMessage.content)
+            ? buildLegalPolicyAnswer(lastUserMessage.content)
+            : 'I did not understand. Please try again.'),
       }
     }
 
