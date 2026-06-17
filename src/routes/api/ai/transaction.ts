@@ -64,8 +64,9 @@ export const Route = createFileRoute('/api/ai/transaction')({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'gemma4:latest',
+              model: 'qwen3.5:4b',
               stream: false,
+              think: false,
               messages: [
                 {
                   role: 'system',

@@ -30,7 +30,7 @@ export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
       {
         id: 'model',
         label: 'Model',
-        placeholder: 'gemma3:latest',
+        placeholder: 'qwen3.5:4b',
         type: 'text',
       },
       {

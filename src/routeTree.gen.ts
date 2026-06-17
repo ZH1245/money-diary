@@ -43,6 +43,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transaction'
 import { Route as ApiAiConversationsRouteImport } from './routes/api/ai/conversations'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
 import { Route as ApiSettingsAiRevealRouteImport } from './routes/api/settings/ai/reveal'
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 
@@ -216,6 +217,11 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSettingsAiTestRoute = ApiSettingsAiTestRouteImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => ApiSettingsAiRoute,
+} as any)
 const ApiSettingsAiRevealRoute = ApiSettingsAiRevealRouteImport.update({
   id: '/reveal',
   path: '/reveal',
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
+  '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
+  '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -342,6 +350,7 @@ export interface FileRoutesById {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
+  '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -382,6 +391,7 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/settings/ai/reveal'
+    | '/api/settings/ai/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/settings/ai/reveal'
+    | '/api/settings/ai/test'
   id:
     | '__root__'
     | '/'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/settings/ai/reveal'
+    | '/api/settings/ai/test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -731,6 +743,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/settings/ai/test': {
+      id: '/api/settings/ai/test'
+      path: '/test'
+      fullPath: '/api/settings/ai/test'
+      preLoaderRoute: typeof ApiSettingsAiTestRouteImport
+      parentRoute: typeof ApiSettingsAiRoute
+    }
     '/api/settings/ai/reveal': {
       id: '/api/settings/ai/reveal'
       path: '/reveal'
@@ -832,10 +851,12 @@ const ApiAiConversationsRouteWithChildren =
 
 interface ApiSettingsAiRouteChildren {
   ApiSettingsAiRevealRoute: typeof ApiSettingsAiRevealRoute
+  ApiSettingsAiTestRoute: typeof ApiSettingsAiTestRoute
 }
 
 const ApiSettingsAiRouteChildren: ApiSettingsAiRouteChildren = {
   ApiSettingsAiRevealRoute: ApiSettingsAiRevealRoute,
+  ApiSettingsAiTestRoute: ApiSettingsAiTestRoute,
 }
 
 const ApiSettingsAiRouteWithChildren = ApiSettingsAiRoute._addFileChildren(

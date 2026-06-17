@@ -31,6 +31,8 @@ export function FormField({
           aria-invalid={Boolean(error)}
           aria-busy={isDisabled}
           className={`h-10 w-full rounded-md border bg-background px-3 text-sm transition-colors ${
+            rightElement ? 'pr-10' : ''
+          } ${
             error
               ? 'border-red-400 placeholder:text-red-300 focus-visible:outline-red-500/60'
               : 'border-border'

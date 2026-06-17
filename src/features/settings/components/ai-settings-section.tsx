@@ -7,8 +7,8 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { AI_PROVIDER_OPTIONS } from '#/features/settings/constants/ai-providers'
-import { Sparkles, Loader2 } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
+import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { InlineError } from '#/components/feedback/inline-error'
 import { toast } from 'sonner'
 
@@ -20,13 +20,27 @@ interface AiSettingsResponse {
   hasApiKey: boolean
 }
 
+type UrlProbeStatus = 'idle' | 'checking' | 'ok' | 'failed'
+
+interface UrlProbeState {
+  status: UrlProbeStatus
+  message: string | null
+  statusCode: number | null
+}
+
+const INITIAL_URL_PROBE: UrlProbeState = {
+  status: 'idle',
+  message: null,
+  statusCode: null,
+}
+
 /**
  * Stores user AI provider settings with Ollama enabled and others marked as coming soon.
  */
 export function AiSettingsSection() {
   const [providerId, setProviderId] = useState('ollama')
   const [baseUrl, setBaseUrl] = useState('http://127.0.0.1:11434')
-  const [model, setModel] = useState('gemma4:latest')
+  const [model, setModel] = useState('qwen3.5:4b')
   const [apiKey, setApiKey] = useState('')
   const [savedApiKeyMask, setSavedApiKeyMask] = useState<string | null>(null)
   const [revealedApiKey, setRevealedApiKey] = useState('')
@@ -34,11 +48,82 @@ export function AiSettingsSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [urlProbe, setUrlProbe] = useState<UrlProbeState>(INITIAL_URL_PROBE)
+  const probeRequestIdRef = useRef(0)
 
   const selectedProvider = useMemo(
     () => AI_PROVIDER_OPTIONS.find((provider) => provider.id === providerId) ?? AI_PROVIDER_OPTIONS[0],
     [providerId],
   )
+
+  const probeBaseUrl = useCallback(async (nextBaseUrl: string, nextApiKey: string) => {
+    const trimmedUrl = nextBaseUrl.trim()
+    if (!trimmedUrl) {
+      setUrlProbe(INITIAL_URL_PROBE)
+      return
+    }
+
+    try {
+      new URL(trimmedUrl)
+    } catch {
+      setUrlProbe({
+        status: 'failed',
+        message: 'Enter a valid URL.',
+        statusCode: null,
+      })
+      return
+    }
+
+    const requestId = probeRequestIdRef.current + 1
+    probeRequestIdRef.current = requestId
+    setUrlProbe({
+      status: 'checking',
+      message: 'Checking connection...',
+      statusCode: null,
+    })
+
+    try {
+      const response = await fetch('/api/settings/ai/test', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          baseUrl: trimmedUrl,
+          apiKey: nextApiKey.trim() || undefined,
+        }),
+      })
+
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean
+        error?: string
+        data?: {
+          ok: boolean
+          statusCode: number | null
+          message: string
+        }
+      } | null
+
+      if (probeRequestIdRef.current !== requestId) return
+
+      if (!response.ok || !payload?.success || !payload.data) {
+        throw new Error(payload?.error ?? 'Unable to test Ollama URL')
+      }
+
+      setUrlProbe({
+        status: payload.data.ok ? 'ok' : 'failed',
+        message: payload.data.message,
+        statusCode: payload.data.statusCode,
+      })
+    } catch (error) {
+      if (probeRequestIdRef.current !== requestId) return
+      setUrlProbe({
+        status: 'failed',
+        message: error instanceof Error ? error.message : 'Unable to test Ollama URL',
+        statusCode: null,
+      })
+    }
+  }, [])
 
   useEffect(() => {
     async function loadSettings() {
@@ -71,6 +156,16 @@ export function AiSettingsSection() {
 
     void loadSettings()
   }, [])
+
+  useEffect(() => {
+    if (providerId !== 'ollama' || isLoading) return
+
+    const timer = window.setTimeout(() => {
+      void probeBaseUrl(baseUrl, apiKey)
+    }, 600)
+
+    return () => window.clearTimeout(timer)
+  }, [apiKey, baseUrl, isLoading, probeBaseUrl, providerId])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -145,6 +240,18 @@ export function AiSettingsSection() {
     }
   }
 
+  const saveButtonLabel =
+    urlProbe.status === 'failed' ? 'Save anyway' : 'Save AI settings'
+
+  const urlProbeIcon =
+    urlProbe.status === 'checking' ? (
+      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+    ) : urlProbe.status === 'ok' ? (
+      <CheckCircle2 className="size-4 text-emerald-600" />
+    ) : urlProbe.status === 'failed' ? (
+      <AlertTriangle className="size-4 text-amber-600" />
+    ) : null
+
   return (
     <article className="feature-card rounded-xl border border-border p-5 xl:col-span-2">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -191,14 +298,40 @@ export function AiSettingsSection() {
               onChange={setBaseUrl}
               placeholder="http://127.0.0.1:11434"
               isDisabled={isLoading || isSubmitting}
+              rightElement={
+                urlProbeIcon ? (
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                    {urlProbeIcon}
+                  </span>
+                ) : undefined
+              }
             />
+            {urlProbe.message ? (
+              <p
+                className={`-mt-2 text-xs ${
+                  urlProbe.status === 'ok'
+                    ? 'text-emerald-700'
+                    : urlProbe.status === 'failed'
+                      ? 'text-amber-700'
+                      : 'opacity-70'
+                }`}
+              >
+                {urlProbe.message}
+                {urlProbe.statusCode != null ? ` (HTTP ${urlProbe.statusCode})` : null}
+              </p>
+            ) : null}
+            {urlProbe.status === 'failed' ? (
+              <p className="-mt-2 text-xs opacity-70">
+                The URL could not be reached. You can still save it if Ollama is offline right now or only reachable from another network.
+              </p>
+            ) : null}
             <FormField
               id="ai-model"
               label="Model"
               type="text"
               value={model}
               onChange={setModel}
-              placeholder="gemma4:latest"
+              placeholder="qwen3.5:4b"
               isDisabled={isLoading || isSubmitting}
             />
             <FormField
@@ -251,11 +384,13 @@ export function AiSettingsSection() {
 
         <button
           type="submit"
-          disabled={isLoading || isSubmitting || providerId !== 'ollama'}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          disabled={isLoading || isSubmitting || providerId !== 'ollama' || urlProbe.status === 'checking'}
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium text-primary-foreground disabled:opacity-60 ${
+            urlProbe.status === 'failed' ? 'bg-amber-600 hover:bg-amber-600/90' : 'bg-primary'
+          }`}
         >
           {isLoading || isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-          Save AI settings
+          {saveButtonLabel}
         </button>
       </form>
     </article>

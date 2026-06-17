@@ -2,15 +2,30 @@ export const AI_TOOLS = [
   {
     type: 'function',
     function: {
-      name: 'get_finance_summary',
+      name: 'query_user_data',
       description:
-        'Read the user\'s income, expenses, and top categories for a date range. Use for "what are my expenses" and similar questions.',
+        'Read the user\'s transactions, savings, goals, or wishlist. Use for any question about their data: totals, lists, date-wise breakdowns, category breakdowns, etc.',
       parameters: {
         type: 'object',
         properties: {
-          fromDate: { type: 'string', description: 'YYYY-MM-DD start (default: start of current month)' },
-          toDate: { type: 'string', description: 'YYYY-MM-DD end (default: today)' },
-          focus: { type: 'string', enum: ['expense', 'income', 'all'], description: 'What to emphasize' },
+          dataset: {
+            type: 'string',
+            enum: ['transactions', 'savings', 'goals', 'wishlist'],
+            description: 'Which data to read',
+          },
+          fromDate: { type: 'string', description: 'YYYY-MM-DD start (transactions/savings only)' },
+          toDate: { type: 'string', description: 'YYYY-MM-DD end (transactions/savings only)' },
+          transactionType: {
+            type: 'string',
+            enum: ['expense', 'income', 'transfer', 'all'],
+            description: 'Filter transactions by type',
+          },
+          groupBy: {
+            type: 'string',
+            enum: ['none', 'date', 'category'],
+            description: 'Group transactions by date or category; use date for date-wise breakdowns',
+          },
+          limit: { type: 'integer', description: 'Max rows to return (default 50)' },
         },
       },
     },
@@ -196,7 +211,7 @@ export type AiWriteToolAction =
   | 'update_goal'
   | 'delete_goal'
 
-export type AiToolAction = AiWriteToolAction | 'get_exchange_rate' | 'get_finance_summary'
+export type AiToolAction = AiWriteToolAction | 'get_exchange_rate' | 'query_user_data'
 
 /**
  * Returns tool definitions for the active AI provider.

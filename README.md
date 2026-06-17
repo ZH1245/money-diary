@@ -58,7 +58,7 @@ To use local Ollama:
 
 ```bash
 ollama serve
-ollama pull gemma4:latest
+ollama pull qwen3.5:4b
 ```
 
 AI write security model:

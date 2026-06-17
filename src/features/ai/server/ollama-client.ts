@@ -46,3 +46,75 @@ export function formatOllamaHttpError(status: number, baseUrl: string): string {
 
   return `Ollama error: ${status}`
 }
+
+export interface OllamaProbeResult {
+  ok: boolean
+  statusCode: number | null
+  message: string
+}
+
+/**
+ * Probes an Ollama base URL by calling GET /api/tags.
+ */
+export async function probeOllamaBaseUrl({
+  baseUrl,
+  apiKey,
+  timeoutMs = 8000,
+}: {
+  baseUrl: string
+  apiKey?: string | null
+  timeoutMs?: number
+}): Promise<OllamaProbeResult> {
+  const trimmed = baseUrl.trim()
+  if (!trimmed) {
+    return { ok: false, statusCode: null, message: 'Enter a URL.' }
+  }
+
+  let normalizedUrl: string
+  try {
+    normalizedUrl = new URL(trimmed).origin
+  } catch {
+    return { ok: false, statusCode: null, message: 'Enter a valid URL.' }
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(`${normalizedUrl.replace(/\/$/, '')}/api/tags`, {
+      method: 'GET',
+      headers: buildOllamaRequestHeaders({ baseUrl: normalizedUrl, apiKey: apiKey ?? null }),
+      signal: controller.signal,
+    })
+
+    if (response.ok) {
+      return {
+        ok: true,
+        statusCode: response.status,
+        message: 'Ollama is reachable.',
+      }
+    }
+
+    return {
+      ok: false,
+      statusCode: response.status,
+      message: formatOllamaHttpError(response.status, normalizedUrl),
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        ok: false,
+        statusCode: null,
+        message: 'Connection timed out. Check the URL and network.',
+      }
+    }
+
+    return {
+      ok: false,
+      statusCode: null,
+      message: `Could not reach Ollama at ${normalizedUrl}.`,
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
+}

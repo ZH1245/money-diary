@@ -54,7 +54,7 @@ const ACTION_LABELS: Record<string, string> = {
   update_goal: 'Goal updated',
   delete_goal: 'Goal removed',
   get_exchange_rate: 'Exchange rate',
-  get_finance_summary: 'Finance summary',
+  query_user_data: 'Data query',
   chained: 'Multiple actions',
 }
 

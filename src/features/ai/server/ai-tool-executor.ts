@@ -30,7 +30,7 @@ import { fetchExchangeRate } from '#/features/exchange-rates/server/fetch-exchan
 import { format, parseISO, startOfMonth } from 'date-fns'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
-import { buildFinanceSummaryAnswer } from '#/features/ai/server/ai-finance-summary'
+import { queryUserData } from '#/features/ai/server/ai-user-data-query'
 
 const createTransactionArgsSchema = z.object({
   title: z.string().min(1),
@@ -93,10 +93,13 @@ const deleteGoalArgsSchema = z.object({
   goalId: z.number().int().positive(),
 })
 
-const getFinanceSummaryArgsSchema = z.object({
+const queryUserDataArgsSchema = z.object({
+  dataset: z.enum(['transactions', 'savings', 'goals', 'wishlist']).optional(),
   fromDate: z.string().min(6).optional(),
   toDate: z.string().min(6).optional(),
-  focus: z.enum(['expense', 'income', 'all']).optional(),
+  transactionType: z.enum(['expense', 'income', 'transfer', 'all']).optional(),
+  groupBy: z.enum(['none', 'date', 'category']).optional(),
+  limit: z.number().int().positive().max(100).optional(),
 })
 
 const getExchangeRateArgsSchema = z.object({
@@ -447,10 +450,10 @@ export async function executeAiTool({
     })
   }
 
-  if (toolName === 'get_finance_summary') {
-    const args = getFinanceSummaryArgsSchema.safeParse(toolArgs)
+  if (toolName === 'query_user_data') {
+    const args = queryUserDataArgsSchema.safeParse(toolArgs)
     if (!args.success) {
-      return { action: 'get_finance_summary', success: false, message: 'Invalid finance summary arguments.' }
+      return { action: 'query_user_data', success: false, message: 'Invalid data query arguments.' }
     }
 
     const todayDate = parseISO(context.today)
@@ -458,19 +461,20 @@ export async function executeAiTool({
       args.data.fromDate ??
       format(startOfMonth(todayDate), 'yyyy-MM-dd')
     const to = args.data.toDate ?? context.today
-    const focusHint =
-      args.data.focus === 'income' ? 'income' : args.data.focus === 'expense' ? 'expenses' : undefined
 
-    const message = await buildFinanceSummaryAnswer({
+    const message = await queryUserData({
       userId: context.userId,
       currency: context.currency,
-      from,
-      to,
-      question: focusHint,
+      dataset: args.data.dataset ?? 'transactions',
+      fromDate: from,
+      toDate: to,
+      transactionType: args.data.transactionType ?? 'all',
+      groupBy: args.data.groupBy ?? 'none',
+      limit: args.data.limit ?? 50,
     })
 
     return {
-      action: 'get_finance_summary',
+      action: 'query_user_data',
       success: true,
       message,
     }

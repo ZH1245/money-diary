@@ -520,6 +520,32 @@ const openApiSpec = {
         },
       },
     },
+    '/api/settings/ai/test': {
+      post: {
+        tags: ['settings'],
+        summary: 'Test Ollama base URL connectivity',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['baseUrl'],
+                properties: {
+                  baseUrl: { type: 'string', format: 'uri' },
+                  apiKey: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Probe result' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
     '/api/goals/{id}': {
       patch: {
         tags: ['goals'],

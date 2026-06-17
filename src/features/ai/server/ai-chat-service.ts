@@ -1,8 +1,3 @@
-import {
-  buildFinanceSummaryAnswer,
-  isFinanceReadQuestion,
-  resolveFinanceQuestionDateRange,
-} from '#/features/ai/server/ai-finance-summary'
 import { buildLegalPolicyAnswer, isPrimarilyLegalQuestion } from '#/features/legal/utils/legal-knowledge'
 import { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
 import {
@@ -18,6 +13,10 @@ import { executeAiTool, loadUserAiContext } from '#/features/ai/server/ai-tool-e
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { getUserAiSettingsForRuntime } from '#/features/settings/server/settings-repository'
 import { buildOllamaRequestHeaders, formatOllamaHttpError } from '#/features/ai/server/ollama-client'
+import {
+  isWeakAssistantReply,
+  resolveFallbackToolInvocation,
+} from '#/features/ai/server/ai-tool-fallback'
 
 const MAX_TOOL_CHAIN_STEPS = 5
 
@@ -51,6 +50,7 @@ interface OllamaToolCall {
 interface OllamaChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: string
+  thinking?: string
   tool_calls?: OllamaToolCall[]
   tool_name?: string
 }
@@ -71,6 +71,14 @@ function parseToolArguments(raw: unknown): unknown {
     }
   }
   return raw
+}
+
+/**
+ * Normalizes tool calls from an Ollama assistant message.
+ */
+function extractToolCalls(message: OllamaChatMessage | undefined): OllamaToolCall[] {
+  if (!message?.tool_calls?.length) return []
+  return message.tool_calls
 }
 
 /**
@@ -97,6 +105,7 @@ async function callOllamaChat({
       body: JSON.stringify({
         model,
         stream: false,
+        think: false,
         messages,
         tools,
       }),
@@ -166,21 +175,6 @@ export async function runAiChat({
     }
   }
 
-  if (lastUserMessage && isFinanceReadQuestion(lastUserMessage.content)) {
-    const range = resolveFinanceQuestionDateRange(lastUserMessage.content, today)
-    return {
-      success: true,
-      action: 'get_finance_summary',
-      message: await buildFinanceSummaryAnswer({
-        userId,
-        currency,
-        from: range.from,
-        to: range.to,
-        question: lastUserMessage.content,
-      }),
-    }
-  }
-
   const aiSettings = await getUserAiSettingsForRuntime({ userId })
   const isOllamaProvider = aiSettings?.provider == null || aiSettings.provider === 'ollama'
   const aiTools = getAiToolsForProvider(aiSettings?.provider)
@@ -203,7 +197,7 @@ export async function runAiChat({
   ]
 
   const ollamaBaseUrl = isOllamaProvider && aiSettings?.baseUrl ? aiSettings.baseUrl : 'http://127.0.0.1:11434'
-  const ollamaModel = isOllamaProvider && aiSettings?.model ? aiSettings.model : 'gemma4:latest'
+  const ollamaModel = isOllamaProvider && aiSettings?.model ? aiSettings.model : 'qwen3.5:4b'
   const ollamaApiKey = isOllamaProvider ? (aiSettings?.apiKey ?? null) : null
 
   const executedSteps: AiChatStep[] = []
@@ -226,7 +220,7 @@ export async function runAiChat({
     }
 
     const assistantMessage = ollamaResult.data.message
-    const toolCalls = assistantMessage?.tool_calls ?? []
+    const toolCalls = extractToolCalls(assistantMessage)
 
     if (toolCalls.length === 0) {
       const reply = sanitizeAssistantUserFacingMessage(assistantMessage?.content?.trim() ?? '')
@@ -240,14 +234,32 @@ export async function runAiChat({
         }
       }
 
-      const fallbackMessage = lastUserMessage
-        ? await resolveClarificationFallback({
-            userId,
-            currency,
-            today,
-            question: lastUserMessage.content,
+      if (step === 0 && isWeakAssistantReply(reply)) {
+        const fallback = resolveFallbackToolInvocation(messages, today)
+        if (fallback) {
+          const stepResult = await executeAiTool({
+            toolName: fallback.toolName,
+            toolArgs: fallback.toolArgs,
+            context: {
+              userId,
+              currency,
+              today,
+              userGoals: userContext.userGoals,
+            },
           })
-        : 'I did not understand. Please try again.'
+
+          if (stepResult.success) {
+            return {
+              success: true,
+              action: stepResult.action,
+              message: stepResult.message,
+              steps: [stepResult],
+            }
+          }
+        }
+      }
+
+      const fallbackMessage = resolveClarificationFallback(messages)
 
       return {
         success: true,
@@ -304,30 +316,16 @@ export async function runAiChat({
 /**
  * Builds a fallback clarification when the model returns an empty reply.
  */
-async function resolveClarificationFallback({
-  userId,
-  currency,
-  today,
-  question,
-}: {
-  userId: string
-  currency: string
-  today: string
-  question: string
-}): Promise<string> {
-  if (isPrimarilyLegalQuestion(question)) {
-    return buildLegalPolicyAnswer(question)
+function resolveClarificationFallback(
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+): string {
+  const lastUser = messages.filter((message) => message.role === 'user').at(-1)
+  if (!lastUser) {
+    return 'I did not understand. Please try again.'
   }
 
-  if (isFinanceReadQuestion(question)) {
-    const range = resolveFinanceQuestionDateRange(question, today)
-    return buildFinanceSummaryAnswer({
-      userId,
-      currency,
-      from: range.from,
-      to: range.to,
-      question,
-    })
+  if (isPrimarilyLegalQuestion(lastUser.content)) {
+    return buildLegalPolicyAnswer(lastUser.content)
   }
 
   return 'I did not understand. Please try again.'
