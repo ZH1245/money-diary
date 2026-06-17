@@ -6,6 +6,9 @@ import { buildTrendSeriesForDateRange, isDateInRange } from '#/features/dashboar
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
 import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { StatCard } from '#/components/feedback/stat-card'
+import { SensitiveText } from '#/components/privacy/sensitive-text'
+import { formatSensitiveCompactAmount, formatSensitiveCurrency, formatSensitiveText, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { chartColors } from '#/lib/chart-colors'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
@@ -58,6 +61,7 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
   const { data: transactions = [], isPending, isError, error } = useTransactionsQuery()
   const { data: categories = [] } = useCategoriesQuery()
   const currency = userCurrency.toUpperCase()
+  const isPrivacyMode = usePrivacyModeEnabled()
 
   const filteredTransactions = useMemo(
     () => transactions.filter((transaction) => isDateInRange(transaction.happenedAt, dateRange.from, dateRange.to)),
@@ -111,17 +115,20 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
               <StatCard
                 icon={<TrendingUp className="size-4 text-emerald-600" />}
                 label="Income"
-                value={formatCurrency(stats.income, currency)}
+                value={formatSensitiveCurrency(stats.income, currency, isPrivacyMode)}
+                isSensitive
               />
               <StatCard
                 icon={<TrendingDown className="size-4 text-rose-600" />}
                 label="Expenses"
-                value={formatCurrency(stats.expense, currency)}
+                value={formatSensitiveCurrency(stats.expense, currency, isPrivacyMode)}
+                isSensitive
               />
               <StatCard
                 icon={<Wallet className="size-4 text-slate-600" />}
                 label="Net"
-                value={formatCurrency(stats.net, currency)}
+                value={formatSensitiveCurrency(stats.net, currency, isPrivacyMode)}
+                isSensitive
               />
               <StatCard
                 icon={<ReceiptText className="size-4 text-sky-600" />}
@@ -154,11 +161,11 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
                           tickLine={false}
                           axisLine={false}
                           tick={{ fontSize: 11 }}
-                          tickFormatter={(value) => compactAmount(Number(value), currency)}
+                          tickFormatter={(value) => formatSensitiveCompactAmount(Number(value), currency, isPrivacyMode)}
                         />
                         <Tooltip
                           formatter={(value, name) => [
-                            formatCurrency(Number(value ?? 0), currency),
+                            formatSensitiveCurrency(Number(value ?? 0), currency, isPrivacyMode),
                             String(name) === 'income' ? 'Income' : 'Expense',
                           ]}
                         />
@@ -186,7 +193,7 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
                             <Cell key={entry.name} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0), currency)} />
+                        <Tooltip formatter={(value) => formatSensitiveCurrency(Number(value ?? 0), currency, isPrivacyMode)} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
@@ -200,8 +207,8 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
 
             {hasExpenseData ? (
               <div className="grid gap-4 lg:grid-cols-2">
-                <InsightTable title="Top categories" rows={topCategories} currency={currency} colors={[...chartColors.series]} />
-                <InsightTable title="Top expense titles" rows={topTitles} currency={currency} colors={[...chartColors.series]} />
+                <InsightTable title="Top categories" rows={topCategories} currency={currency} colors={[...chartColors.series]} isPrivacyMode={isPrivacyMode} />
+                <InsightTable title="Top expense titles" rows={topTitles} currency={currency} colors={[...chartColors.series]} isPrivacyMode={isPrivacyMode} />
               </div>
             ) : (
               <div className="island-shell rounded-2xl p-6">
@@ -217,9 +224,9 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={buildTopIncome(filteredTransactions)} layout="vertical" margin={{ left: 12, right: 12 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                      <XAxis type="number" tickFormatter={(value) => compactAmount(Number(value), currency)} />
-                      <YAxis type="category" dataKey="label" width={100} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0), currency)} />
+                      <XAxis type="number" tickFormatter={(value) => formatSensitiveCompactAmount(Number(value), currency, isPrivacyMode)} />
+                      <YAxis type="category" dataKey="label" width={100} tick={{ fontSize: 11 }} tickFormatter={(value) => formatSensitiveText(String(value), isPrivacyMode)} />
+                      <Tooltip formatter={(value) => formatSensitiveCurrency(Number(value ?? 0), currency, isPrivacyMode)} />
                       <Bar dataKey="amount" radius={[0, 8, 8, 0]} fill={chartColors.income} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -256,9 +263,10 @@ interface InsightTableProps {
   rows: Array<{ label: string; amount: number }>
   currency: string
   colors: string[]
+  isPrivacyMode: boolean
 }
 
-function InsightTable({ title, rows, currency, colors }: InsightTableProps) {
+function InsightTable({ title, rows, currency, colors, isPrivacyMode }: InsightTableProps) {
   const total = rows.reduce((sum, row) => sum + row.amount, 0)
 
   return (
@@ -273,8 +281,8 @@ function InsightTable({ title, rows, currency, colors }: InsightTableProps) {
             return (
               <li key={row.label}>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-medium">{row.label}</span>
-                  <span className="shrink-0 font-medium">{formatCurrency(row.amount, currency)}</span>
+                  <SensitiveText text={row.label} className="font-medium" />
+                  <span className="shrink-0 font-medium">{formatSensitiveCurrency(row.amount, currency, isPrivacyMode)}</span>
                 </div>
                 <div className="mt-1.5 flex items-center gap-2">
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">

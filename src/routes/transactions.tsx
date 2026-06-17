@@ -36,6 +36,7 @@ import {
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
+import { formatSensitiveCompactAmount, formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { cn } from '#/lib/utils'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 import { setTransactionType, transactionFiltersStore } from '#/features/transactions/store/transaction-filters-store'
@@ -48,7 +49,8 @@ import { toInputDate, toIsoDateAtNoon } from '#/lib/date-input'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { PageContentSkeleton, SessionLoadingSkeleton } from '#/components/feedback/page-state'
+import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { Skeleton } from '#/components/ui/skeleton'
 import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
 import { TableRowActions } from '#/components/feedback/table-row-actions'
@@ -90,6 +92,7 @@ function TransactionsPage() {
   const [isCurrencyPickerOpen, setIsCurrencyPickerOpen] = useState(false)
 
   const isForeignCurrency = createForm.currency !== userCurrency
+  const isPrivacyMode = usePrivacyModeEnabled()
   const convertedAmountPreview = useMemo(() => {
     if (!isForeignCurrency) return null
     const amount = Number(createForm.amount)
@@ -147,6 +150,7 @@ function TransactionsPage() {
       {
         accessorKey: 'title',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        cell: ({ row }) => <SensitiveText text={row.original.title} />,
       },
       {
         accessorKey: 'type',
@@ -164,7 +168,7 @@ function TransactionsPage() {
         id: 'amount',
         accessorFn: (row) => Number(row.amount),
         header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
-        cell: ({ row }) => <span className="font-medium">{formatCurrency(row.original.amount, userCurrency)}</span>,
+        cell: ({ row }) => <SensitiveAmount amount={row.original.amount} currency={userCurrency} className="font-medium" />,
       },
       {
         id: 'account',
@@ -188,7 +192,7 @@ function TransactionsPage() {
         ),
       },
     ],
-    [deleteTransactionMutation.isPending, handleDeleteTransaction, openEditSheet, userCurrency],
+    [deleteTransactionMutation.isPending, handleDeleteTransaction, openEditSheet, userCurrency, isPrivacyMode],
   )
 
   if (isSessionPending) {
@@ -532,9 +536,9 @@ function TransactionsPage() {
                         <YAxis
                           tickLine={false}
                           axisLine={false}
-                          tickFormatter={(value) => compactAmount(value, userCurrency)}
+                          tickFormatter={(value) => formatSensitiveCompactAmount(value, userCurrency, isPrivacyMode)}
                         />
-                        <Tooltip formatter={(value) => formatCurrency(String(value), userCurrency)} />
+                        <Tooltip formatter={(value) => formatSensitiveCurrency(String(value), userCurrency, isPrivacyMode)} />
                         <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
                           {chartData.map((entry) => (
                             <Cell key={entry.name} fill={entry.color} />
@@ -560,7 +564,7 @@ function TransactionsPage() {
                             <Cell key={entry.name} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(String(value), userCurrency)} />
+                        <Tooltip formatter={(value) => formatSensitiveCurrency(String(value), userCurrency, isPrivacyMode)} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -573,6 +577,7 @@ function TransactionsPage() {
                   data={tableRows}
                   filterPlaceholder="Search by title, type, or date..."
                   emptyMessage="No transactions match this filter."
+                  showPrivacyToggle
                   initialSorting={[{ id: 'happenedAt', desc: true }]}
                 />
               </div>

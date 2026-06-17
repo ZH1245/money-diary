@@ -11,6 +11,9 @@ import { useTransactionsQuery } from '#/features/transactions/hooks/use-transact
 import { useWishlistQuery } from '#/features/wishlist/hooks/use-wishlist'
 import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SensitiveText } from '#/components/privacy/sensitive-text'
+import { formatSensitiveCompactAmount, formatSensitiveCurrency, formatSensitiveText, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { chartColors } from '#/lib/chart-colors'
 import { Wallet, TrendingUp, TrendingDown, Target, Star, WalletCards } from 'lucide-react'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
@@ -67,6 +70,7 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
   const { data: savings = [], isError: isSavingsError, error: savingsError } = useSavingsQuery()
   const { data: wishlist = [], isError: isWishlistError, error: wishlistError } = useWishlistQuery()
   const { data: goals = [], isError: isGoalsError, error: goalsError } = useGoalsQuery()
+  const isPrivacyMode = usePrivacyModeEnabled()
 
   const filteredTransactions = useMemo(
     () => transactions.filter((transaction) => isDateInRange(transaction.happenedAt, dateRange.from, dateRange.to)),
@@ -104,6 +108,7 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
       {
         accessorKey: 'title',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        cell: ({ row }) => <SensitiveText text={row.original.title} />,
       },
       {
         accessorKey: 'happenedAt',
@@ -124,10 +129,10 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
           <DataTableColumnHeader column={column} title="Amount" className="w-full justify-end" />
         ),
         meta: { cellClassName: 'text-right font-medium' },
-        cell: ({ row }) => formatCurrency(parseAmount(row.original.amount), userCurrency),
+        cell: ({ row }) => <SensitiveAmount amount={row.original.amount} currency={userCurrency} />,
       },
     ],
-    [userCurrency],
+    [userCurrency, isPrivacyMode],
   )
 
   return (
@@ -145,17 +150,20 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
                 <InsightMiniCard
                   icon={<Wallet className="size-4 text-slate-600" />}
                   label="Total Balance"
-                  value={formatCurrency(stats.balance, userCurrency)}
+                  value={formatSensitiveCurrency(stats.balance, userCurrency, isPrivacyMode)}
+                  isSensitive
                 />
                 <InsightMiniCard
                   icon={<TrendingUp className="size-4 text-emerald-600" />}
                   label="Total Income"
-                  value={formatCurrency(stats.totalIncome, userCurrency)}
+                  value={formatSensitiveCurrency(stats.totalIncome, userCurrency, isPrivacyMode)}
+                  isSensitive
                 />
                 <InsightMiniCard
                   icon={<TrendingDown className="size-4 text-rose-600" />}
                   label="Total Expenses"
-                  value={formatCurrency(stats.totalExpense, userCurrency)}
+                  value={formatSensitiveCurrency(stats.totalExpense, userCurrency, isPrivacyMode)}
+                  isSensitive
                 />
                 <InsightMiniCard
                   icon={<Wallet className="size-4 text-sky-600" />}
@@ -165,17 +173,20 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
                 <InsightMiniCard
                   icon={<WalletCards className="size-4 text-indigo-600" />}
                   label="Saved"
-                  value={formatCurrency(stats.totalSaved, userCurrency)}
+                  value={formatSensitiveCurrency(stats.totalSaved, userCurrency, isPrivacyMode)}
+                  isSensitive
                 />
                 <InsightMiniCard
                   icon={<Star className="size-4 text-amber-600" />}
                   label="Wishlist"
-                  value={formatCurrency(stats.totalWishlistTarget, userCurrency)}
+                  value={formatSensitiveCurrency(stats.totalWishlistTarget, userCurrency, isPrivacyMode)}
+                  isSensitive
                 />
                 <InsightMiniCard
                   icon={<Target className="size-4 text-rose-600" />}
                   label="Goals"
-                  value={formatCurrency(stats.totalGoalTarget, userCurrency)}
+                  value={formatSensitiveCurrency(stats.totalGoalTarget, userCurrency, isPrivacyMode)}
+                  isSensitive
                 />
               </div>
 
@@ -210,11 +221,11 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
                           tickLine={false}
                           axisLine={false}
                           tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
-                          tickFormatter={(value) => compactAmount(value, userCurrency)}
+                          tickFormatter={(value) => formatSensitiveCompactAmount(value, userCurrency, isPrivacyMode)}
                         />
                         <Tooltip
                           formatter={(value, name) => [
-                            formatCurrency(Number(value ?? 0), userCurrency),
+                            formatSensitiveCurrency(Number(value ?? 0), userCurrency, isPrivacyMode),
                             String(name) === 'income' ? 'Income' : 'Expense',
                           ]}
                           labelFormatter={(label) => String(label)}
@@ -247,7 +258,9 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
                       className="w-full bg-transparent p-0"
                     />
                   </div>
-                  <p className="mt-4 text-xs opacity-70">Top expense: {stats.topExpenseCategoryLabel}</p>
+                  <p className="mt-4 text-xs opacity-70">
+                    Top expense: {formatSensitiveText(stats.topExpenseCategoryLabel, isPrivacyMode)}
+                  </p>
                   <p className="mt-1 text-xs opacity-70">Currency: {userCurrency}</p>
                 </div>
               </div>
@@ -345,16 +358,19 @@ interface InsightMiniCardProps {
   icon: React.ReactNode
   label: string
   value: string
+  isSensitive?: boolean
 }
 
-function InsightMiniCard({ icon, label, value }: InsightMiniCardProps) {
+function InsightMiniCard({ icon, label, value, isSensitive = false }: InsightMiniCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-2">
         {icon}
         <p className="text-xs uppercase tracking-wide opacity-70">{label}</p>
       </div>
-      <p className="mt-3 text-3xl font-semibold leading-none">{value}</p>
+      <p className="mt-3 text-3xl font-semibold leading-none">
+        {isSensitive ? <SensitiveText text={value} /> : value}
+      </p>
     </div>
   )
 }

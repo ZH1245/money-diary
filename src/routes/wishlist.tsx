@@ -24,6 +24,9 @@ import { useCreateWishlistMutation, useDeleteWishlistMutation, useUpdateWishlist
 import type { WishlistItemDto } from '#/features/wishlist/types/wishlist'
 import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SensitiveText } from '#/components/privacy/sensitive-text'
+import { formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
@@ -54,6 +57,7 @@ function WishlistPage() {
   )
 
   const userCurrency = ((session?.user as { currency?: string } | undefined)?.currency ?? DEFAULT_CURRENCY).toUpperCase()
+  const isPrivacyMode = usePrivacyModeEnabled()
 
   const handleDeleteWishlistItem = useCallback(
     async (id: number, itemTitle: string) => {
@@ -98,6 +102,7 @@ function WishlistPage() {
       {
         accessorKey: 'title',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        cell: ({ row }) => <SensitiveText text={row.original.title} />,
       },
       {
         accessorKey: 'priority',
@@ -119,8 +124,8 @@ function WishlistPage() {
           return (
             <div>
               <p className="text-sm">
-                {formatCurrency(parseAmount(item.currentAmount), userCurrency)} /{' '}
-                {formatCurrency(parseAmount(item.targetAmount), userCurrency)}
+                <SensitiveAmount amount={item.currentAmount} currency={userCurrency} /> /{' '}
+                <SensitiveAmount amount={item.targetAmount} currency={userCurrency} />
               </p>
               <ProgressBar current={parseAmount(item.currentAmount)} target={parseAmount(item.targetAmount)} />
             </div>
@@ -143,7 +148,7 @@ function WishlistPage() {
         ),
       },
     ],
-    [deleteWishlistMutation.isPending, handleDeleteWishlistItem, openEditWishlistItem, userCurrency],
+    [deleteWishlistMutation.isPending, handleDeleteWishlistItem, openEditWishlistItem, userCurrency, isPrivacyMode],
   )
 
   if (isSessionPending) return <SessionLoadingSkeleton />
@@ -216,7 +221,9 @@ function WishlistPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <p className="text-sm font-medium">{formatCurrency(totalTargetAmount, userCurrency)} target</p>
+              <p className="text-sm font-medium">
+                <SensitiveAmount amount={totalTargetAmount} currency={userCurrency} /> target
+              </p>
               <Button className="gap-2" onClick={openCreateSheet}>
                 <Plus className="size-4" />
                 Add item
@@ -239,6 +246,7 @@ function WishlistPage() {
                   data={wishlist}
                   filterPlaceholder="Filter by title, priority, or status..."
                   emptyMessage="No wishlist items yet."
+                  showPrivacyToggle
                 />
               </div>
             ) : (

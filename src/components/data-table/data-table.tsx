@@ -1,4 +1,5 @@
 import { DataTableColumnHeader } from '#/components/data-table/data-table-column-header'
+import { PrivacyModeToggle } from '#/components/privacy/privacy-mode-toggle'
 import { Input } from '#/components/ui/input'
 import { cn } from '#/lib/utils.ts'
 import {
@@ -27,6 +28,7 @@ interface DataTableProps<TData> {
   filterPlaceholder?: string
   emptyMessage?: string
   showToolbar?: boolean
+  showPrivacyToggle?: boolean
   initialSorting?: SortingState
   maxBodyHeight?: number
   rowHeightEstimate?: number
@@ -41,6 +43,7 @@ export function DataTable<TData>({
   filterPlaceholder = 'Filter rows...',
   emptyMessage = 'No rows found.',
   showToolbar = true,
+  showPrivacyToggle = false,
   initialSorting = [],
   maxBodyHeight = 460,
   rowHeightEstimate = 56,
@@ -85,7 +88,8 @@ export function DataTable<TData>({
   return (
     <div className="space-y-3">
       {showToolbar ? (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {showPrivacyToggle ? <PrivacyModeToggle compact /> : null}
           <Input
             value={globalFilter}
             onChange={(event) => setGlobalFilter(event.target.value)}

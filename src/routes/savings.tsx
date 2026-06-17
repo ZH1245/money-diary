@@ -37,6 +37,9 @@ import type { SavingDto } from '#/features/savings/types/saving'
 import { buildSavingsPageStats } from '#/features/savings/utils/savings-stats'
 import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SensitiveText } from '#/components/privacy/sensitive-text'
+import { formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { toInputDate, toIsoDateAtNoon } from '#/lib/date-input'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
@@ -85,6 +88,7 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
   const isEditing = editingSavingId !== null
   const isSaving = createSavingMutation.isPending || updateSavingMutation.isPending
   const pageStats = useMemo(() => buildSavingsPageStats(savings), [savings])
+  const isPrivacyMode = usePrivacyModeEnabled()
 
   const goalsById = useMemo(
     () =>
@@ -209,9 +213,7 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
         id: 'amount',
         accessorFn: (row) => Number(row.amount),
         header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
-        cell: ({ row }) => (
-          <span className="font-medium">{formatCurrency(parseAmount(row.original.amount), userCurrency)}</span>
-        ),
+        cell: ({ row }) => <SensitiveAmount amount={row.original.amount} currency={userCurrency} className="font-medium" />,
       },
       {
         id: 'goal',
@@ -223,7 +225,7 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
           }
 
           const goalTitle = goalsById[row.original.goalId]?.title ?? 'Linked goal'
-          return <span className="text-sm font-medium">{goalTitle}</span>
+          return <SensitiveText text={goalTitle} className="text-sm font-medium" />
         },
       },
       {
@@ -246,7 +248,11 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
       {
         accessorKey: 'note',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Note" />,
-        cell: ({ row }) => row.original.note?.trim() || '—',
+        cell: ({ row }) => {
+          const note = row.original.note?.trim()
+          if (!note) return '—'
+          return <SensitiveText text={note} />
+        },
       },
       {
         id: 'actions',
@@ -264,7 +270,7 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
         ),
       },
     ],
-    [accountsById, deleteSavingMutation.isPending, goalsById, handleDeleteSaving, openEditSaving, userCurrency],
+    [accountsById, deleteSavingMutation.isPending, goalsById, handleDeleteSaving, openEditSaving, userCurrency, isPrivacyMode],
   )
 
   return (
@@ -288,19 +294,22 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
             <StatCard
               icon={<PiggyBank className="size-4 text-violet-600" />}
               label="Total saved"
-              value={formatCurrency(pageStats.totalSaved, userCurrency)}
+              value={formatSensitiveCurrency(pageStats.totalSaved, userCurrency, isPrivacyMode)}
+              isSensitive
             />
             <StatCard
               icon={<Link2 className="size-4 text-sky-600" />}
               label="Linked to goals"
-              value={formatCurrency(pageStats.linkedToGoals, userCurrency)}
+              value={formatSensitiveCurrency(pageStats.linkedToGoals, userCurrency, isPrivacyMode)}
               hint={`${pageStats.linkedEntryCount} linked entries`}
+              isSensitive
             />
             <StatCard
               icon={<Wallet className="size-4 text-emerald-600" />}
               label="General savings"
-              value={formatCurrency(pageStats.generalSavings, userCurrency)}
+              value={formatSensitiveCurrency(pageStats.generalSavings, userCurrency, isPrivacyMode)}
               hint="Not tied to a goal"
+              isSensitive
             />
             <StatCard
               icon={<ReceiptText className="size-4 text-amber-600" />}
@@ -329,6 +338,7 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
                 data={savings}
                 filterPlaceholder="Filter savings..."
                 emptyMessage="No savings added yet."
+                showPrivacyToggle
                 initialSorting={[{ id: 'savedAt', desc: true }]}
               />
             </div>

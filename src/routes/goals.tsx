@@ -32,6 +32,9 @@ import {
 import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
 import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SensitiveText } from '#/components/privacy/sensitive-text'
+import { formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { toInputDate } from '#/lib/date-input'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
@@ -66,6 +69,7 @@ function GoalsPage() {
   )
 
   const userCurrency = ((session?.user as { currency?: string } | undefined)?.currency ?? DEFAULT_CURRENCY).toUpperCase()
+  const isPrivacyMode = usePrivacyModeEnabled()
 
   const handleDeleteGoal = useCallback(
     async (id: number, goalTitle: string) => {
@@ -111,6 +115,7 @@ function GoalsPage() {
       {
         accessorKey: 'title',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        cell: ({ row }) => <SensitiveText text={row.original.title} />,
       },
       {
         accessorKey: 'status',
@@ -136,9 +141,7 @@ function GoalsPage() {
           if (breakdown.stillNeeded <= 0) {
             return <span className="text-sm font-medium text-emerald-600">Reached</span>
           }
-          return (
-            <span className="text-sm font-medium">{formatCurrency(breakdown.stillNeeded, userCurrency)}</span>
-          )
+          return <SensitiveAmount amount={breakdown.stillNeeded} currency={userCurrency} className="text-sm font-medium" />
         },
       },
       {
@@ -152,17 +155,24 @@ function GoalsPage() {
           return (
             <div>
               <p className="text-sm font-medium">
-                {formatCurrency(breakdown.totalAchieved, userCurrency)} /{' '}
-                {formatCurrency(breakdown.targetAmount, userCurrency)}
+                <SensitiveAmount amount={breakdown.totalAchieved} currency={userCurrency} /> /{' '}
+                <SensitiveAmount amount={breakdown.targetAmount} currency={userCurrency} />
               </p>
               <ProgressBar current={breakdown.totalAchieved} target={breakdown.targetAmount} />
               <p className="mt-1 text-xs opacity-70">
-                {breakdown.progressAmount > 0
-                  ? `${formatCurrency(breakdown.progressAmount, userCurrency)} logged`
-                  : 'No logged progress'}
-                {breakdown.savingsForGoal > 0
-                  ? ` · ${formatCurrency(breakdown.savingsForGoal, userCurrency)} in savings`
-                  : ''}
+                {breakdown.progressAmount > 0 ? (
+                  <>
+                    <SensitiveAmount amount={breakdown.progressAmount} currency={userCurrency} /> logged
+                  </>
+                ) : (
+                  'No logged progress'
+                )}
+                {breakdown.savingsForGoal > 0 ? (
+                  <>
+                    {' · '}
+                    <SensitiveAmount amount={breakdown.savingsForGoal} currency={userCurrency} /> in savings
+                  </>
+                ) : null}
               </p>
             </div>
           )
@@ -190,6 +200,7 @@ function GoalsPage() {
       linkedSavingsByGoalId,
       openEditGoal,
       userCurrency,
+      isPrivacyMode,
     ],
   )
 
@@ -279,19 +290,22 @@ function GoalsPage() {
               <StatCard
                 icon={<TrendingUp className="size-4 text-emerald-600" />}
                 label="Combined achieved"
-                value={formatCurrency(pageStats.totalAchieved, userCurrency)}
+                value={formatSensitiveCurrency(pageStats.totalAchieved, userCurrency, isPrivacyMode)}
                 hint="Progress + savings for active goals"
+                isSensitive
               />
               <StatCard
                 icon={<CircleDollarSign className="size-4 text-amber-600" />}
                 label="Still needed"
-                value={formatCurrency(pageStats.totalStillNeeded, userCurrency)}
+                value={formatSensitiveCurrency(pageStats.totalStillNeeded, userCurrency, isPrivacyMode)}
                 hint="Across active goals"
+                isSensitive
               />
               <StatCard
                 icon={<PiggyBank className="size-4 text-violet-600" />}
                 label="Active target"
-                value={formatCurrency(pageStats.totalTarget, userCurrency)}
+                value={formatSensitiveCurrency(pageStats.totalTarget, userCurrency, isPrivacyMode)}
+                isSensitive
               />
             </div>
           ) : null}
@@ -311,6 +325,7 @@ function GoalsPage() {
                   data={goals}
                   filterPlaceholder="Filter by title, status, or date..."
                   emptyMessage="No goals added yet."
+                  showPrivacyToggle
                 />
               </div>
             ) : (

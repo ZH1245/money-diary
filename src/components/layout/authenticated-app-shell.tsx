@@ -47,6 +47,7 @@ import {
 } from '#/components/ui/sidebar'
 import { DashboardDateRangeFilter } from '#/components/layout/dashboard-date-range-filter'
 import { QueryRefreshButton } from '#/components/feedback/query-refresh-button'
+import { PrivacyModeToggle } from '#/components/privacy/privacy-mode-toggle'
 import { AiTransactionPanel } from '#/components/ai/ai-transaction-panel'
 import { useState } from 'react'
 
@@ -288,6 +289,7 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
           <p className="text-sm font-medium">Welcome{user.name ? `, ${user.name}` : ''}!</p>
           <div className="ml-auto flex items-center gap-2">
             {isDashboard ? <DashboardDateRangeFilter /> : null}
+            <PrivacyModeToggle />
             <QueryRefreshButton />
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiPanelOpen(true)}>
               <Sparkles className="size-4 text-primary" />
