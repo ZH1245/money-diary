@@ -379,7 +379,7 @@ function buildDashboardStats({
     .reduce((sum, transaction) => sum + parseAmount(transaction.amount), 0)
 
   const expenseByCategoryId = transactions.reduce<Record<number, number>>((accumulator, transaction) => {
-    if (transaction.type !== 'expense') return accumulator
+    if (transaction.type !== 'expense' || transaction.categoryId === null) return accumulator
 
     const currentAmount = accumulator[transaction.categoryId] ?? 0
     return {

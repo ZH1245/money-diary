@@ -57,7 +57,7 @@ export const transactions = pgTable('transactions', {
   sourceCurrency: text('source_currency').notNull().default('USD'),
   exchangeRate: text('exchange_rate').notNull().default('1'),
   type: text().notNull(),
-  categoryId: integer('category_id').notNull(),
+  categoryId: integer('category_id'),
   paymentAccountId: integer('payment_account_id').references(() => paymentAccounts.id, {
     onDelete: 'set null',
   }),

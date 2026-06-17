@@ -5,6 +5,7 @@ import { StatCard } from '#/components/feedback/stat-card'
 import { TableRowActions } from '#/components/feedback/table-row-actions'
 import { PageEmptyState, PageErrorState, PageContentSkeleton, SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { Button } from '#/components/ui/button'
+import { DatePickerField } from '#/components/ui/date-picker'
 import { Input } from '#/components/ui/input'
 import {
   Select,
@@ -366,14 +367,13 @@ function GoalsPage() {
                   </div>
                 ) : null}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Target date</label>
-                    <Input
-                      type="date"
-                      value={form.targetDate}
-                      onChange={(event) => setForm((state) => ({ ...state, targetDate: event.target.value }))}
-                    />
-                  </div>
+                  <DatePickerField
+                    id="goal-target-date"
+                    label="Target date"
+                    value={form.targetDate}
+                    onChange={(targetDate) => setForm((state) => ({ ...state, targetDate }))}
+                    optional
+                  />
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Status</label>
                     <Select

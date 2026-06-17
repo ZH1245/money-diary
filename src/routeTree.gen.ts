@@ -27,11 +27,13 @@ import { Route as ApiSavingsRouteImport } from './routes/api/savings'
 import { Route as ApiPaymentAccountsRouteImport } from './routes/api/payment-accounts'
 import { Route as ApiGoalsRouteImport } from './routes/api/goals'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as ApiCategoriesIdRouteImport } from './routes/api/categories/$id'
 import { Route as ApiWishlistIdRouteImport } from './routes/api/wishlist/$id'
 import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions/$id'
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
 import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
 import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
+import { Route as ApiExchangeRateRouteImport } from './routes/api/exchange-rate'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -128,6 +130,11 @@ const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
   path: '/api/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCategoriesIdRoute = ApiCategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiCategoriesRoute,
+} as any)
 const ApiWishlistIdRoute = ApiWishlistIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -152,6 +159,11 @@ const ApiPaymentAccountsIdRoute = ApiPaymentAccountsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiPaymentAccountsRoute,
+} as any)
+const ApiExchangeRateRoute = ApiExchangeRateRouteImport.update({
+  id: '/api/exchange-rate',
+  path: '/api/exchange-rate',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiOpenapiJsonRoute = ApiOpenapiJsonRouteImport.update({
   id: '/api/openapi/json',
@@ -192,7 +204,7 @@ export interface FileRoutesByFullPath {
   '/swagger': typeof SwaggerRoute
   '/transactions': typeof TransactionsRoute
   '/wishlist': typeof WishlistRoute
-  '/api/categories': typeof ApiCategoriesRoute
+  '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
@@ -201,6 +213,8 @@ export interface FileRoutesByFullPath {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/exchange-rate': typeof ApiExchangeRateRoute
+  '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
@@ -222,7 +236,7 @@ export interface FileRoutesByTo {
   '/swagger': typeof SwaggerRoute
   '/transactions': typeof TransactionsRoute
   '/wishlist': typeof WishlistRoute
-  '/api/categories': typeof ApiCategoriesRoute
+  '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
@@ -231,6 +245,8 @@ export interface FileRoutesByTo {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/exchange-rate': typeof ApiExchangeRateRoute
+  '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
@@ -253,7 +269,7 @@ export interface FileRoutesById {
   '/swagger': typeof SwaggerRoute
   '/transactions': typeof TransactionsRoute
   '/wishlist': typeof WishlistRoute
-  '/api/categories': typeof ApiCategoriesRoute
+  '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
@@ -262,6 +278,8 @@ export interface FileRoutesById {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/exchange-rate': typeof ApiExchangeRateRoute
+  '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
@@ -286,6 +304,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/wishlist'
     | '/api/categories'
+    | '/api/categories/$id'
     | '/api/goals'
     | '/api/payment-accounts'
     | '/api/savings'
@@ -294,6 +313,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/transaction'
     | '/api/auth/$'
+    | '/api/exchange-rate'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -316,6 +336,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/wishlist'
     | '/api/categories'
+    | '/api/categories/$id'
     | '/api/goals'
     | '/api/payment-accounts'
     | '/api/savings'
@@ -324,6 +345,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/transaction'
     | '/api/auth/$'
+    | '/api/exchange-rate'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -346,6 +368,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/wishlist'
     | '/api/categories'
+    | '/api/categories/$id'
     | '/api/goals'
     | '/api/payment-accounts'
     | '/api/savings'
@@ -354,6 +377,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/transaction'
     | '/api/auth/$'
+    | '/api/exchange-rate'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -385,6 +409,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiAiTransactionRoute: typeof ApiAiTransactionRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiExchangeRateRoute: typeof ApiExchangeRateRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
 }
@@ -517,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/categories/$id': {
+      id: '/api/categories/$id'
+      path: '/$id'
+      fullPath: '/api/categories/$id'
+      preLoaderRoute: typeof ApiCategoriesIdRouteImport
+      parentRoute: typeof ApiCategoriesRoute
+    }
     '/api/wishlist/$id': {
       id: '/api/wishlist/$id'
       path: '/$id'
@@ -551,6 +583,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/payment-accounts/$id'
       preLoaderRoute: typeof ApiPaymentAccountsIdRouteImport
       parentRoute: typeof ApiPaymentAccountsRoute
+    }
+    '/api/exchange-rate': {
+      id: '/api/exchange-rate'
+      path: '/api/exchange-rate'
+      fullPath: '/api/exchange-rate'
+      preLoaderRoute: typeof ApiExchangeRateRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/openapi/json': {
       id: '/api/openapi/json'
@@ -589,6 +628,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface ApiCategoriesRouteChildren {
+  ApiCategoriesIdRoute: typeof ApiCategoriesIdRoute
+}
+
+const ApiCategoriesRouteChildren: ApiCategoriesRouteChildren = {
+  ApiCategoriesIdRoute: ApiCategoriesIdRoute,
+}
+
+const ApiCategoriesRouteWithChildren = ApiCategoriesRoute._addFileChildren(
+  ApiCategoriesRouteChildren,
+)
 
 interface ApiGoalsRouteChildren {
   ApiGoalsIdRoute: typeof ApiGoalsIdRoute
@@ -662,7 +713,7 @@ const rootRouteChildren: RootRouteChildren = {
   SwaggerRoute: SwaggerRoute,
   TransactionsRoute: TransactionsRoute,
   WishlistRoute: WishlistRoute,
-  ApiCategoriesRoute: ApiCategoriesRoute,
+  ApiCategoriesRoute: ApiCategoriesRouteWithChildren,
   ApiGoalsRoute: ApiGoalsRouteWithChildren,
   ApiPaymentAccountsRoute: ApiPaymentAccountsRouteWithChildren,
   ApiSavingsRoute: ApiSavingsRouteWithChildren,
@@ -671,6 +722,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiAiTransactionRoute: ApiAiTransactionRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiExchangeRateRoute: ApiExchangeRateRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,
 }

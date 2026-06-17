@@ -1,4 +1,5 @@
 import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
+import { DeleteRowButton } from '#/components/feedback/delete-row-button'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import { PageEmptyState, PageErrorState, PageContentSkeleton, SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { Button } from '#/components/ui/button'
@@ -18,7 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '#/components/ui/sheet'
-import { useCategoriesQuery, useCreateCategoryMutation } from '#/features/categories/hooks/use-categories'
+import { useCategoriesQuery, useCreateCategoryMutation, useDeleteCategoryMutation } from '#/features/categories/hooks/use-categories'
 import type { CategoryDto } from '#/features/categories/types/category'
 import { slugifyCategoryName } from '#/features/categories/utils/category-slug'
 import { authClient } from '#/lib/auth-client'
@@ -65,6 +66,7 @@ function CategoriesPage() {
 function CategoriesContent({ userId }: { userId: string }) {
   const { data: categories = [], isPending, isError, error } = useCategoriesQuery()
   const createCategoryMutation = useCreateCategoryMutation()
+  const deleteCategoryMutation = useDeleteCategoryMutation()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [form, setForm] = useState<CategoryFormState>(getDefaultCategoryForm())
 
@@ -85,6 +87,17 @@ function CategoriesContent({ userId }: { userId: string }) {
     const global = categories.filter((category) => !category.userId)
     return { personalCategories: personal, globalCategories: global }
   }, [categories])
+
+  const handleDeleteCategory = useCallback(
+    async (id: number, categoryName: string) => {
+      await toast.promise(deleteCategoryMutation.mutateAsync(id), {
+        loading: 'Deleting category...',
+        success: `Deleted ${categoryName}`,
+        error: (message) => (message instanceof Error ? message.message : 'Unable to delete category'),
+      })
+    },
+    [deleteCategoryMutation],
+  )
 
   async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -147,7 +160,15 @@ function CategoriesContent({ userId }: { userId: string }) {
 
         {!isPending && !isError ? (
           <div className="mt-6 space-y-6">
-            <CategoryTable title="Your categories" categories={personalCategories} userId={userId} emptyMessage="No personal categories yet." />
+            <CategoryTable
+              title="Your categories"
+              categories={personalCategories}
+              userId={userId}
+              emptyMessage="No personal categories yet."
+              canDelete
+              onDelete={handleDeleteCategory}
+              isDeletePending={deleteCategoryMutation.isPending}
+            />
             <CategoryTable title="Built-in categories" categories={globalCategories} userId={userId} emptyMessage="No built-in categories found." />
           </div>
         ) : null}
@@ -204,27 +225,61 @@ interface CategoryTableProps {
   categories: CategoryDto[]
   userId: string
   emptyMessage: string
+  canDelete?: boolean
+  onDelete?: (id: number, name: string) => void
+  isDeletePending?: boolean
 }
 
-function CategoryTable({ title, categories, userId, emptyMessage }: CategoryTableProps) {
+function CategoryTable({
+  title,
+  categories,
+  userId,
+  emptyMessage,
+  canDelete = false,
+  onDelete,
+  isDeletePending = false,
+}: CategoryTableProps) {
   const columns = useMemo<ColumnDef<CategoryDto>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-      },
-      {
-        accessorKey: 'kind',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Kind" />,
-        cell: ({ row }) => <span className="capitalize">{row.original.kind}</span>,
-      },
-      {
-        id: 'scope',
-        accessorFn: (row) => (row.userId === userId ? 'Yours' : 'Built-in'),
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Scope" />,
-      },
-    ],
-    [userId],
+    () => {
+      const baseColumns: ColumnDef<CategoryDto>[] = [
+        {
+          accessorKey: 'name',
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+        },
+        {
+          accessorKey: 'kind',
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Kind" />,
+          cell: ({ row }) => <span className="capitalize">{row.original.kind}</span>,
+        },
+        {
+          id: 'scope',
+          accessorFn: (row) => (row.userId === userId ? 'Yours' : 'Built-in'),
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Scope" />,
+        },
+      ]
+
+      if (canDelete && onDelete) {
+        baseColumns.push({
+          id: 'actions',
+          enableSorting: false,
+          enableGlobalFilter: false,
+          header: () => <div className="text-right">Actions</div>,
+          meta: { cellClassName: 'w-[4.5rem]' },
+          cell: ({ row }) => (
+            <div className="flex justify-end">
+              <DeleteRowButton
+                label={row.original.name}
+                isPending={isDeletePending}
+                onConfirm={() => onDelete(row.original.id, row.original.name)}
+              />
+            </div>
+          ),
+        })
+      }
+
+      return baseColumns
+    },
+    [canDelete, isDeletePending, onDelete, userId],
   )
 
   return (

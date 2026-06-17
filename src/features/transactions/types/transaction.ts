@@ -9,7 +9,7 @@ export interface TransactionDto {
   sourceCurrency: string
   exchangeRate: string
   type: 'income' | 'expense' | 'transfer'
-  categoryId: number
+  categoryId: number | null
   paymentAccountId: number | null
   source: string | null
   note: string | null
@@ -25,7 +25,7 @@ export interface CreateTransactionInput {
   currency?: string
   exchangeRate?: string
   type: 'income' | 'expense' | 'transfer'
-  categoryId: number
+  categoryId: number | null
   paymentAccountId?: number | null
   source?: string
   note?: string
@@ -38,8 +38,10 @@ export interface CreateTransactionInput {
 export interface UpdateTransactionInput {
   title?: string
   amount?: string
+  currency?: string
+  exchangeRate?: string
   type?: 'income' | 'expense' | 'transfer'
-  categoryId?: number
+  categoryId?: number | null
   paymentAccountId?: number | null
   source?: string | null
   note?: string | null

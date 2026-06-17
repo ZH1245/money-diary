@@ -10,7 +10,7 @@ interface CreateUserTransactionParams {
   sourceCurrency: string
   exchangeRate: string
   type: 'income' | 'expense' | 'transfer'
-  categoryId: number
+  categoryId: number | null
   paymentAccountId: number | null
   source: string | null
   note: string | null
@@ -82,8 +82,11 @@ interface UpdateUserTransactionParams {
   transactionId: number
   title?: string
   amount?: string
+  sourceAmount?: string | null
+  sourceCurrency?: string
+  exchangeRate?: string
   type?: 'income' | 'expense' | 'transfer'
-  categoryId?: number
+  categoryId?: number | null
   paymentAccountId?: number | null
   source?: string | null
   note?: string | null
@@ -112,6 +115,9 @@ export async function updateUserTransaction(params: UpdateUserTransactionParams)
     .set({
       ...(params.title !== undefined ? { title: params.title } : {}),
       ...(params.amount !== undefined ? { amount: params.amount } : {}),
+      ...(params.sourceAmount !== undefined ? { sourceAmount: params.sourceAmount } : {}),
+      ...(params.sourceCurrency !== undefined ? { sourceCurrency: params.sourceCurrency } : {}),
+      ...(params.exchangeRate !== undefined ? { exchangeRate: params.exchangeRate } : {}),
       ...(params.type !== undefined ? { type: params.type } : {}),
       ...(params.categoryId !== undefined ? { categoryId: params.categoryId } : {}),
       ...(params.paymentAccountId !== undefined ? { paymentAccountId: params.paymentAccountId } : {}),

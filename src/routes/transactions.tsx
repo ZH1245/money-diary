@@ -1,6 +1,7 @@
 import { authClient } from '#/lib/auth-client'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import { Button } from '#/components/ui/button'
+import { DatePickerField } from '#/components/ui/date-picker'
 import { Input } from '#/components/ui/input'
 import {
   Select,
@@ -29,13 +30,19 @@ import {
   useTransactionsQuery,
   useUpdateTransactionMutation,
 } from '#/features/transactions/hooks/use-transactions'
-import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { getExchangeRate } from '#/features/exchange-rates/api/exchange-rate-api'
+import {
+  requiresTransactionCategory,
+  resolveTransactionCategoryId,
+} from '#/features/transactions/utils/transaction-category'
+import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
+import { cn } from '#/lib/utils'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 import { setTransactionType, transactionFiltersStore } from '#/features/transactions/store/transaction-filters-store'
 import { Navigate, Link, createFileRoute } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { toInputDate, toIsoDateAtNoon } from '#/lib/date-input'
 import type { FormEvent } from 'react'
@@ -51,10 +58,12 @@ export const Route = createFileRoute('/transactions')({
   component: TransactionsPage,
 })
 
-function getDefaultTransactionForm(): TransactionFormState {
+function getDefaultTransactionForm(userCurrency: string): TransactionFormState {
   return {
     title: '',
     amount: '',
+    currency: userCurrency,
+    exchangeRate: '1',
     type: 'expense',
     categoryId: '',
     paymentAccountId: 'none',
@@ -75,9 +84,19 @@ function TransactionsPage() {
   const filters = useStore(transactionFiltersStore, (state) => state)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null)
-  const [createForm, setCreateForm] = useState<TransactionFormState>(getDefaultTransactionForm)
-
   const userCurrency = ((session?.user as { currency?: string } | undefined)?.currency ?? DEFAULT_CURRENCY).toUpperCase()
+  const [createForm, setCreateForm] = useState<TransactionFormState>(() => getDefaultTransactionForm(userCurrency))
+  const [isFetchingRate, setIsFetchingRate] = useState(false)
+  const [isCurrencyPickerOpen, setIsCurrencyPickerOpen] = useState(false)
+
+  const isForeignCurrency = createForm.currency !== userCurrency
+  const convertedAmountPreview = useMemo(() => {
+    if (!isForeignCurrency) return null
+    const amount = Number(createForm.amount)
+    const rate = Number(createForm.exchangeRate)
+    if (!Number.isFinite(amount) || !Number.isFinite(rate) || amount <= 0 || rate <= 0) return null
+    return formatCurrency((amount * rate).toString(), userCurrency)
+  }, [createForm.amount, createForm.exchangeRate, isForeignCurrency, userCurrency])
 
   const filteredTransactions = (data ?? []).filter((transaction) => {
     const typeMatches = filters.type === 'all' || transaction.type === filters.type
@@ -101,20 +120,27 @@ function TransactionsPage() {
     [deleteTransactionMutation],
   )
 
-  const openEditSheet = useCallback((row: TransactionTableRow) => {
-    setEditingTransactionId(row.id)
-    setCreateForm({
-      title: row.title,
-      amount: row.amount,
-      type: row.type,
-      categoryId: String(row.categoryId),
-      paymentAccountId: row.paymentAccountId ? String(row.paymentAccountId) : 'none',
-      source: row.source,
-      note: row.note,
-      happenedAt: toInputDate(row.happenedAt),
-    })
-    setIsSheetOpen(true)
-  }, [])
+  const openEditSheet = useCallback(
+    (row: TransactionTableRow) => {
+      const isForeign = row.sourceCurrency.toUpperCase() !== userCurrency
+      setEditingTransactionId(row.id)
+      setIsCurrencyPickerOpen(isForeign)
+      setCreateForm({
+        title: row.title,
+        amount: isForeign && row.sourceAmount ? row.sourceAmount : row.amount,
+        currency: row.sourceCurrency.toUpperCase(),
+        exchangeRate: row.exchangeRate,
+        type: row.type,
+        categoryId: row.categoryId ? String(row.categoryId) : '',
+        paymentAccountId: row.paymentAccountId ? String(row.paymentAccountId) : 'none',
+        source: row.source,
+        note: row.note,
+        happenedAt: toInputDate(row.happenedAt),
+      })
+      setIsSheetOpen(true)
+    },
+    [userCurrency],
+  )
 
   const transactionColumns = useMemo<ColumnDef<TransactionTableRow>[]>(
     () => [
@@ -174,10 +200,12 @@ function TransactionsPage() {
   }
   const isEditing = editingTransactionId !== null
   const isSaving = createTransactionMutation.isPending || updateTransactionMutation.isPending
+  const showCategoryField = requiresTransactionCategory(createForm.type)
 
   function openCreateSheet() {
     setEditingTransactionId(null)
-    setCreateForm(getDefaultTransactionForm())
+    setIsCurrencyPickerOpen(false)
+    setCreateForm(getDefaultTransactionForm(userCurrency))
     setIsSheetOpen(true)
   }
 
@@ -185,15 +213,37 @@ function TransactionsPage() {
     setIsSheetOpen(open)
     if (!open) {
       setEditingTransactionId(null)
-      setCreateForm(getDefaultTransactionForm())
+      setIsCurrencyPickerOpen(false)
+      setCreateForm(getDefaultTransactionForm(userCurrency))
+    }
+  }
+
+  async function handleCurrencyChange(currency: string) {
+    if (currency === userCurrency) {
+      setCreateForm((state) => ({ ...state, currency, exchangeRate: '1' }))
+      setIsCurrencyPickerOpen(false)
+      return
+    }
+
+    setIsCurrencyPickerOpen(true)
+    setCreateForm((state) => ({ ...state, currency }))
+    setIsFetchingRate(true)
+
+    try {
+      const rate = await getExchangeRate(currency, userCurrency)
+      setCreateForm((state) => ({ ...state, currency, exchangeRate: rate.toFixed(6) }))
+    } catch {
+      toast.error('Could not fetch exchange rate. Enter it manually.')
+    } finally {
+      setIsFetchingRate(false)
     }
   }
 
   async function handleSaveTransaction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!createForm.categoryId) {
-      toast.error('Choose a category first')
+    if (requiresTransactionCategory(createForm.type) && !createForm.categoryId) {
+      toast.error('Choose a category for expense and transfer entries')
       return
     }
 
@@ -207,12 +257,22 @@ function TransactionsPage() {
       return
     }
 
+    if (isForeignCurrency && !createForm.exchangeRate.trim()) {
+      toast.error('Exchange rate is required for foreign currency entries')
+      return
+    }
+
     const happenedAt = toIsoDateAtNoon(createForm.happenedAt)
     const payload = {
       title: createForm.title.trim(),
       amount: createForm.amount.trim(),
+      currency: createForm.currency,
+      exchangeRate: isForeignCurrency ? createForm.exchangeRate.trim() : undefined,
       type: createForm.type,
-      categoryId: Number(createForm.categoryId),
+      categoryId: resolveTransactionCategoryId(
+        createForm.type,
+        createForm.categoryId ? Number(createForm.categoryId) : null,
+      ),
       paymentAccountId: createForm.paymentAccountId === 'none' ? null : Number(createForm.paymentAccountId),
       source: createForm.source.trim() || undefined,
       note: createForm.note.trim() || undefined,
@@ -244,7 +304,8 @@ function TransactionsPage() {
       })
     }
 
-    setCreateForm(getDefaultTransactionForm())
+    setCreateForm(getDefaultTransactionForm(userCurrency))
+    setIsCurrencyPickerOpen(false)
     setEditingTransactionId(null)
     setIsSheetOpen(false)
   }
@@ -285,22 +346,81 @@ function TransactionsPage() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <label className="text-sm font-medium">Amount ({userCurrency})</label>
-                    <Input
-                      type="number"
-                      value={createForm.amount}
-                      onChange={(event) => setCreateForm((state) => ({ ...state, amount: event.target.value }))}
-                      placeholder="0.00"
-                    />
+                    <label className="text-sm font-medium">
+                      Amount{isCurrencyPickerOpen || isForeignCurrency ? '' : ` (${userCurrency})`}
+                    </label>
+                    <div className={cn('flex gap-2', !isCurrencyPickerOpen && !isForeignCurrency && 'flex-col')}>
+                      <Input
+                        type="number"
+                        value={createForm.amount}
+                        onChange={(event) => setCreateForm((state) => ({ ...state, amount: event.target.value }))}
+                        placeholder="0.00"
+                        className={isCurrencyPickerOpen || isForeignCurrency ? 'flex-1' : undefined}
+                      />
+                      {isCurrencyPickerOpen || isForeignCurrency ? (
+                        <Select value={createForm.currency} onValueChange={(value) => void handleCurrencyChange(value)}>
+                          <SelectTrigger className="w-[7.5rem]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SUPPORTED_CURRENCIES.map((currency) => (
+                              <SelectItem key={currency.code} value={currency.code}>
+                                {currency.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : null}
+                    </div>
+                    {!isCurrencyPickerOpen && !isForeignCurrency ? (
+                      <button
+                        type="button"
+                        className="w-fit text-xs text-primary underline-offset-4 hover:underline"
+                        onClick={() => setIsCurrencyPickerOpen(true)}
+                      >
+                        Paid in another currency?
+                      </button>
+                    ) : null}
                   </div>
+                  {isForeignCurrency ? (
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium">
+                        Exchange rate (1 {createForm.currency} → {userCurrency})
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={createForm.exchangeRate}
+                          onChange={(event) =>
+                            setCreateForm((state) => ({ ...state, exchangeRate: event.target.value }))
+                          }
+                          placeholder="0.00"
+                          disabled={isFetchingRate}
+                        />
+                        {isFetchingRate ? (
+                          <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                        ) : null}
+                      </div>
+                      {convertedAmountPreview ? (
+                        <p className="text-xs text-muted-foreground">
+                          ≈ {convertedAmountPreview} in {userCurrency}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="grid gap-2">
                       <label className="text-sm font-medium">Type</label>
                       <Select
                         value={createForm.type}
-                        onValueChange={(value) =>
-                          setCreateForm((state) => ({ ...state, type: value as TransactionFormState['type'] }))
-                        }
+                        onValueChange={(value) => {
+                          const nextType = value as TransactionFormState['type']
+                          setCreateForm((state) => ({
+                            ...state,
+                            type: nextType,
+                            categoryId: nextType === 'income' ? '' : state.categoryId,
+                          }))
+                        }}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -312,38 +432,41 @@ function TransactionsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <label className="text-sm font-medium">Category</label>
-                        <Link to="/categories" className="text-xs text-primary underline-offset-4 hover:underline">
-                          Manage
-                        </Link>
+                    {showCategoryField ? (
+                      <div className="grid gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium">Category</label>
+                          <Link to="/categories" className="text-xs text-primary underline-offset-4 hover:underline">
+                            Manage
+                          </Link>
+                        </div>
+                        <Select
+                          value={createForm.categoryId}
+                          onValueChange={(value) => setCreateForm((state) => ({ ...state, categoryId: value }))}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={String(category.id)}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Select
-                        value={createForm.categoryId}
-                        onValueChange={(value) => setCreateForm((state) => ({ ...state, categoryId: value }))}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={String(category.id)}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    ) : null}
                   </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Date</label>
-                    <Input
-                      type="date"
-                      value={createForm.happenedAt}
-                      onChange={(event) => setCreateForm((state) => ({ ...state, happenedAt: event.target.value }))}
-                    />
-                  </div>
+                  {createForm.type === 'income' ? (
+                    <p className="text-xs text-muted-foreground">Income entries do not need a category.</p>
+                  ) : null}
+                  <DatePickerField
+                    id="transaction-date"
+                    label="Date"
+                    value={createForm.happenedAt}
+                    onChange={(happenedAt) => setCreateForm((state) => ({ ...state, happenedAt }))}
+                  />
                   <PaymentAccountSelect
                     value={createForm.paymentAccountId}
                     onValueChange={(value) => setCreateForm((state) => ({ ...state, paymentAccountId: value }))}
@@ -522,6 +645,9 @@ function buildTableRows(
       id: transaction.id,
       title: transaction.title,
       amount: transaction.amount,
+      sourceAmount: transaction.sourceAmount,
+      sourceCurrency: transaction.sourceCurrency,
+      exchangeRate: transaction.exchangeRate,
       type: transaction.type,
       categoryId: transaction.categoryId,
       paymentAccountId: transaction.paymentAccountId,
@@ -552,6 +678,8 @@ function compactAmount(amount: number, currency: string): string {
 interface TransactionFormState {
   title: string
   amount: string
+  currency: string
+  exchangeRate: string
   type: 'income' | 'expense' | 'transfer'
   categoryId: string
   paymentAccountId: string
@@ -564,8 +692,11 @@ interface TransactionTableRow {
   id: number
   title: string
   amount: string
+  sourceAmount: string | null
+  sourceCurrency: string
+  exchangeRate: string
   type: 'income' | 'expense' | 'transfer'
-  categoryId: number
+  categoryId: number | null
   paymentAccountId: number | null
   accountLabel: string
   source: string

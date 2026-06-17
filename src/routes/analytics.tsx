@@ -311,11 +311,11 @@ function buildAnalyticsStats(transactions: Array<{ amount: string; type: string 
 }
 
 function buildTopCategories(
-  transactions: Array<{ amount: string; type: string; categoryId: number }>,
+  transactions: Array<{ amount: string; type: string; categoryId: number | null }>,
   categories: Array<{ id: number; name: string }>,
 ) {
   const totals = transactions.reduce<Record<number, number>>((accumulator, transaction) => {
-    if (transaction.type !== 'expense') return accumulator
+    if (transaction.type !== 'expense' || transaction.categoryId === null) return accumulator
     const amount = Number(transaction.amount)
     if (!Number.isFinite(amount)) return accumulator
     accumulator[transaction.categoryId] = (accumulator[transaction.categoryId] ?? 0) + amount

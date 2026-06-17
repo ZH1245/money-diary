@@ -13,6 +13,11 @@ import {
   resolveTargetUserId,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
+import {
+  requiresTransactionCategory,
+  resolveTransactionCategoryId,
+} from '#/features/transactions/utils/transaction-category'
+import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
 
 const createTransactionSchema = z.object({
   title: z.string().min(1),
@@ -20,7 +25,7 @@ const createTransactionSchema = z.object({
   currency: z.string().trim().length(3).optional(),
   exchangeRate: z.string().trim().min(1).optional(),
   type: z.enum(['income', 'expense', 'transfer']),
-  categoryId: z.number().int().positive(),
+  categoryId: z.number().int().positive().nullable().optional(),
   paymentAccountId: z.number().int().positive().nullable().optional(),
   source: z.string().optional(),
   note: z.string().optional(),
@@ -66,28 +71,32 @@ export const Route = createFileRoute('/api/transactions')({
           return Response.json({ success: false, error: 'Amount must be a positive number' }, { status: 400 })
         }
 
-        const enteredCurrency = (parsed.data.currency ?? userContext.currency).toUpperCase()
-        const isForeignCurrency = enteredCurrency !== userContext.currency
-        const parsedExchangeRate = isForeignCurrency
-          ? parsePositiveNumber(parsed.data.exchangeRate ?? '')
-          : 1
-
-        if (parsedExchangeRate === null) {
-          return Response.json(
-            { success: false, error: 'Exchange rate is required for foreign currency entries' },
-            { status: 400 },
-          )
-        }
-
-        const normalizedAmount = enteredAmount * parsedExchangeRate
-
-        const canUseCategory = await isCategoryAccessibleByUser({
-          userId: userContext.id,
-          categoryId: parsed.data.categoryId,
+        const amountResult = normalizeTransactionAmount({
+          amount: parsed.data.amount,
+          currency: parsed.data.currency ?? userContext.currency,
+          userCurrency: userContext.currency,
+          exchangeRate: parsed.data.exchangeRate,
         })
 
-        if (!canUseCategory) {
-          return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
+        if (!amountResult.ok) {
+          return Response.json({ success: false, error: amountResult.error }, { status: 400 })
+        }
+
+        const categoryId = resolveTransactionCategoryId(parsed.data.type, parsed.data.categoryId)
+
+        if (requiresTransactionCategory(parsed.data.type) && categoryId === null) {
+          return Response.json({ success: false, error: 'Category is required for expense and transfer' }, { status: 400 })
+        }
+
+        if (categoryId !== null) {
+          const canUseCategory = await isCategoryAccessibleByUser({
+            userId: userContext.id,
+            categoryId,
+          })
+
+          if (!canUseCategory) {
+            return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
+          }
         }
 
         let paymentAccountId: number | null = parsed.data.paymentAccountId ?? null
@@ -104,12 +113,12 @@ export const Route = createFileRoute('/api/transactions')({
         const row = await createUserTransaction({
           userId: userContext.id,
           title: parsed.data.title,
-          amount: normalizedAmount.toString(),
-          sourceAmount: isForeignCurrency ? enteredAmount.toString() : null,
-          sourceCurrency: enteredCurrency,
-          exchangeRate: parsedExchangeRate.toString(),
+          amount: amountResult.data.normalizedAmount,
+          sourceAmount: amountResult.data.sourceAmount,
+          sourceCurrency: amountResult.data.sourceCurrency,
+          exchangeRate: amountResult.data.exchangeRate,
           type: parsed.data.type,
-          categoryId: parsed.data.categoryId,
+          categoryId,
           paymentAccountId,
           source: parsed.data.source ?? null,
           note: parsed.data.note ?? null,

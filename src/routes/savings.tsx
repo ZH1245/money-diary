@@ -4,6 +4,7 @@ import { StatCard } from '#/components/feedback/stat-card'
 import { TableRowActions } from '#/components/feedback/table-row-actions'
 import { PageEmptyState, PageErrorState, PageContentSkeleton, SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { Button } from '#/components/ui/button'
+import { DatePickerField } from '#/components/ui/date-picker'
 import { Input } from '#/components/ui/input'
 import {
   Select,
@@ -356,14 +357,12 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
                   placeholder="0.00"
                 />
               </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Date</label>
-                <Input
-                  type="date"
-                  value={form.savedAt}
-                  onChange={(event) => setForm((state) => ({ ...state, savedAt: event.target.value }))}
-                />
-              </div>
+              <DatePickerField
+                id="saving-date"
+                label="Date"
+                value={form.savedAt}
+                onChange={(savedAt) => setForm((state) => ({ ...state, savedAt }))}
+              />
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Goal (optional)</label>
                 <GoalSelect

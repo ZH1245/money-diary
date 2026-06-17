@@ -17,6 +17,7 @@ const openApiSpec = {
     { name: 'payment-accounts', description: 'Payment account endpoints' },
     { name: 'savings', description: 'Savings endpoints' },
     { name: 'transactions', description: 'Transaction endpoints' },
+    { name: 'exchange-rates', description: 'Currency exchange rate endpoints' },
     { name: 'wishlist', description: 'Wishlist endpoints' },
   ],
   paths: {
@@ -101,6 +102,45 @@ const openApiSpec = {
         },
       },
     },
+    '/api/categories/{id}': {
+      delete: {
+        tags: ['categories'],
+        summary: 'Delete user-owned category',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Category deleted' },
+          '404': { description: 'Category not found' },
+          '409': { description: 'Category is used by transactions' },
+        },
+      },
+    },
+    '/api/exchange-rate': {
+      get: {
+        tags: ['exchange-rates'],
+        summary: 'Fetch latest exchange rate',
+        parameters: [
+          {
+            name: 'from',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', minLength: 3, maxLength: 3 },
+            description: 'Source currency code (e.g. USD)',
+          },
+          {
+            name: 'to',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', minLength: 3, maxLength: 3 },
+            description: 'Target currency code (e.g. PKR)',
+          },
+        ],
+        responses: {
+          '200': { description: 'Latest exchange rate' },
+          '400': { description: 'Invalid currency query' },
+          '502': { description: 'Exchange rate provider error' },
+        },
+      },
+    },
     '/api/transactions': {
       get: {
         tags: ['transactions'],
@@ -120,12 +160,14 @@ const openApiSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['title', 'amount', 'type', 'categoryId'],
+                required: ['title', 'amount', 'type'],
                 properties: {
                   title: { type: 'string' },
                   amount: { type: 'string' },
+                  currency: { type: 'string', minLength: 3, maxLength: 3 },
+                  exchangeRate: { type: 'string' },
                   type: { type: 'string', enum: ['income', 'expense', 'transfer'] },
-                  categoryId: { type: 'integer' },
+                  categoryId: { type: 'integer', nullable: true },
                   paymentAccountId: { type: 'integer', nullable: true },
                   source: { type: 'string' },
                   note: { type: 'string' },
@@ -164,8 +206,10 @@ const openApiSpec = {
                 properties: {
                   title: { type: 'string' },
                   amount: { type: 'string' },
+                  currency: { type: 'string', minLength: 3, maxLength: 3 },
+                  exchangeRate: { type: 'string' },
                   type: { type: 'string', enum: ['income', 'expense', 'transfer'] },
-                  categoryId: { type: 'integer' },
+                  categoryId: { type: 'integer', nullable: true },
                   paymentAccountId: { type: 'integer', nullable: true },
                   source: { type: 'string', nullable: true },
                   note: { type: 'string', nullable: true },

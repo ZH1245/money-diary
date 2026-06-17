@@ -35,3 +35,15 @@ export async function createCategory(input: CreateCategoryInput): Promise<Catego
 
   return json.data
 }
+
+/**
+ * Deletes a user-owned category.
+ */
+export async function deleteCategory(id: number): Promise<void> {
+  const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
+  const json = (await response.json()) as { success: boolean; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to delete category')
+  }
+}

@@ -1,6 +1,6 @@
-import { desc, eq, isNull, or } from 'drizzle-orm'
+import { and, count, desc, eq, isNull, or } from 'drizzle-orm'
 import { db } from '#/db/index'
-import { categories } from '#/db/schema'
+import { categories, transactions } from '#/db/schema'
 import type { CategoryKind } from '#/features/categories/types/category'
 
 interface CreateUserCategoryParams {
@@ -36,4 +36,35 @@ export async function createUserCategory(params: CreateUserCategoryParams) {
     .returning()
 
   return row
+}
+
+/**
+ * Deletes a user-owned category when it is not referenced by transactions.
+ */
+export async function deleteUserCategory(userId: string, categoryId: number) {
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
+    .limit(1)
+
+  if (!category) {
+    return null
+  }
+
+  const [{ transactionCount }] = await db
+    .select({ transactionCount: count() })
+    .from(transactions)
+    .where(and(eq(transactions.categoryId, categoryId), eq(transactions.userId, userId)))
+
+  if (Number(transactionCount) > 0) {
+    return { blocked: true as const }
+  }
+
+  const [deleted] = await db
+    .delete(categories)
+    .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
+    .returning()
+
+  return deleted ?? null
 }

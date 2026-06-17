@@ -22,6 +22,10 @@ import {
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
 import { slugifyCategoryName } from '#/features/categories/utils/category-slug'
+import {
+  requiresTransactionCategory,
+  resolveTransactionCategoryId,
+} from '#/features/transactions/utils/transaction-category'
 
 export const Route = createFileRoute('/api/ai/chat')({
   server: {
@@ -67,7 +71,8 @@ Active goals: ${goalList || 'none'}.
 
 Rules:
 - Pick the closest matching category/account/goal id from the lists above.
-- If no category matches, use categoryId -1 and provide categoryName.
+- Income transactions do not need a category.
+- For expense/transfer, if no category matches, use categoryId -1 and provide categoryName.
 - Use ISO date YYYY-MM-DD for all date fields.
 - Relative dates like "yesterday", "last Monday" must be resolved to exact YYYY-MM-DD.
 - Always pick exactly ONE tool per message.
@@ -126,9 +131,12 @@ Rules:
 
           const { title, amount, type, date, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, note } = args.data
 
-          // Resolve or create category
-          let categoryId = rawCatId
-          if (rawCatId === -1) {
+          let categoryId: number | null = null
+          if (type === 'income') {
+            categoryId = null
+          } else if (rawCatId === undefined) {
+            return Response.json({ success: false, error: 'Category is required for expense and transfer.' }, { status: 422 })
+          } else if (rawCatId === -1) {
             if (!categoryName?.trim()) {
               return Response.json({ success: false, error: 'No category name provided for new category.' }, { status: 422 })
             }
@@ -142,6 +150,12 @@ Rules:
           } else {
             const ok = await isCategoryAccessibleByUser({ userId: userContext.id, categoryId: rawCatId })
             if (!ok) return Response.json({ success: false, error: 'Category not accessible.' }, { status: 403 })
+            categoryId = rawCatId
+          }
+
+          categoryId = resolveTransactionCategoryId(type, categoryId)
+          if (requiresTransactionCategory(type) && categoryId === null) {
+            return Response.json({ success: false, error: 'Category is required for expense and transfer.' }, { status: 422 })
           }
 
           // Resolve account
@@ -315,13 +329,13 @@ const AI_TOOLS = [
       description: 'Log an income, expense, or transfer transaction.',
       parameters: {
         type: 'object',
-        required: ['title', 'amount', 'type', 'date', 'categoryId'],
+        required: ['title', 'amount', 'type', 'date'],
         properties: {
           title: { type: 'string' },
           amount: { type: 'number', description: 'Positive amount' },
           type: { type: 'string', enum: ['expense', 'income', 'transfer'] },
           date: { type: 'string', description: 'YYYY-MM-DD' },
-          categoryId: { type: 'integer', description: 'Use -1 if no match found' },
+          categoryId: { type: 'integer', description: 'Required for expense/transfer. Use -1 if no match found. Omit for income.' },
           categoryName: { type: 'string', description: 'Required when categoryId is -1' },
           paymentAccountId: { type: 'integer', description: 'Account id or omit' },
           note: { type: 'string' },
@@ -398,7 +412,7 @@ const createTransactionArgsSchema = z.object({
   amount: z.number().positive(),
   type: z.enum(['expense', 'income', 'transfer']),
   date: z.string().min(6),
-  categoryId: z.number().int(),
+  categoryId: z.number().int().optional(),
   categoryName: z.string().optional(),
   paymentAccountId: z.number().int().positive().optional(),
   note: z.string().optional(),

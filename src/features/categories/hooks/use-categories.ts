@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCategory, getCategories } from '../api/categories-api'
+import { createCategory, deleteCategory, getCategories } from '../api/categories-api'
 import { queryKeys } from '#/features/query-keys'
 
 /**
@@ -20,6 +20,22 @@ export function useCreateCategoryMutation() {
 
   return useMutation({
     mutationFn: createCategory,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all,
+      })
+    },
+  })
+}
+
+/**
+ * React Query mutation hook for deleting a user-owned category.
+ */
+export function useDeleteCategoryMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteCategory,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.categories.all,

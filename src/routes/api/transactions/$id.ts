@@ -15,18 +15,24 @@ import {
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
 import {
+  requiresTransactionCategory,
+  resolveTransactionCategoryId,
+} from '#/features/transactions/utils/transaction-category'
+import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
+import {
   apiAmountSchema,
   apiNoteSchema,
   apiSourceSchema,
   apiTitleSchema,
-  parsePositiveAmount,
 } from '#/lib/server/validation-schemas'
 
 const updateTransactionSchema = z.object({
   title: apiTitleSchema.optional(),
   amount: apiAmountSchema.optional(),
+  currency: z.string().trim().length(3).optional(),
+  exchangeRate: z.string().trim().min(1).optional(),
   type: z.enum(['income', 'expense', 'transfer']).optional(),
-  categoryId: z.number().int().positive().optional(),
+  categoryId: z.number().int().positive().nullable().optional(),
   paymentAccountId: z.number().int().positive().nullable().optional(),
   source: apiSourceSchema.nullable(),
   note: apiNoteSchema.nullable(),
@@ -62,10 +68,23 @@ export const Route = createFileRoute('/api/transactions/$id')({
           return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
         }
 
-        if (parsed.data.categoryId !== undefined) {
+        const nextType = (parsed.data.type ?? existing.type) as 'income' | 'expense' | 'transfer'
+        const nextCategoryId = resolveTransactionCategoryId(
+          nextType,
+          parsed.data.categoryId !== undefined ? parsed.data.categoryId : existing.categoryId,
+        )
+
+        if (requiresTransactionCategory(nextType) && nextCategoryId === null) {
+          return Response.json(
+            { success: false, error: 'Category is required for expense and transfer' },
+            { status: 400 },
+          )
+        }
+
+        if (nextCategoryId !== null) {
           const canUseCategory = await isCategoryAccessibleByUser({
             userId: userContext.id,
-            categoryId: parsed.data.categoryId,
+            categoryId: nextCategoryId,
           })
           if (!canUseCategory) {
             return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
@@ -82,22 +101,51 @@ export const Route = createFileRoute('/api/transactions/$id')({
           }
         }
 
-        let amount = parsed.data.amount
-        if (amount !== undefined) {
-          const parsedAmount = parsePositiveAmount(amount)
-          if (parsedAmount === null) {
-            return Response.json({ success: false, error: 'Amount must be a positive number' }, { status: 400 })
+        const shouldNormalizeAmount =
+          parsed.data.amount !== undefined ||
+          parsed.data.currency !== undefined ||
+          parsed.data.exchangeRate !== undefined
+
+        let amount: string | undefined
+        let sourceAmount: string | null | undefined
+        let sourceCurrency: string | undefined
+        let exchangeRate: string | undefined
+
+        if (shouldNormalizeAmount) {
+          const enteredAmount = parsed.data.amount ?? existing.sourceAmount ?? existing.amount
+          const enteredCurrency = (parsed.data.currency ?? existing.sourceCurrency).toUpperCase()
+          const enteredExchangeRate = parsed.data.exchangeRate ?? existing.exchangeRate
+
+          const amountResult = normalizeTransactionAmount({
+            amount: enteredAmount,
+            currency: enteredCurrency,
+            userCurrency: userContext.currency,
+            exchangeRate: enteredExchangeRate,
+          })
+
+          if (!amountResult.ok) {
+            return Response.json({ success: false, error: amountResult.error }, { status: 400 })
           }
-          amount = parsedAmount.toString()
+
+          amount = amountResult.data.normalizedAmount
+          sourceAmount = amountResult.data.sourceAmount
+          sourceCurrency = amountResult.data.sourceCurrency
+          exchangeRate = amountResult.data.exchangeRate
         }
+
+        const shouldUpdateCategory =
+          parsed.data.type !== undefined || parsed.data.categoryId !== undefined
 
         const row = await updateUserTransaction({
           userId: userContext.id,
           transactionId,
           title: parsed.data.title?.trim(),
           amount,
+          sourceAmount,
+          sourceCurrency,
+          exchangeRate,
           type: parsed.data.type,
-          categoryId: parsed.data.categoryId,
+          ...(shouldUpdateCategory ? { categoryId: nextCategoryId } : {}),
           ...(parsed.data.paymentAccountId !== undefined ? { paymentAccountId: parsed.data.paymentAccountId } : {}),
           source: parsed.data.source,
           note: parsed.data.note,

@@ -17,6 +17,10 @@ import {
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
 import { slugifyCategoryName } from '#/features/categories/utils/category-slug'
+import {
+  requiresTransactionCategory,
+  resolveTransactionCategoryId,
+} from '#/features/transactions/utils/transaction-category'
 
 export const Route = createFileRoute('/api/ai/transaction')({
   server: {
@@ -70,8 +74,9 @@ The user's currency is ${userContext.currency}.
 Available categories: ${categoryList}.
 Available payment accounts: ${accountList}.
 When the user describes a transaction, call the create_transaction tool with exact IDs from the lists above.
-If a category name roughly matches (e.g. "food" → "Groceries"), pick the closest match.
-If there is no matching category, set categoryId to -1 and categoryName to a short descriptive name.
+Income transactions do not need a category — omit categoryId for income.
+For expense and transfer, if a category name roughly matches (e.g. "food" → "Groceries"), pick the closest match.
+If there is no matching category for expense/transfer, set categoryId to -1 and categoryName to a short descriptive name.
 Use ISO date format (YYYY-MM-DD) for the date field.`,
                 },
                 {
@@ -87,7 +92,7 @@ Use ISO date format (YYYY-MM-DD) for the date field.`,
                     description: 'Create a financial transaction entry in the database.',
                     parameters: {
                       type: 'object',
-                      required: ['title', 'amount', 'type', 'date', 'categoryId'],
+                      required: ['title', 'amount', 'type', 'date'],
                       properties: {
                         title: { type: 'string', description: 'Short title for the transaction' },
                         amount: { type: 'number', description: 'Positive amount in user currency' },
@@ -95,7 +100,7 @@ Use ISO date format (YYYY-MM-DD) for the date field.`,
                         date: { type: 'string', description: 'ISO date YYYY-MM-DD' },
                         categoryId: {
                           type: 'integer',
-                          description: 'Category id from the list, or -1 if new category needed',
+                          description: 'Required for expense/transfer. Category id from the list, or -1 if new category needed. Omit for income.',
                         },
                         categoryName: {
                           type: 'string',
@@ -157,9 +162,16 @@ Use ISO date format (YYYY-MM-DD) for the date field.`,
           note,
         } = args.data
 
-        // Resolve category — create new one if model said -1
-        let resolvedCategoryId = rawCategoryId
-        if (rawCategoryId === -1) {
+        // Resolve category — income has none; expense/transfer may create new category when model said -1
+        let resolvedCategoryId: number | null = null
+        if (type === 'income') {
+          resolvedCategoryId = null
+        } else if (rawCategoryId === undefined || rawCategoryId === null) {
+          return Response.json(
+            { success: false, error: 'Category is required for expense and transfer.' },
+            { status: 422 },
+          )
+        } else if (rawCategoryId === -1) {
           if (!categoryName?.trim()) {
             return Response.json(
               { success: false, error: 'Model requested new category but gave no name.' },
@@ -175,7 +187,6 @@ Use ISO date format (YYYY-MM-DD) for the date field.`,
           })
           resolvedCategoryId = newCat.id
         } else {
-          // Ownership check: category must belong to user or be global
           const canUse = await isCategoryAccessibleByUser({
             userId: userContext.id,
             categoryId: rawCategoryId,
@@ -186,6 +197,15 @@ Use ISO date format (YYYY-MM-DD) for the date field.`,
               { status: 403 },
             )
           }
+          resolvedCategoryId = rawCategoryId
+        }
+
+        resolvedCategoryId = resolveTransactionCategoryId(type, resolvedCategoryId)
+        if (requiresTransactionCategory(type) && resolvedCategoryId === null) {
+          return Response.json(
+            { success: false, error: 'Category is required for expense and transfer.' },
+            { status: 422 },
+          )
         }
 
         // Resolve payment account — ownership check
@@ -248,7 +268,7 @@ const toolCallArgsSchema = z.object({
   amount: z.number().positive(),
   type: z.enum(['expense', 'income', 'transfer']),
   date: z.string().min(6),
-  categoryId: z.number().int(),
+  categoryId: z.number().int().optional(),
   categoryName: z.string().optional(),
   paymentAccountId: z.number().int().positive().optional(),
   note: z.string().optional(),
