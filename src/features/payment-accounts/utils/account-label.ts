@@ -13,8 +13,12 @@ const ACCOUNT_TYPE_LABELS: Record<PaymentAccountDto['accountType'], string> = {
 /**
  * Builds a compact label for tables and selects.
  */
-export function formatPaymentAccountLabel(account: PaymentAccountDto): string {
-  const typeLabel = ACCOUNT_TYPE_LABELS[account.accountType]
+export function formatPaymentAccountLabel(account: PaymentAccountDto | null | undefined): string {
+  if (!account) {
+    return 'Unknown account'
+  }
+
+  const typeLabel = ACCOUNT_TYPE_LABELS[account.accountType] ?? ACCOUNT_TYPE_LABELS.other
   const institutionName = getInstitutionName(account.institutionSlug)
 
   if (institutionName && institutionName !== account.name) {
