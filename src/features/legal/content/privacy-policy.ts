@@ -1,8 +1,5 @@
 export const PRIVACY_POLICY_LAST_UPDATED = 'June 17, 2026'
 
-/** Update this address to your real support or privacy inbox. */
-export const PRIVACY_CONTACT_EMAIL = 'privacy@moneydiary.app'
-
 export interface PrivacyPolicySection {
   id: string
   title: string
@@ -75,7 +72,7 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     title: 'Data retention and deletion',
     paragraphs: [
       'We keep your data for as long as your account is active so the app can function.',
-      'If you want your account and associated data deleted, contact us using the email below. We will process verified deletion requests within a reasonable timeframe, subject to any legal or security obligations to retain certain records.',
+      'If you want your account and associated data deleted, use Settings in the app. We will process verified deletion requests within a reasonable timeframe, subject to any legal or security obligations to retain certain records.',
     ],
   },
   {
@@ -122,7 +119,7 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     id: 'contact',
     title: 'Contact',
     paragraphs: [
-      `Questions about this Privacy Policy or your data? Email us at ${PRIVACY_CONTACT_EMAIL}.`,
+      'Questions about this Privacy Policy or your data? Use Settings in the app to manage your account.',
     ],
   },
 ]

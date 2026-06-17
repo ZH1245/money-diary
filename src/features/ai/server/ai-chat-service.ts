@@ -1,3 +1,8 @@
+import {
+  buildFinanceSummaryAnswer,
+  isFinanceReadQuestion,
+  resolveFinanceQuestionDateRange,
+} from '#/features/ai/server/ai-finance-summary'
 import { buildLegalPolicyAnswer, isPrimarilyLegalQuestion } from '#/features/legal/utils/legal-knowledge'
 import { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
 import {
@@ -151,6 +156,8 @@ export async function runAiChat({
   }
 
   const lastUserMessage = messages.filter((message) => message.role === 'user').at(-1)
+  const today = new Date().toISOString().split('T')[0]
+
   if (lastUserMessage && isPrimarilyLegalQuestion(lastUserMessage.content)) {
     return {
       success: true,
@@ -159,7 +166,21 @@ export async function runAiChat({
     }
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  if (lastUserMessage && isFinanceReadQuestion(lastUserMessage.content)) {
+    const range = resolveFinanceQuestionDateRange(lastUserMessage.content, today)
+    return {
+      success: true,
+      action: 'get_finance_summary',
+      message: await buildFinanceSummaryAnswer({
+        userId,
+        currency,
+        from: range.from,
+        to: range.to,
+        question: lastUserMessage.content,
+      }),
+    }
+  }
+
   const aiSettings = await getUserAiSettingsForRuntime({ userId })
   const isOllamaProvider = aiSettings?.provider == null || aiSettings.provider === 'ollama'
   const aiTools = getAiToolsForProvider(aiSettings?.provider)
@@ -219,14 +240,19 @@ export async function runAiChat({
         }
       }
 
+      const fallbackMessage = lastUserMessage
+        ? await resolveClarificationFallback({
+            userId,
+            currency,
+            today,
+            question: lastUserMessage.content,
+          })
+        : 'I did not understand. Please try again.'
+
       return {
         success: true,
         action: 'clarification',
-        message:
-          reply ||
-          (lastUserMessage && isPrimarilyLegalQuestion(lastUserMessage.content)
-            ? buildLegalPolicyAnswer(lastUserMessage.content)
-            : 'I did not understand. Please try again.'),
+        message: reply || fallbackMessage,
       }
     }
 
@@ -273,6 +299,38 @@ export async function runAiChat({
     navigateTo: pickNavigateTo(executedSteps),
     warning: 'Stopped after maximum tool steps. Review results and continue if needed.',
   }
+}
+
+/**
+ * Builds a fallback clarification when the model returns an empty reply.
+ */
+async function resolveClarificationFallback({
+  userId,
+  currency,
+  today,
+  question,
+}: {
+  userId: string
+  currency: string
+  today: string
+  question: string
+}): Promise<string> {
+  if (isPrimarilyLegalQuestion(question)) {
+    return buildLegalPolicyAnswer(question)
+  }
+
+  if (isFinanceReadQuestion(question)) {
+    const range = resolveFinanceQuestionDateRange(question, today)
+    return buildFinanceSummaryAnswer({
+      userId,
+      currency,
+      from: range.from,
+      to: range.to,
+      question,
+    })
+  }
+
+  return 'I did not understand. Please try again.'
 }
 
 /**

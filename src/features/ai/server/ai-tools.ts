@@ -2,6 +2,22 @@ export const AI_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'get_finance_summary',
+      description:
+        'Read the user\'s income, expenses, and top categories for a date range. Use for "what are my expenses" and similar questions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fromDate: { type: 'string', description: 'YYYY-MM-DD start (default: start of current month)' },
+          toDate: { type: 'string', description: 'YYYY-MM-DD end (default: today)' },
+          focus: { type: 'string', enum: ['expense', 'income', 'all'], description: 'What to emphasize' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'create_transaction',
       description: 'Log an income, expense, or transfer transaction.',
       parameters: {
@@ -180,7 +196,7 @@ export type AiWriteToolAction =
   | 'update_goal'
   | 'delete_goal'
 
-export type AiToolAction = AiWriteToolAction | 'get_exchange_rate'
+export type AiToolAction = AiWriteToolAction | 'get_exchange_rate' | 'get_finance_summary'
 
 /**
  * Returns tool definitions for the active AI provider.

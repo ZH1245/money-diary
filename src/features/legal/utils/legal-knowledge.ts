@@ -1,5 +1,4 @@
 import {
-  PRIVACY_CONTACT_EMAIL,
   PRIVACY_POLICY_LAST_UPDATED,
   privacyPolicySections,
   type PrivacyPolicySection,
@@ -28,9 +27,7 @@ export function buildLegalKnowledgeForAi(): string {
 ${formatLegalSections(privacyPolicySections)}
 
 TERMS OF SERVICE (last updated ${TERMS_LAST_UPDATED}; in-app page: /terms)
-${formatLegalSections(termsSections)}
-
-Privacy contact: ${PRIVACY_CONTACT_EMAIL}`
+${formatLegalSections(termsSections)}`
 }
 
 /**
@@ -76,7 +73,7 @@ export function buildLegalPolicyAnswer(question: string): string {
 
   if (/delete|retention|remove my/.test(normalized)) {
     parts.push(
-      `We keep your data while your account is active. To request account and data deletion, email ${PRIVACY_CONTACT_EMAIL}.`,
+      'We keep your data while your account is active. To request account and data deletion, use Settings in the app.',
     )
   }
 
@@ -99,7 +96,7 @@ export function buildLegalPolicyAnswer(question: string): string {
   }
 
   parts.push(
-    `Read the full documents in the app: /privacy (updated ${PRIVACY_POLICY_LAST_UPDATED}) and /terms (updated ${TERMS_LAST_UPDATED}). Contact: ${PRIVACY_CONTACT_EMAIL}.`,
+    `Read the full documents in the app: /privacy (updated ${PRIVACY_POLICY_LAST_UPDATED}) and /terms (updated ${TERMS_LAST_UPDATED}).`,
   )
 
   return parts.join('\n\n')

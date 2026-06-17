@@ -27,9 +27,10 @@ import {
 } from '#/features/transactions/utils/transaction-category'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
 import { fetchExchangeRate } from '#/features/exchange-rates/server/fetch-exchange-rate'
-import { format } from 'date-fns'
+import { format, parseISO, startOfMonth } from 'date-fns'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
+import { buildFinanceSummaryAnswer } from '#/features/ai/server/ai-finance-summary'
 
 const createTransactionArgsSchema = z.object({
   title: z.string().min(1),
@@ -90,6 +91,12 @@ const updateGoalArgsSchema = z.object({
 
 const deleteGoalArgsSchema = z.object({
   goalId: z.number().int().positive(),
+})
+
+const getFinanceSummaryArgsSchema = z.object({
+  fromDate: z.string().min(6).optional(),
+  toDate: z.string().min(6).optional(),
+  focus: z.enum(['expense', 'income', 'all']).optional(),
 })
 
 const getExchangeRateArgsSchema = z.object({
@@ -438,6 +445,35 @@ export async function executeAiTool({
       message: `Goal removed: "${goal.title}"`,
       entityId: deleted.id,
     })
+  }
+
+  if (toolName === 'get_finance_summary') {
+    const args = getFinanceSummaryArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'get_finance_summary', success: false, message: 'Invalid finance summary arguments.' }
+    }
+
+    const todayDate = parseISO(context.today)
+    const from =
+      args.data.fromDate ??
+      format(startOfMonth(todayDate), 'yyyy-MM-dd')
+    const to = args.data.toDate ?? context.today
+    const focusHint =
+      args.data.focus === 'income' ? 'income' : args.data.focus === 'expense' ? 'expenses' : undefined
+
+    const message = await buildFinanceSummaryAnswer({
+      userId: context.userId,
+      currency: context.currency,
+      from,
+      to,
+      question: focusHint,
+    })
+
+    return {
+      action: 'get_finance_summary',
+      success: true,
+      message,
+    }
   }
 
   if (toolName === 'get_exchange_rate') {
