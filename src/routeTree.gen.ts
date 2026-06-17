@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SwaggerRouteImport } from './routes/swagger'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SavingsRouteImport } from './routes/savings'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -26,16 +28,16 @@ import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
 import { Route as ApiSavingsRouteImport } from './routes/api/savings'
 import { Route as ApiPaymentAccountsRouteImport } from './routes/api/payment-accounts'
 import { Route as ApiGoalsRouteImport } from './routes/api/goals'
+import { Route as ApiExchangeRateRouteImport } from './routes/api/exchange-rate'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
-import { Route as ApiCategoriesIdRouteImport } from './routes/api/categories/$id'
 import { Route as ApiWishlistIdRouteImport } from './routes/api/wishlist/$id'
 import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions/$id'
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
 import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
 import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
-import { Route as ApiExchangeRateRouteImport } from './routes/api/exchange-rate'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
+import { Route as ApiCategoriesIdRouteImport } from './routes/api/categories/$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transaction'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
@@ -48,6 +50,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SwaggerRoute = SwaggerRouteImport.update({
@@ -73,6 +80,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SavingsRoute = SavingsRouteImport.update({
   id: '/savings',
   path: '/savings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GoalsRoute = GoalsRouteImport.update({
@@ -125,15 +137,15 @@ const ApiGoalsRoute = ApiGoalsRouteImport.update({
   path: '/api/goals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExchangeRateRoute = ApiExchangeRateRouteImport.update({
+  id: '/api/exchange-rate',
+  path: '/api/exchange-rate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
   id: '/api/categories',
   path: '/api/categories',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCategoriesIdRoute = ApiCategoriesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiCategoriesRoute,
 } as any)
 const ApiWishlistIdRoute = ApiWishlistIdRouteImport.update({
   id: '/$id',
@@ -160,11 +172,6 @@ const ApiPaymentAccountsIdRoute = ApiPaymentAccountsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiPaymentAccountsRoute,
 } as any)
-const ApiExchangeRateRoute = ApiExchangeRateRouteImport.update({
-  id: '/api/exchange-rate',
-  path: '/api/exchange-rate',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiOpenapiJsonRoute = ApiOpenapiJsonRouteImport.update({
   id: '/api/openapi/json',
   path: '/api/openapi/json',
@@ -174,6 +181,11 @@ const ApiGoalsIdRoute = ApiGoalsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiGoalsRoute,
+} as any)
+const ApiCategoriesIdRoute = ApiCategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiCategoriesRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -197,14 +209,17 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/categories': typeof CategoriesRoute
   '/goals': typeof GoalsRoute
+  '/privacy': typeof PrivacyRoute
   '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
+  '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
   '/wishlist': typeof WishlistRoute
   '/api/categories': typeof ApiCategoriesRouteWithChildren
+  '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
@@ -213,7 +228,6 @@ export interface FileRoutesByFullPath {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
@@ -229,14 +243,17 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/categories': typeof CategoriesRoute
   '/goals': typeof GoalsRoute
+  '/privacy': typeof PrivacyRoute
   '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
+  '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
   '/wishlist': typeof WishlistRoute
   '/api/categories': typeof ApiCategoriesRouteWithChildren
+  '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
@@ -245,7 +262,6 @@ export interface FileRoutesByTo {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
@@ -262,14 +278,17 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/categories': typeof CategoriesRoute
   '/goals': typeof GoalsRoute
+  '/privacy': typeof PrivacyRoute
   '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
+  '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
   '/wishlist': typeof WishlistRoute
   '/api/categories': typeof ApiCategoriesRouteWithChildren
+  '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
@@ -278,7 +297,6 @@ export interface FileRoutesById {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
@@ -296,15 +314,17 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/categories'
     | '/goals'
+    | '/privacy'
     | '/savings'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
+    | '/terms'
     | '/transactions'
     | '/wishlist'
     | '/api/categories'
-    | '/api/categories/$id'
+    | '/api/exchange-rate'
     | '/api/goals'
     | '/api/payment-accounts'
     | '/api/savings'
@@ -313,7 +333,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/transaction'
     | '/api/auth/$'
-    | '/api/exchange-rate'
+    | '/api/categories/$id'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -328,15 +348,17 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/categories'
     | '/goals'
+    | '/privacy'
     | '/savings'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
+    | '/terms'
     | '/transactions'
     | '/wishlist'
     | '/api/categories'
-    | '/api/categories/$id'
+    | '/api/exchange-rate'
     | '/api/goals'
     | '/api/payment-accounts'
     | '/api/savings'
@@ -345,7 +367,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/transaction'
     | '/api/auth/$'
-    | '/api/exchange-rate'
+    | '/api/categories/$id'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -360,15 +382,17 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/categories'
     | '/goals'
+    | '/privacy'
     | '/savings'
     | '/settings'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
+    | '/terms'
     | '/transactions'
     | '/wishlist'
     | '/api/categories'
-    | '/api/categories/$id'
+    | '/api/exchange-rate'
     | '/api/goals'
     | '/api/payment-accounts'
     | '/api/savings'
@@ -377,7 +401,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/transaction'
     | '/api/auth/$'
-    | '/api/exchange-rate'
+    | '/api/categories/$id'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -393,14 +417,17 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   CategoriesRoute: typeof CategoriesRoute
   GoalsRoute: typeof GoalsRoute
+  PrivacyRoute: typeof PrivacyRoute
   SavingsRoute: typeof SavingsRoute
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   SwaggerRoute: typeof SwaggerRoute
+  TermsRoute: typeof TermsRoute
   TransactionsRoute: typeof TransactionsRoute
   WishlistRoute: typeof WishlistRoute
-  ApiCategoriesRoute: typeof ApiCategoriesRoute
+  ApiCategoriesRoute: typeof ApiCategoriesRouteWithChildren
+  ApiExchangeRateRoute: typeof ApiExchangeRateRoute
   ApiGoalsRoute: typeof ApiGoalsRouteWithChildren
   ApiPaymentAccountsRoute: typeof ApiPaymentAccountsRouteWithChildren
   ApiSavingsRoute: typeof ApiSavingsRouteWithChildren
@@ -409,7 +436,6 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiAiTransactionRoute: typeof ApiAiTransactionRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiExchangeRateRoute: typeof ApiExchangeRateRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
 }
@@ -428,6 +454,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/swagger': {
@@ -463,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/savings'
       fullPath: '/savings'
       preLoaderRoute: typeof SavingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/goals': {
@@ -535,19 +575,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGoalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/exchange-rate': {
+      id: '/api/exchange-rate'
+      path: '/api/exchange-rate'
+      fullPath: '/api/exchange-rate'
+      preLoaderRoute: typeof ApiExchangeRateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/categories': {
       id: '/api/categories'
       path: '/api/categories'
       fullPath: '/api/categories'
       preLoaderRoute: typeof ApiCategoriesRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/api/categories/$id': {
-      id: '/api/categories/$id'
-      path: '/$id'
-      fullPath: '/api/categories/$id'
-      preLoaderRoute: typeof ApiCategoriesIdRouteImport
-      parentRoute: typeof ApiCategoriesRoute
     }
     '/api/wishlist/$id': {
       id: '/api/wishlist/$id'
@@ -584,13 +624,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentAccountsIdRouteImport
       parentRoute: typeof ApiPaymentAccountsRoute
     }
-    '/api/exchange-rate': {
-      id: '/api/exchange-rate'
-      path: '/api/exchange-rate'
-      fullPath: '/api/exchange-rate'
-      preLoaderRoute: typeof ApiExchangeRateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/openapi/json': {
       id: '/api/openapi/json'
       path: '/api/openapi/json'
@@ -604,6 +637,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/goals/$id'
       preLoaderRoute: typeof ApiGoalsIdRouteImport
       parentRoute: typeof ApiGoalsRoute
+    }
+    '/api/categories/$id': {
+      id: '/api/categories/$id'
+      path: '/$id'
+      fullPath: '/api/categories/$id'
+      preLoaderRoute: typeof ApiCategoriesIdRouteImport
+      parentRoute: typeof ApiCategoriesRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -706,14 +746,17 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   CategoriesRoute: CategoriesRoute,
   GoalsRoute: GoalsRoute,
+  PrivacyRoute: PrivacyRoute,
   SavingsRoute: SavingsRoute,
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   SwaggerRoute: SwaggerRoute,
+  TermsRoute: TermsRoute,
   TransactionsRoute: TransactionsRoute,
   WishlistRoute: WishlistRoute,
   ApiCategoriesRoute: ApiCategoriesRouteWithChildren,
+  ApiExchangeRateRoute: ApiExchangeRateRoute,
   ApiGoalsRoute: ApiGoalsRouteWithChildren,
   ApiPaymentAccountsRoute: ApiPaymentAccountsRouteWithChildren,
   ApiSavingsRoute: ApiSavingsRouteWithChildren,
@@ -722,7 +765,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiAiTransactionRoute: ApiAiTransactionRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiExchangeRateRoute: ApiExchangeRateRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,
 }

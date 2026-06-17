@@ -2,7 +2,9 @@ import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { FormField } from '#/components/forms/form-field'
+import { AuthFeaturePanel } from '#/components/layout/auth-feature-panel'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
+import { ThemeToggle } from '#/components/layout/theme-toggle'
 import {
   Select,
   SelectContent,
@@ -12,7 +14,7 @@ import {
 } from '#/components/ui/select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
+import { CheckCircle2, Clock3, FileText, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -26,6 +28,9 @@ const signUpSchema = z.object({
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   currency: z.string().trim().length(3, 'Select a valid currency'),
+  acceptsLegal: z.boolean().refine((value) => value, {
+    message: 'You must agree to the Terms and Privacy Policy',
+  }),
 })
 
 function SignUpPage() {
@@ -35,6 +40,7 @@ function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY)
+  const [acceptsLegal, setAcceptsLegal] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -90,12 +96,29 @@ function SignUpPage() {
     }))
   }
 
+
+
+  function handleLegalChange(checked: boolean) {
+    setAcceptsLegal(checked)
+    setErrorMessage(null)
+    setFieldErrors((previous) => ({
+      ...previous,
+      acceptsLegal: checked ? '' : 'You must agree to the Terms and Privacy Policy',
+    }))
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage(null)
     setFieldErrors({})
 
-    const parsed = signUpSchema.safeParse({ name, email, password, currency })
+    const parsed = signUpSchema.safeParse({
+      name,
+      email,
+      password,
+      currency,
+      acceptsLegal,
+    })
 
     if (!parsed.success) {
       const nextErrors: Record<string, string> = {}
@@ -146,7 +169,10 @@ function SignUpPage() {
     <AuthSplitLayout
       formPanel={
         <article className="island-shell rise-in w-full max-w-md rounded-2xl p-6 sm:p-7">
-          <h2 className="display-title text-3xl">Create account</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="display-title text-3xl">Create account</h2>
+            <ThemeToggle />
+          </div>
           <p className="mt-2 text-sm opacity-80">Start your money tracking workspace.</p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
@@ -207,11 +233,39 @@ function SignUpPage() {
               ) : null}
             </div>
 
+            <div>
+              <label className="flex items-start gap-2 text-xs leading-relaxed opacity-90">
+                <input
+                  type="checkbox"
+                  checked={acceptsLegal}
+                  onChange={(event) => handleLegalChange(event.target.checked)}
+                  disabled={isSubmitting}
+                  className="mt-0.5 size-4 rounded border border-border"
+                />
+                <span>
+                  I agree to the{' '}
+                  <Link to="/terms" className="font-medium underline underline-offset-4">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" className="font-medium underline underline-offset-4">
+                    Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+              {fieldErrors.acceptsLegal ? (
+                <p className="mt-1 text-xs text-red-600 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {fieldErrors.acceptsLegal}
+                </p>
+              ) : null}
+            </div>
+
             {errorMessage ? <InlineError message={errorMessage} /> : null}
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !acceptsLegal}
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
             >
               {isSubmitting ? (
@@ -234,36 +288,30 @@ function SignUpPage() {
         </article>
       }
       featurePanel={
-        <>
-          <div className="absolute inset-0 bg-linear-to-tr from-(--hero-b) via-transparent to-(--hero-a)" />
-          <div className="relative flex h-full flex-col p-12 xl:p-16 rise-in">
-            <p className="island-kicker">Money Diary</p>
-            <h1 className="display-title mt-4 max-w-2xl text-5xl leading-tight xl:text-6xl">
-              Build stronger financial habits from day one.
-            </h1>
-            <p className="mt-5 max-w-xl text-base opacity-85">
-              Create your account to organize expenses, savings, wishlist items, and goals in one place.
-            </p>
-            <div className="mt-10 grid max-w-2xl grid-cols-2 gap-4">
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Control</p>
-                <p className="mt-2 text-2xl font-semibold">Expense clarity</p>
-              </div>
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Focus</p>
-                <p className="mt-2 text-2xl font-semibold">Savings growth</p>
-              </div>
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Planning</p>
-                <p className="mt-2 text-2xl font-semibold">Goal tracking</p>
-              </div>
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Insights</p>
-                <p className="mt-2 text-2xl font-semibold">Category signals</p>
-              </div>
-            </div>
-          </div>
-        </>
+        <AuthFeaturePanel
+          kicker="Money Diary"
+          title="Build stronger money habits."
+          description="Organize expenses, savings, wishlist items, and goals in one secure workspace."
+          tags={['Fast setup', 'Personal dashboard', 'No clutter']}
+          gradientDirection="tr"
+          features={[
+            {
+              icon: CheckCircle2,
+              title: 'Fast setup',
+              description: 'Create your workspace and start tracking in minutes.',
+            },
+            {
+              icon: Clock3,
+              title: 'Track progress',
+              description: 'Stay updated on savings, goals, and spending trends.',
+            },
+            {
+              icon: FileText,
+              title: 'Stay organized',
+              description: 'Keep records tidy with account-linked entries.',
+            },
+          ]}
+        />
       }
     />
   )

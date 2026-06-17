@@ -1,0 +1,32 @@
+import { LegalPageLayout } from '#/components/layout/legal-page-layout'
+import { TermsOfServiceContent } from '#/features/legal/components/terms-of-service-content'
+import { TERMS_LAST_UPDATED } from '#/features/legal/content/terms-of-service'
+import { authClient } from '#/lib/auth-client'
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/terms')({
+  head: () => ({
+    meta: [
+      {
+        title: 'Terms of Service | Money Diary',
+      },
+    ],
+  }),
+  component: TermsPage,
+})
+
+function TermsPage() {
+  const { data: session } = authClient.useSession()
+  const isSignedIn = Boolean(session?.user)
+
+  return (
+    <LegalPageLayout
+      title="Terms of Service"
+      lastUpdated={TERMS_LAST_UPDATED}
+      backTo={isSignedIn ? '/' : '/sign-in'}
+      backLabel={isSignedIn ? 'Back to dashboard' : 'Back to sign in'}
+    >
+      <TermsOfServiceContent />
+    </LegalPageLayout>
+  )
+}

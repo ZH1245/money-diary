@@ -2,9 +2,11 @@ import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { FormField } from '#/components/forms/form-field'
+import { AuthFeaturePanel } from '#/components/layout/auth-feature-panel'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
+import { ThemeToggle } from '#/components/layout/theme-toggle'
 import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
+import { CheckCircle2, Clock3, FileText, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -113,40 +115,36 @@ function SignInPage() {
   return (
     <AuthSplitLayout
       featurePanel={
-        <>
-          <div className="absolute inset-0 bg-linear-to-br from-(--hero-a) via-transparent to-(--hero-b)" />
-          <div className="relative flex h-full flex-col p-12 xl:p-16 rise-in">
-            <p className="island-kicker">Money Diary</p>
-            <h1 className="display-title mt-4 max-w-2xl text-5xl leading-tight xl:text-6xl">
-              Financial focus, in one calm workspace.
-            </h1>
-            <p className="mt-5 max-w-xl text-base opacity-85">
-              Sign in to monitor spending patterns, protect savings flow, and stay aligned with what matters.
-            </p>
-            <div className="mt-10 grid max-w-2xl grid-cols-2 gap-4">
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Savings</p>
-                <p className="mt-2 text-2xl font-semibold">Live balance</p>
-              </div>
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Spending</p>
-                <p className="mt-2 text-2xl font-semibold">Top categories</p>
-              </div>
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Planning</p>
-                <p className="mt-2 text-2xl font-semibold">Wishlist vs goals</p>
-              </div>
-              <div className="feature-card rounded-2xl border border-border/70 p-4 transition-transform duration-300 hover:-translate-y-1">
-                <p className="text-xs uppercase tracking-[0.16em] opacity-70">Insights</p>
-                <p className="mt-2 text-2xl font-semibold">Monthly trends</p>
-              </div>
-            </div>
-          </div>
-        </>
+        <AuthFeaturePanel
+          kicker="Money Diary"
+          title="Financial focus, simplified."
+          description="Sign in to view spending, savings, wishlist, and goals in one place."
+          tags={['Secure auth', 'Private by default', 'AI assisted entries']}
+          features={[
+            {
+              icon: CheckCircle2,
+              title: 'Log with ease',
+              description: 'Record transactions quickly and keep every entry organized.',
+            },
+            {
+              icon: Clock3,
+              title: 'Track daily progress',
+              description: 'Monitor savings flow and goal progress in one workspace.',
+            },
+            {
+              icon: FileText,
+              title: 'Understand spending',
+              description: 'Use account-linked analytics to spot patterns over time.',
+            },
+          ]}
+        />
       }
       formPanel={
         <article className="island-shell rise-in w-full max-w-md rounded-2xl p-6 sm:p-7">
-          <h2 className="display-title text-3xl">Sign in</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="display-title text-3xl">Sign in</h2>
+            <ThemeToggle />
+          </div>
           <p className="mt-2 text-sm opacity-80">Access your account to continue.</p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
@@ -189,10 +187,20 @@ function SignInPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-sm opacity-80">
+          <p className="mt-6 text-center text-sm opacity-80">
             New here?{' '}
             <Link to="/sign-up" className="font-medium underline underline-offset-4">
               Create an account
+            </Link>
+          </p>
+
+          <p className="mt-4 text-center text-xs opacity-70">
+            <Link to="/terms" className="underline underline-offset-4">
+              Terms of Service
+            </Link>
+            {' · '}
+            <Link to="/privacy" className="underline underline-offset-4">
+              Privacy Policy
             </Link>
           </p>
         </article>

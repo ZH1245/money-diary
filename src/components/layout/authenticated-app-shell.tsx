@@ -49,6 +49,7 @@ import { DashboardDateRangeFilter } from '#/components/layout/dashboard-date-ran
 import { QueryRefreshButton } from '#/components/feedback/query-refresh-button'
 import { PrivacyModeToggle } from '#/components/privacy/privacy-mode-toggle'
 import { AiTransactionPanel } from '#/components/ai/ai-transaction-panel'
+import { ThemeToggle } from '#/components/layout/theme-toggle'
 import { useState } from 'react'
 
 interface AuthenticatedAppShellProps {
@@ -289,6 +290,7 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
           <p className="text-sm font-medium">Welcome{user.name ? `, ${user.name}` : ''}!</p>
           <div className="ml-auto flex items-center gap-2">
             {isDashboard ? <DashboardDateRangeFilter /> : null}
+            <ThemeToggle />
             <PrivacyModeToggle />
             <QueryRefreshButton />
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiPanelOpen(true)}>

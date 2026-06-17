@@ -12,7 +12,7 @@ import {
 } from '#/components/ui/select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { AiSettingsSection } from '#/features/settings/components/ai-settings-section'
-import { Navigate, createFileRoute } from '@tanstack/react-router'
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -284,6 +284,17 @@ function SettingsPage() {
               </form>
             </article>
           </div>
+
+          <article className="feature-card rounded-2xl border border-border/70 p-6">
+            <h2 className="text-lg font-semibold">Legal</h2>
+            <p className="mt-1 text-sm opacity-80">Review how Money Diary handles your data.</p>
+            <Link
+              to="/privacy"
+              className="mt-4 inline-flex text-sm font-medium underline underline-offset-4"
+            >
+              Privacy Policy
+            </Link>
+          </article>
 
           <AiSettingsSection />
         </section>
