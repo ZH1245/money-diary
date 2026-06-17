@@ -81,7 +81,7 @@ export function DatePickerField({
               {value ? format(selectedDate!, 'MMM d, yyyy') : placeholder}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] overflow-hidden p-0" align="start">
             <Calendar mode="single" selected={selectedDate} onSelect={handleSelect} defaultMonth={selectedDate} />
           </PopoverContent>
         </Popover>

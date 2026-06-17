@@ -35,6 +35,8 @@ import {
 } from '#/features/savings/hooks/use-savings'
 import type { SavingDto } from '#/features/savings/types/saving'
 import { buildSavingsPageStats } from '#/features/savings/utils/savings-stats'
+import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
+import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
@@ -42,6 +44,7 @@ import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { toInputDate, toIsoDateAtNoon } from '#/lib/date-input'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
+import { useStore } from '@tanstack/react-store'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -84,10 +87,15 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [editingSavingId, setEditingSavingId] = useState<number | null>(null)
   const [form, setForm] = useState<SavingFormState>(getDefaultSavingForm)
+  const dateRange = useStore(dashboardDateRangeStore, (state) => state)
 
   const isEditing = editingSavingId !== null
   const isSaving = createSavingMutation.isPending || updateSavingMutation.isPending
-  const pageStats = useMemo(() => buildSavingsPageStats(savings), [savings])
+  const filteredSavings = useMemo(
+    () => savings.filter((saving) => isDateInRange(saving.savedAt, dateRange.from, dateRange.to)),
+    [savings, dateRange.from, dateRange.to],
+  )
+  const pageStats = useMemo(() => buildSavingsPageStats(filteredSavings), [filteredSavings])
   const isPrivacyMode = usePrivacyModeEnabled()
 
   const goalsById = useMemo(
@@ -331,11 +339,11 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
         ) : null}
 
         {!isPending && !isError ? (
-          savings.length ? (
+          filteredSavings.length ? (
             <div className="mt-5">
               <DataTable
                 columns={savingsColumns}
-                data={savings}
+                data={filteredSavings}
                 filterPlaceholder="Filter savings..."
                 emptyMessage="No savings added yet."
                 showPrivacyToggle
@@ -344,7 +352,13 @@ function SavingsContent({ userCurrency }: { userCurrency: string }) {
             </div>
           ) : (
             <div className="mt-5">
-              <PageEmptyState message="No savings yet. Add your first entry." />
+              <PageEmptyState
+                message={
+                  savings.length
+                    ? 'No savings in the selected date range.'
+                    : 'No savings yet. Add your first entry.'
+                }
+              />
             </div>
           )
         ) : null}

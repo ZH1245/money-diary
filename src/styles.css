@@ -168,9 +168,14 @@ body {
   color: var(--sea-ink);
   font-family: var(--font-sans);
   background-color: var(--background);
+  color-scheme: light;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  color-scheme: dark;
 }
 
 a {
@@ -327,6 +332,24 @@ a {
   font-size: 0.72rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .dashboard-calendar [data-slot='calendar'] {
+    padding: 0.125rem 0;
+  }
+
+  .dashboard-calendar [data-slot='calendar'] .rdp-caption_label {
+    font-size: 0.82rem;
+  }
+
+  .dashboard-calendar [data-slot='calendar'] .rdp-weekday {
+    font-size: 0.65rem;
+  }
+
+  .dashboard-calendar [data-slot='calendar'] .rdp-day {
+    font-size: 0.8rem;
+  }
 }
 
 @keyframes route-fade-slide {

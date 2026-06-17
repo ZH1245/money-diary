@@ -1,5 +1,6 @@
 import { ThemeToggle } from '#/components/layout/theme-toggle'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { SiteFooter } from '#/components/layout/site-footer'
+import { useNavigate } from '@tanstack/react-router'
 
 interface LegalPageLayoutProps {
   title: string
@@ -60,19 +61,7 @@ export function LegalPageLayout({
         </article>
       </div>
 
-      <footer className="site-footer px-5 py-6 md:px-8">
-        <div className="page-wrap flex flex-wrap items-center justify-between gap-3 text-sm opacity-80">
-          <p>© {new Date().getFullYear()} Money Diary</p>
-          <div className="flex gap-4">
-            <Link to="/sign-in" className="underline underline-offset-4">
-              Sign in
-            </Link>
-            <Link to="/sign-up" className="underline underline-offset-4">
-              Sign up
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   )
 }

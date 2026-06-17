@@ -30,9 +30,9 @@ export function QueryRefreshButton({ className }: QueryRefreshButtonProps) {
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="ghost"
       size="icon"
-      className={cn('size-9 shrink-0', className)}
+      className={className}
       onClick={() => void handleRefresh()}
       disabled={isRefreshing}
       aria-label="Refresh data"

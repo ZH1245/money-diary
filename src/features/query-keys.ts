@@ -17,4 +17,8 @@ export const queryKeys = {
   wishlist: {
     all: ['wishlist'] as const,
   },
+  ai: {
+    conversations: ['ai', 'conversations'] as const,
+    conversation: (id: number) => ['ai', 'conversations', id] as const,
+  },
 }

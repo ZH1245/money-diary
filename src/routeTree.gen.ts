@@ -33,6 +33,7 @@ import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiWishlistIdRouteImport } from './routes/api/wishlist/$id'
 import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions/$id'
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
+import { Route as ApiSettingsAiRouteImport } from './routes/api/settings/ai'
 import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
 import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
@@ -40,7 +41,10 @@ import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
 import { Route as ApiCategoriesIdRouteImport } from './routes/api/categories/$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transaction'
+import { Route as ApiAiConversationsRouteImport } from './routes/api/ai/conversations'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as ApiSettingsAiRevealRouteImport } from './routes/api/settings/ai/reveal'
+import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -162,6 +166,11 @@ const ApiSettingsCurrencyRoute = ApiSettingsCurrencyRouteImport.update({
   path: '/api/settings/currency',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSettingsAiRoute = ApiSettingsAiRouteImport.update({
+  id: '/api/settings/ai',
+  path: '/api/settings/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSavingsIdRoute = ApiSavingsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -197,11 +206,27 @@ const ApiAiTransactionRoute = ApiAiTransactionRouteImport.update({
   path: '/api/ai/transaction',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiConversationsRoute = ApiAiConversationsRouteImport.update({
+  id: '/api/ai/conversations',
+  path: '/api/ai/conversations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAiChatRoute = ApiAiChatRouteImport.update({
   id: '/api/ai/chat',
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSettingsAiRevealRoute = ApiSettingsAiRevealRouteImport.update({
+  id: '/reveal',
+  path: '/reveal',
+  getParentRoute: () => ApiSettingsAiRoute,
+} as any)
+const ApiAiConversationsConversationIdRoute =
+  ApiAiConversationsConversationIdRouteImport.update({
+    id: '/$conversationId',
+    path: '/$conversationId',
+    getParentRoute: () => ApiAiConversationsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -226,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
@@ -233,9 +259,12 @@ export interface FileRoutesByFullPath {
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
+  '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
+  '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
+  '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -260,6 +289,7 @@ export interface FileRoutesByTo {
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
@@ -267,9 +297,12 @@ export interface FileRoutesByTo {
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
+  '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
+  '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
+  '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -295,6 +328,7 @@ export interface FileRoutesById {
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
@@ -302,9 +336,12 @@ export interface FileRoutesById {
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
+  '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
+  '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
+  '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -331,6 +368,7 @@ export interface FileRouteTypes {
     | '/api/transactions'
     | '/api/wishlist'
     | '/api/ai/chat'
+    | '/api/ai/conversations'
     | '/api/ai/transaction'
     | '/api/auth/$'
     | '/api/categories/$id'
@@ -338,9 +376,12 @@ export interface FileRouteTypes {
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
     | '/api/savings/$id'
+    | '/api/settings/ai'
     | '/api/settings/currency'
     | '/api/transactions/$id'
     | '/api/wishlist/$id'
+    | '/api/ai/conversations/$conversationId'
+    | '/api/settings/ai/reveal'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -365,6 +406,7 @@ export interface FileRouteTypes {
     | '/api/transactions'
     | '/api/wishlist'
     | '/api/ai/chat'
+    | '/api/ai/conversations'
     | '/api/ai/transaction'
     | '/api/auth/$'
     | '/api/categories/$id'
@@ -372,9 +414,12 @@ export interface FileRouteTypes {
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
     | '/api/savings/$id'
+    | '/api/settings/ai'
     | '/api/settings/currency'
     | '/api/transactions/$id'
     | '/api/wishlist/$id'
+    | '/api/ai/conversations/$conversationId'
+    | '/api/settings/ai/reveal'
   id:
     | '__root__'
     | '/'
@@ -399,6 +444,7 @@ export interface FileRouteTypes {
     | '/api/transactions'
     | '/api/wishlist'
     | '/api/ai/chat'
+    | '/api/ai/conversations'
     | '/api/ai/transaction'
     | '/api/auth/$'
     | '/api/categories/$id'
@@ -406,9 +452,12 @@ export interface FileRouteTypes {
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
     | '/api/savings/$id'
+    | '/api/settings/ai'
     | '/api/settings/currency'
     | '/api/transactions/$id'
     | '/api/wishlist/$id'
+    | '/api/ai/conversations/$conversationId'
+    | '/api/settings/ai/reveal'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -434,9 +483,11 @@ export interface RootRouteChildren {
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   ApiWishlistRoute: typeof ApiWishlistRouteWithChildren
   ApiAiChatRoute: typeof ApiAiChatRoute
+  ApiAiConversationsRoute: typeof ApiAiConversationsRouteWithChildren
   ApiAiTransactionRoute: typeof ApiAiTransactionRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
+  ApiSettingsAiRoute: typeof ApiSettingsAiRouteWithChildren
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
 }
 
@@ -610,6 +661,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSettingsCurrencyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/settings/ai': {
+      id: '/api/settings/ai'
+      path: '/api/settings/ai'
+      fullPath: '/api/settings/ai'
+      preLoaderRoute: typeof ApiSettingsAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/savings/$id': {
       id: '/api/savings/$id'
       path: '/$id'
@@ -659,12 +717,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiTransactionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/conversations': {
+      id: '/api/ai/conversations'
+      path: '/api/ai/conversations'
+      fullPath: '/api/ai/conversations'
+      preLoaderRoute: typeof ApiAiConversationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ai/chat': {
       id: '/api/ai/chat'
       path: '/api/ai/chat'
       fullPath: '/api/ai/chat'
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/settings/ai/reveal': {
+      id: '/api/settings/ai/reveal'
+      path: '/reveal'
+      fullPath: '/api/settings/ai/reveal'
+      preLoaderRoute: typeof ApiSettingsAiRevealRouteImport
+      parentRoute: typeof ApiSettingsAiRoute
+    }
+    '/api/ai/conversations/$conversationId': {
+      id: '/api/ai/conversations/$conversationId'
+      path: '/$conversationId'
+      fullPath: '/api/ai/conversations/$conversationId'
+      preLoaderRoute: typeof ApiAiConversationsConversationIdRouteImport
+      parentRoute: typeof ApiAiConversationsRoute
     }
   }
 }
@@ -740,6 +819,29 @@ const ApiWishlistRouteWithChildren = ApiWishlistRoute._addFileChildren(
   ApiWishlistRouteChildren,
 )
 
+interface ApiAiConversationsRouteChildren {
+  ApiAiConversationsConversationIdRoute: typeof ApiAiConversationsConversationIdRoute
+}
+
+const ApiAiConversationsRouteChildren: ApiAiConversationsRouteChildren = {
+  ApiAiConversationsConversationIdRoute: ApiAiConversationsConversationIdRoute,
+}
+
+const ApiAiConversationsRouteWithChildren =
+  ApiAiConversationsRoute._addFileChildren(ApiAiConversationsRouteChildren)
+
+interface ApiSettingsAiRouteChildren {
+  ApiSettingsAiRevealRoute: typeof ApiSettingsAiRevealRoute
+}
+
+const ApiSettingsAiRouteChildren: ApiSettingsAiRouteChildren = {
+  ApiSettingsAiRevealRoute: ApiSettingsAiRevealRoute,
+}
+
+const ApiSettingsAiRouteWithChildren = ApiSettingsAiRoute._addFileChildren(
+  ApiSettingsAiRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
@@ -763,9 +865,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   ApiWishlistRoute: ApiWishlistRouteWithChildren,
   ApiAiChatRoute: ApiAiChatRoute,
+  ApiAiConversationsRoute: ApiAiConversationsRouteWithChildren,
   ApiAiTransactionRoute: ApiAiTransactionRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
+  ApiSettingsAiRoute: ApiSettingsAiRouteWithChildren,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,
 }
 export const routeTree = rootRouteImport

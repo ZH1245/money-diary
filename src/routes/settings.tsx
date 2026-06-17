@@ -179,7 +179,7 @@ function SettingsPage() {
           <div className="island-shell rounded-2xl p-6">
             <h1 className="display-title text-3xl">Settings</h1>
             <p className="mt-2 text-sm opacity-80">
-              Manage your account security, currency preferences, and upcoming AI provider settings.
+              Manage your account security, currency preferences, and AI provider settings.
             </p>
           </div>
 
@@ -287,13 +287,15 @@ function SettingsPage() {
 
           <article className="feature-card rounded-2xl border border-border/70 p-6">
             <h2 className="text-lg font-semibold">Legal</h2>
-            <p className="mt-1 text-sm opacity-80">Review how Money Diary handles your data.</p>
-            <Link
-              to="/privacy"
-              className="mt-4 inline-flex text-sm font-medium underline underline-offset-4"
-            >
-              Privacy Policy
-            </Link>
+            <p className="mt-1 text-sm opacity-80">Review how Money Diary handles your data and usage rules.</p>
+            <div className="mt-4 flex flex-col gap-2 text-sm font-medium">
+              <Link to="/privacy" className="underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="underline underline-offset-4">
+                Terms of Service
+              </Link>
+            </div>
           </article>
 
           <AiSettingsSection />

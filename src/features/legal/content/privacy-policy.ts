@@ -59,7 +59,7 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
       'Database: Neon hosts your application data.',
       'Hosting: Vercel serves the web application.',
       'Exchange rates: When you fetch a rate, we may call public exchange-rate APIs (such as Frankfurter, open.er-api.com, or exchangerate.host). These requests include currency codes only, not your full financial history.',
-      'AI features (coming soon): If enabled in the future, optional AI helpers may send transaction text you provide to a provider you configure. That feature is not active today.',
+      'AI assistant (optional): If you enable AI in settings, natural-language prompts and conversation history are stored in your account and may be sent to the model provider you configure (for example Ollama on your own server). Review entries the AI creates before relying on them.',
     ],
   },
   {

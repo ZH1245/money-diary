@@ -37,7 +37,7 @@ function commitDateRange(nextRange: DashboardDateRangeState) {
 }
 
 /**
- * Central date range store for dashboard filtering.
+ * Central date range store for workspace-wide filtering.
  */
 export const dashboardDateRangeStore = new Store<DashboardDateRangeState>(getDefaultDateRange())
 

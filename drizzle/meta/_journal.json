@@ -99,6 +99,27 @@
       "when": 1781680000000,
       "tag": "0014_transaction_category_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1781784000000,
+      "tag": "0015_ai_provider_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1781884000000,
+      "tag": "0016_ai_conversations",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1781984000000,
+      "tag": "0017_dedupe_global_categories",
+      "breakpoints": true
     }
   ]
 }

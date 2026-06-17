@@ -1,19 +1,42 @@
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '#/components/ui/sheet'
-import { type AiChatMessage, useAiChatMutation } from '#/features/ai/hooks/use-ai-chat'
-import { CheckCircle2, Sparkles } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#/components/ui/sheet'
+import { useAiChatMutation } from '#/features/ai/hooks/use-ai-chat'
+import {
+  activeAiConversationStore,
+  setActiveAiConversationId,
+} from '#/features/ai/store/active-ai-conversation-store'
+import {
+  useAiConversationQuery,
+  useAiConversationsQuery,
+  useDeleteAiConversationMutation,
+} from '#/features/ai/hooks/use-ai-conversations'
+import type { AiConversationDetail, AiConversationMessage } from '#/features/ai/types/ai-conversation'
+import { toolbarIconButtonClass } from '#/components/layout/toolbar-control-styles'
+import { AlertTriangle, CheckCircle2, History, MessageSquarePlus, Sparkles, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
-import { useRef, useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useStore } from '@tanstack/react-store'
+import { useNavigate, Link } from '@tanstack/react-router'
+import { queryKeys } from '#/features/query-keys'
 import { toast } from 'sonner'
 
-const AI_COMING_SOON = true
-
 interface ThreadMessage {
+  id?: number
   role: 'user' | 'assistant'
   text: string
   ok?: boolean
   action?: string
+  steps?: Array<{ action: string; success: boolean }>
 }
 
 interface AiTransactionPanelProps {
@@ -26,76 +49,236 @@ const ACTION_LABELS: Record<string, string> = {
   create_saving: 'Saving',
   create_goal: 'Goal',
   create_wishlist_item: 'Wishlist item',
+  update_wishlist_item: 'Wishlist updated',
+  delete_wishlist_item: 'Wishlist removed',
+  update_goal: 'Goal updated',
+  delete_goal: 'Goal removed',
+  get_exchange_rate: 'Exchange rate',
+  chained: 'Multiple actions',
 }
 
 const EXAMPLES = [
-  'Spent 2500 on groceries yesterday from Cash on hand',
+  'Spent 2500 on groceries yesterday',
   'Got salary of 85000 today',
-  'Saved 10000 toward Hajj goal from HBL',
-  'Add iPhone 16 Pro to wishlist, target 350000',
-  'New goal: Emergency fund, 500000 target by Dec 2026',
+  'Saved 10000 toward my goal',
 ]
 
 /**
- * Side panel AI assistant that handles transactions, savings, goals and wishlist
- * via plain language — all writes are session-gated on the server.
+ * Maps persisted conversation messages into renderable thread bubbles.
+ */
+function mapConversationMessage(message: AiConversationMessage): ThreadMessage {
+  return {
+    id: message.id,
+    role: message.role,
+    text: message.content,
+    ok: message.metadata?.ok,
+    action: message.metadata?.action,
+    steps: message.metadata?.steps,
+  }
+}
+
+/**
+ * Side panel AI assistant with persisted conversations across navigation.
  */
 export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelProps) {
   const [prompt, setPrompt] = useState('')
-  const [thread, setThread] = useState<ThreadMessage[]>([])
+  const [pendingMessages, setPendingMessages] = useState<ThreadMessage[]>([])
+  const activeConversationId = useStore(activeAiConversationStore, (state) => state.conversationId)
   const mutation = useAiChatMutation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const deleteConversationMutation = useDeleteAiConversationMutation()
+  const conversationsQuery = useAiConversationsQuery(open)
+  const conversationQuery = useAiConversationQuery(activeConversationId)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Scroll to bottom when thread grows
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [thread, mutation.isPending])
+  const persistedThread = useMemo(
+    () => (conversationQuery.data?.messages ?? []).map(mapConversationMessage),
+    [conversationQuery.data?.messages],
+  )
 
-  function buildApiMessages(): AiChatMessage[] {
-    return thread.map((m) => ({
-      role: m.role,
-      content: m.text,
-    }))
+  const thread =
+    activeConversationId == null && pendingMessages.length > 0
+      ? pendingMessages
+      : persistedThread
+
+  const chatClosed = conversationQuery.data?.isClosed ?? false
+  const savedChats = conversationsQuery.data ?? []
+  const historyLabel =
+    activeConversationId == null
+      ? pendingMessages.length > 0
+        ? 'Sending...'
+        : 'Start typing below'
+      : conversationQuery.data?.title ?? 'Loading...'
+
+  useEffect(() => {
+    if (!open) return
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [open, thread, mutation.isPending])
+
+  function handleNewChat() {
+    setActiveAiConversationId(null)
+    setPendingMessages([])
+    setPrompt('')
+  }
+
+  function handleSelectConversation(conversationId: number) {
+    setActiveAiConversationId(conversationId)
+    setPrompt('')
+  }
+
+  async function handleDeleteConversation(conversationId: number) {
+    try {
+      await deleteConversationMutation.mutateAsync(conversationId)
+      if (activeConversationId === conversationId) {
+        const fallback = savedChats.find((entry) => entry.id !== conversationId)
+        setActiveAiConversationId(fallback?.id ?? null)
+      }
+      toast.success('Chat deleted')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to delete chat')
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (AI_COMING_SOON) return
+    if (chatClosed) return
 
     const text = prompt.trim()
     if (!text) return
 
     setPrompt('')
-    setThread((prev) => [...prev, { role: 'user', text }])
 
-    const history = buildApiMessages()
+    if (activeConversationId == null) {
+      setPendingMessages((current) => [...current, { role: 'user', text }])
+    } else {
+      queryClient.setQueryData<AiConversationDetail | undefined>(
+        queryKeys.ai.conversation(activeConversationId),
+        (current) => {
+          if (!current) return current
+          return {
+            ...current,
+            messages: [
+              ...current.messages,
+              {
+                id: -Date.now(),
+                role: 'user' as const,
+                content: text,
+                metadata: null,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          }
+        },
+      )
+    }
 
     try {
-      const result = await mutation.mutateAsync([...history, { role: 'user', content: text }])
+      const result = await mutation.mutateAsync({
+        conversationId: activeConversationId ?? undefined,
+        message: text,
+      })
 
-      if (result.action === 'clarification') {
-        setThread((prev) => [
-          ...prev,
-          { role: 'assistant', text: result.message ?? 'Could you clarify?', ok: false },
-        ])
+      setPendingMessages([])
+
+      if (result.conversationId) {
+        queryClient.setQueryData<AiConversationDetail>(
+          queryKeys.ai.conversation(result.conversationId),
+          (current) => {
+            const title = text.trim().slice(0, 80) || 'New chat'
+            const userMessage = {
+              id: -Date.now(),
+              role: 'user' as const,
+              content: text,
+              metadata: null,
+              createdAt: new Date().toISOString(),
+            }
+            const assistantMessage =
+              result.message != null
+                ? {
+                    id: -(Date.now() + 1),
+                    role: 'assistant' as const,
+                    content: result.message,
+                    metadata: {
+                      action: result.action,
+                      ok:
+                        result.action !== 'clarification' &&
+                        (result.steps?.length
+                          ? result.steps.every((step) => step.success)
+                          : result.success),
+                      steps: result.steps?.map((step) => ({
+                        action: step.action,
+                        success: step.success,
+                      })),
+                    },
+                    createdAt: new Date().toISOString(),
+                  }
+                : null
+
+            if (!current) {
+              return {
+                id: result.conversationId!,
+                title,
+                isClosed: Boolean(result.closeChat),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                messages: assistantMessage ? [userMessage, assistantMessage] : [userMessage],
+              }
+            }
+
+            return {
+              ...current,
+              title: current.title === 'New chat' ? title : current.title,
+              messages: assistantMessage
+                ? [...current.messages, assistantMessage]
+                : current.messages,
+            }
+          },
+        )
+      }
+
+      if (result.closeChat) {
+        toast.error('AI chat closed for security reasons.')
         return
       }
 
-      if (result.success && result.message) {
-        setThread((prev) => [
-          ...prev,
-          { role: 'assistant', text: result.message ?? '', ok: true, action: result.action },
-        ])
-        toast.success(ACTION_LABELS[result.action ?? ''] ?? 'Entry' + ' created')
-      } else {
-        setThread((prev) => [
-          ...prev,
-          { role: 'assistant', text: result.error ?? 'Something went wrong.', ok: false },
-        ])
+      if (result.warning) {
+        toast.warning(result.warning)
+      }
+
+      if (result.action === 'clarification') {
+        return
+      }
+
+      if (result.steps?.length) {
+        const allOk = result.steps.every((step) => step.success)
+        if (allOk) {
+          const label =
+            result.action === 'chained'
+              ? `${result.steps.length} entries created`
+              : ACTION_LABELS[result.action ?? ''] ?? 'Entry created'
+          toast.success(label)
+        } else {
+          toast.error('Some actions could not be completed.')
+        }
+        if (allOk && result.navigateTo) {
+          onOpenChange(false)
+          void navigate({ to: result.navigateTo })
+        }
+        return
+      }
+
+      if (result.success && result.message && result.action && result.action !== 'chained') {
+        toast.success(ACTION_LABELS[result.action] ?? 'Entry created')
+        if (result.navigateTo) {
+          onOpenChange(false)
+          void navigate({ to: result.navigateTo })
+        }
       }
     } catch (error) {
+      setPendingMessages([])
       const message = error instanceof Error ? error.message : 'Request failed.'
-      setThread((prev) => [...prev, { role: 'assistant', text: message, ok: false }])
+      toast.error(message)
     }
   }
 
@@ -103,50 +286,105 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
     setPrompt(example)
   }
 
+  const isLoadingConversation = activeConversationId != null && conversationQuery.isLoading
+  const showEmptyState =
+    !isLoadingConversation && thread.length === 0 && !chatClosed && pendingMessages.length === 0
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-        <SheetHeader className="border-b px-5 py-4">
-          <SheetTitle className="flex items-center gap-2">
+        <SheetHeader className="space-y-0 border-b px-4 py-3 pr-12">
+          <SheetTitle className="flex items-center gap-2 text-base">
             <Sparkles className="size-4 text-primary" />
             AI Assistant
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-              Soon
-            </span>
           </SheetTitle>
-          <SheetDescription>
-            Natural-language finance actions are coming soon. Scope and provider support are not decided yet.
-          </SheetDescription>
+
+          <div className="mt-2.5 flex items-center gap-1.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-w-0 flex-1 justify-start gap-2 px-4 py-2 font-normal"
+                >
+                  <History className="size-3.5 shrink-0 opacity-70" />
+                  <span className="truncate">{historyLabel}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[min(20rem,calc(100vw-2rem))]">
+                <DropdownMenuLabel>Saved chats</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleNewChat}>
+                  <MessageSquarePlus className="size-4" />
+                  <span>New chat</span>
+                </DropdownMenuItem>
+                {savedChats.length > 0 ? <DropdownMenuSeparator /> : null}
+                {savedChats.length === 0 ? (
+                  <DropdownMenuItem disabled>No saved chats yet</DropdownMenuItem>
+                ) : (
+                  savedChats.map((conversation) => (
+                    <DropdownMenuItem
+                      key={conversation.id}
+                      className="flex items-center justify-between gap-2"
+                      onClick={() => handleSelectConversation(conversation.id)}
+                    >
+                      <span className="truncate">{conversation.title}</span>
+                      <button
+                        type="button"
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                        aria-label={`Delete ${conversation.title}`}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void handleDeleteConversation(conversation.id)
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              type="button"
+              variant="outline"
+              className={toolbarIconButtonClass}
+              onClick={handleNewChat}
+              aria-label="New chat"
+              title="New chat"
+            >
+              <MessageSquarePlus className="size-4" />
+            </Button>
+          </div>
         </SheetHeader>
 
-        {/* Thread */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          {AI_COMING_SOON ? (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-dashed border-amber-300/80 bg-amber-50/60 px-3 py-3 text-sm text-amber-900">
-                The AI assistant is in preview only. You will be able to log transactions, savings, goals, and wishlist
-                items in plain language once this ships.
-              </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Planned examples (not available yet):
-              </p>
-              <div className="space-y-2 opacity-60">
-                {EXAMPLES.map((example) => (
-                  <div
-                    key={example}
-                    className="w-full text-left text-sm rounded-lg border border-border bg-muted/30 px-3 py-2"
-                  >
-                    {example}
-                  </div>
-                ))}
-              </div>
+          {chatClosed ? (
+            <div className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-3 text-sm text-destructive">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <p>Chat closed after repeated unsafe requests. Start a new chat to continue.</p>
             </div>
           ) : null}
 
-          {!AI_COMING_SOON && thread.length === 0 ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center mt-6">
-                Try one of these or type your own:
+          {isLoadingConversation ? (
+            <div className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground animate-pulse">
+              Loading chat...
+            </div>
+          ) : null}
+
+          {showEmptyState ? (
+            <div className="space-y-3 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Log transactions, savings, goals, or wishlist items. You can also ask about our{' '}
+                <Link to="/privacy" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>
+                  Privacy Policy
+                </Link>{' '}
+                or{' '}
+                <Link to="/terms" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>
+                  Terms
+                </Link>
+                .
               </p>
               <div className="space-y-2">
                 {EXAMPLES.map((example) => (
@@ -154,7 +392,7 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                     key={example}
                     type="button"
                     onClick={() => handleExampleClick(example)}
-                    className="w-full text-left text-sm rounded-lg border border-border bg-muted/30 px-3 py-2 hover:bg-muted/60 transition-colors"
+                    className="w-full text-left text-sm rounded-lg border border-border bg-muted/30 px-3 py-2.5 hover:bg-muted/60 transition-colors"
                   >
                     {example}
                   </button>
@@ -163,34 +401,45 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
             </div>
           ) : null}
 
-          {!AI_COMING_SOON ? thread.map((message, index) => (
+          {thread.map((message, index) => (
             <div
-              key={index}
+              key={message.id ?? index}
               className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && message.ok ? (
                 <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-500" />
               ) : null}
               <div
-                className={`rounded-xl px-3 py-2 text-sm max-w-[84%] ${
+                className={`rounded-xl px-3 py-2 text-sm max-w-[84%] whitespace-pre-wrap ${
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : message.ok
-                      ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                      ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800'
                       : 'bg-muted text-foreground'
                 }`}
               >
                 {message.text}
-                {message.ok && message.action ? (
+                {message.steps?.length ? (
+                  <div className="mt-2 space-y-1 border-t border-emerald-200/60 pt-2 dark:border-emerald-800/60">
+                    {message.steps.map((step, stepIndex) => (
+                      <span
+                        key={stepIndex}
+                        className="block text-[10px] font-medium uppercase tracking-wide opacity-70"
+                      >
+                        {step.success ? '✓' : '✗'} {ACTION_LABELS[step.action] ?? step.action}
+                      </span>
+                    ))}
+                  </div>
+                ) : message.ok && message.action ? (
                   <span className="mt-1 block text-[10px] font-medium uppercase tracking-wide opacity-60">
                     {ACTION_LABELS[message.action] ?? message.action}
                   </span>
                 ) : null}
               </div>
             </div>
-          )) : null}
+          ))}
 
-          {!AI_COMING_SOON && mutation.isPending ? (
+          {mutation.isPending ? (
             <div className="flex justify-start">
               <div className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground animate-pulse">
                 Thinking...
@@ -201,18 +450,31 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
-        <form onSubmit={handleSubmit} className="flex gap-2 border-t px-4 py-3">
-          <Input
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder={AI_COMING_SOON ? 'AI assistant coming soon...' : 'Type anything about your finances...'}
-            disabled={AI_COMING_SOON || mutation.isPending}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={AI_COMING_SOON || mutation.isPending || !prompt.trim()}>
-            Send
-          </Button>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 border-t px-4 py-3">
+          <div className="flex gap-2">
+            <Input
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              placeholder={chatClosed ? 'Chat closed' : 'Ask about your finances...'}
+              disabled={chatClosed || mutation.isPending || isLoadingConversation}
+              className="flex-1"
+            />
+            <Button
+              type="submit"
+              disabled={chatClosed || mutation.isPending || isLoadingConversation || !prompt.trim()}
+            >
+              Send
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            <Link to="/privacy" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>
+              Privacy Policy
+            </Link>
+            {' · '}
+            <Link to="/terms" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>
+              Terms of Service
+            </Link>
+          </p>
         </form>
       </SheetContent>
     </Sheet>

@@ -97,8 +97,8 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
         <div className="island-shell rounded-2xl p-6">
           <h1 className="display-title text-3xl">Analytics</h1>
           <p className="mt-2 text-sm opacity-70">
-            Spending insights for <span className="font-medium text-foreground">{dateRangeLabel}</span>. Change the range
-            from the date picker in the top bar.
+            Spending insights for <span className="font-medium text-foreground">{dateRangeLabel}</span>. Use the date
+            range in the top bar to filter workspace data.
           </p>
         </div>
 

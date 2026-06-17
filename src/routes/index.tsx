@@ -136,7 +136,7 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
   )
 
   return (
-    <main className="p-6 md:p-8">
+    <main className="p-4 sm:p-6 md:p-8">
         <section className="space-y-6">
           {isStatsPending ? <DashboardLoadingSkeleton /> : null}
           {statsError ? <p className="text-sm text-red-600">{statsError.message}</p> : null}
@@ -148,7 +148,7 @@ function HomeContent({ userCurrency }: { userCurrency: string }) {
             <>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <InsightMiniCard
-                  icon={<Wallet className="size-4 text-slate-600" />}
+                  icon={<Wallet className="size-4 text-muted-foreground" />}
                   label="Total Balance"
                   value={formatSensitiveCurrency(stats.balance, userCurrency, isPrivacyMode)}
                   isSensitive
@@ -363,12 +363,12 @@ interface InsightMiniCardProps {
 
 function InsightMiniCard({ icon, label, value, isSensitive = false }: InsightMiniCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-4">
       <div className="flex items-center gap-2">
         {icon}
-        <p className="text-xs uppercase tracking-wide opacity-70">{label}</p>
+        <p className="truncate text-[0.65rem] uppercase tracking-wide opacity-70 sm:text-xs">{label}</p>
       </div>
-      <p className="mt-3 text-3xl font-semibold leading-none">
+      <p className="mt-2 wrap-break-word text-lg font-semibold leading-tight sm:mt-3 sm:text-2xl lg:text-3xl">
         {isSensitive ? <SensitiveText text={value} /> : value}
       </p>
     </div>

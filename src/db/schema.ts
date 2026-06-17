@@ -152,3 +152,53 @@ export const wishlistItems = pgTable('wishlist_items', {
   priorityIdx: index('wishlist_items_priority_idx').on(table.priority),
   createdAtIdx: index('wishlist_items_created_at_idx').on(table.createdAt),
 }))
+
+export const aiProviderSettings = pgTable('ai_provider_settings', {
+  id: serial().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+  provider: text().notNull().default('ollama'),
+  baseUrlEncrypted: text('base_url_encrypted').notNull(),
+  modelEncrypted: text('model_encrypted').notNull(),
+  apiKeyEncrypted: text('api_key_encrypted'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userUniqueIdx: uniqueIndex('ai_provider_settings_user_id_unique_idx').on(table.userId),
+  userIdIdx: index('ai_provider_settings_user_id_idx').on(table.userId),
+}))
+
+export const aiConversations = pgTable('ai_conversations', {
+  id: serial().primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+  title: text().notNull().default('New chat'),
+  isClosed: boolean('is_closed').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('ai_conversations_user_id_idx').on(table.userId),
+  updatedAtIdx: index('ai_conversations_updated_at_idx').on(table.updatedAt),
+}))
+
+export const aiMessages = pgTable('ai_messages', {
+  id: serial().primaryKey(),
+  conversationId: integer('conversation_id')
+    .notNull()
+    .references(() => aiConversations.id, {
+      onDelete: 'cascade',
+    }),
+  role: text().notNull(),
+  content: text().notNull(),
+  metadata: text(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  conversationIdIdx: index('ai_messages_conversation_id_idx').on(table.conversationId),
+  createdAtIdx: index('ai_messages_created_at_idx').on(table.createdAt),
+}))

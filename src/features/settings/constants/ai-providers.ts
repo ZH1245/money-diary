@@ -1,5 +1,5 @@
 export interface AiProviderField {
-  id: 'apiKey' | 'apiSecret' | 'baseUrl'
+  id: 'apiKey' | 'apiSecret' | 'baseUrl' | 'model'
   label: string
   placeholder: string
   type: 'password' | 'url' | 'text'
@@ -9,6 +9,7 @@ export interface AiProviderOption {
   id: string
   label: string
   fields: AiProviderField[]
+  isEnabled?: boolean
 }
 
 /**
@@ -16,8 +17,34 @@ export interface AiProviderOption {
  */
 export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
   {
+    id: 'ollama',
+    label: 'Ollama',
+    isEnabled: true,
+    fields: [
+      {
+        id: 'baseUrl',
+        label: 'Ollama base URL',
+        placeholder: 'http://127.0.0.1:11434',
+        type: 'url',
+      },
+      {
+        id: 'model',
+        label: 'Model',
+        placeholder: 'gemma3:latest',
+        type: 'text',
+      },
+      {
+        id: 'apiKey',
+        label: 'API key (optional)',
+        placeholder: 'Only if your Ollama gateway requires auth',
+        type: 'password',
+      },
+    ],
+  },
+  {
     id: 'openai',
     label: 'OpenAI',
+    isEnabled: false,
     fields: [
       {
         id: 'apiKey',
@@ -30,6 +57,7 @@ export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
   {
     id: 'anthropic',
     label: 'Anthropic',
+    isEnabled: false,
     fields: [
       {
         id: 'apiKey',
@@ -42,6 +70,7 @@ export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
   {
     id: 'openrouter',
     label: 'OpenRouter',
+    isEnabled: false,
     fields: [
       {
         id: 'apiKey',
@@ -60,6 +89,7 @@ export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
   {
     id: 'custom',
     label: 'Custom endpoint',
+    isEnabled: false,
     fields: [
       {
         id: 'baseUrl',

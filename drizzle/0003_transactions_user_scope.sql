@@ -1,5 +1,5 @@
 ALTER TABLE "transactions"
-ADD COLUMN "user_id" text;
+ADD COLUMN IF NOT EXISTS "user_id" text;
 --> statement-breakpoint
 
 UPDATE "transactions"
@@ -16,13 +16,17 @@ ALTER TABLE "transactions"
 ALTER COLUMN "user_id" SET NOT NULL;
 --> statement-breakpoint
 
-ALTER TABLE "transactions"
-ADD CONSTRAINT "transactions_user_id_user_id_fk"
-FOREIGN KEY ("user_id")
-REFERENCES "public"."user"("id")
-ON DELETE cascade
-ON UPDATE no action;
+DO $$ BEGIN
+  ALTER TABLE "transactions"
+  ADD CONSTRAINT "transactions_user_id_user_id_fk"
+  FOREIGN KEY ("user_id")
+  REFERENCES "public"."user"("id")
+  ON DELETE cascade
+  ON UPDATE no action;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
 
-CREATE INDEX "transactions_user_id_idx"
+CREATE INDEX IF NOT EXISTS "transactions_user_id_idx"
 ON "transactions" USING btree ("user_id");

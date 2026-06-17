@@ -9,18 +9,15 @@ import {
   Goal,
   LayoutDashboard,
   LogOut,
-  Plus,
   ReceiptText,
   Settings,
   Shield,
-  Sparkles,
   Star,
   Tags,
   WalletCards,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
-import { Button } from '#/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,11 +42,9 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from '#/components/ui/sidebar'
-import { DashboardDateRangeFilter } from '#/components/layout/dashboard-date-range-filter'
-import { QueryRefreshButton } from '#/components/feedback/query-refresh-button'
-import { PrivacyModeToggle } from '#/components/privacy/privacy-mode-toggle'
+import { WorkspaceHeaderToolbar } from '#/components/layout/workspace-header-toolbar'
+import { SiteFooter } from '#/components/layout/site-footer'
 import { AiTransactionPanel } from '#/components/ai/ai-transaction-panel'
-import { ThemeToggle } from '#/components/layout/theme-toggle'
 import { useState } from 'react'
 
 interface AuthenticatedAppShellProps {
@@ -77,7 +72,6 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
     select: (state) => state.location.pathname,
   })
   const pageTitle = getWorkspacePageTitle(pathname)
-  const isDashboard = pathname === '/' || pathname === '/analytics'
   const sidebarSections: SidebarSection[] = [
     {
       label: 'Overview',
@@ -284,65 +278,28 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
       </Sidebar>
 
       <SidebarInset className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-          <SidebarTrigger />
-          <p className="text-sm font-semibold uppercase tracking-wide">{pageTitle}</p>
-          <p className="text-sm font-medium">Welcome{user.name ? `, ${user.name}` : ''}!</p>
-          <div className="ml-auto flex items-center gap-2">
-            {isDashboard ? <DashboardDateRangeFilter /> : null}
-            <ThemeToggle />
-            <PrivacyModeToggle />
-            <QueryRefreshButton />
-            <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiPanelOpen(true)}>
-              <Sparkles className="size-4 text-primary" />
-              AI
-              <span className="rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                Soon
-              </span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <Plus className="size-4" />
-                  Create
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link to="/transactions" className="text-foreground no-underline hover:text-foreground">
-                    <ReceiptText />
-                    <span>Create transaction</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/savings" className="text-foreground no-underline hover:text-foreground">
-                    <WalletCards />
-                    <span>Add saving</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/wishlist" className="text-foreground no-underline hover:text-foreground">
-                    <Star />
-                    <span>Add wishlist item</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/categories" className="text-foreground no-underline hover:text-foreground">
-                    <Tags />
-                    <span>Add category</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/goals" className="text-foreground no-underline hover:text-foreground">
-                    <Goal />
-                    <span>Add goal</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <header className="sticky top-0 z-20 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/85">
+          <div className="flex min-w-0 items-center gap-2 px-3 py-2 sm:px-4">
+            <SidebarTrigger />
+            <div className="hidden min-w-0 flex-1 sm:block">
+              <p className="truncate text-xs font-semibold uppercase tracking-wide sm:text-sm">{pageTitle}</p>
+              <p className="mt-0.5 truncate text-sm font-medium opacity-85">
+                Welcome{user.name ? `, ${user.name}` : ''}!
+              </p>
+            </div>
+            <WorkspaceHeaderToolbar onOpenAiPanel={() => setAiPanelOpen(true)} />
+          </div>
+          <div className="border-t px-3 py-2 sm:hidden sm:px-4">
+            <p className="truncate text-xs font-semibold uppercase tracking-wide">{pageTitle}</p>
+            <p className="mt-0.5 truncate text-sm font-medium opacity-85">
+              Welcome{user.name ? `, ${user.name}` : ''}!
+            </p>
           </div>
         </header>
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+          <div className="flex-1">{children}</div>
+          <SiteFooter showAuthLinks={false} />
+        </div>
       </SidebarInset>
 
       <AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />

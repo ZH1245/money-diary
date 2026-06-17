@@ -40,6 +40,8 @@ import { formatSensitiveCompactAmount, formatSensitiveCurrency, usePrivacyModeEn
 import { cn } from '#/lib/utils'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 import { setTransactionType, transactionFiltersStore } from '#/features/transactions/store/transaction-filters-store'
+import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
+import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { Navigate, Link, createFileRoute } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -85,6 +87,7 @@ function TransactionsPage() {
   const updateTransactionMutation = useUpdateTransactionMutation()
   const deleteTransactionMutation = useDeleteTransactionMutation()
   const filters = useStore(transactionFiltersStore, (state) => state)
+  const dateRange = useStore(dashboardDateRangeStore, (state) => state)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [editingTransactionId, setEditingTransactionId] = useState<number | null>(null)
   const userCurrency = ((session?.user as { currency?: string } | undefined)?.currency ?? DEFAULT_CURRENCY).toUpperCase()
@@ -104,7 +107,8 @@ function TransactionsPage() {
 
   const filteredTransactions = (data ?? []).filter((transaction) => {
     const typeMatches = filters.type === 'all' || transaction.type === filters.type
-    return typeMatches
+    const dateMatches = isDateInRange(transaction.happenedAt, dateRange.from, dateRange.to)
+    return typeMatches && dateMatches
   })
   const transactionTotals = useMemo(() => buildTransactionTotals(filteredTransactions), [filteredTransactions])
   const chartData = useMemo(() => buildChartData(transactionTotals), [transactionTotals])
