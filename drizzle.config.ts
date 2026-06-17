@@ -1,7 +1,12 @@
 import { config } from 'dotenv'
 import { defineConfig } from 'drizzle-kit'
 
-config({ path: ['.env.local', '.env'] })
+const isProdEnv = process.env.DRIZZLE_ENV === 'prod'
+
+config({
+  path: isProdEnv ? '.env.prod' : ['.env.local', '.env'],
+  override: isProdEnv,
+})
 
 export default defineConfig({
   out: './drizzle',

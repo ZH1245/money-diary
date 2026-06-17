@@ -1,6 +1,13 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
 
+export const authRoles = pgTable("auth_roles", {
+  slug: text("slug").primaryKey(),
+  label: text("label").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -12,7 +19,10 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  role: text("role").default("user"),
+  role: text("role")
+    .default("user")
+    .notNull()
+    .references(() => authRoles.slug),
   currency: text("currency").default("PKR").notNull(),
 });
 

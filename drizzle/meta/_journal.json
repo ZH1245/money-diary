@@ -85,6 +85,13 @@
       "when": 1781595900000,
       "tag": "0011_payment_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781596000000,
+      "tag": "0012_auth_roles",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import type { AppShellUser } from '#/components/types/app-shell'
 import { authClient } from '#/lib/auth-client'
+import { AUTH_ROLES } from '#/lib/auth-roles'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   BarChart3,
@@ -143,7 +144,7 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
           title: 'API Docs',
           to: '/swagger',
           icon: <Shield />,
-          show: user.role === 'admin',
+          show: user.role === AUTH_ROLES.admin,
         },
       ],
     },

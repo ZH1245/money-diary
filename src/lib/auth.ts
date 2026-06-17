@@ -4,8 +4,10 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '#/db/index'
 import { DEFAULT_AUTH_ROLE } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
+import { resolveAuthBaseUrl } from '#/lib/server/app-hosts'
 
 export const auth = betterAuth({
+  baseURL: resolveAuthBaseUrl(),
   database: drizzleAdapter(db, {
     provider: 'pg',
   }),
