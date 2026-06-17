@@ -26,7 +26,7 @@ import { authClient } from '#/lib/auth-client'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
-import { formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
+import { usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
@@ -379,14 +379,6 @@ function parseAmount(amount: string): number {
   const parsedAmount = Number(amount)
   if (!Number.isFinite(parsedAmount)) return 0
   return parsedAmount
-}
-
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amount)
 }
 
 interface WishlistFormState {

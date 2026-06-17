@@ -49,6 +49,7 @@ import { toInputDate, toIsoDateAtNoon } from '#/lib/date-input'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { PageContentSkeleton, SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { Skeleton } from '#/components/ui/skeleton'
@@ -666,18 +667,6 @@ function buildTableRows(
         dateStyle: 'medium',
       }).format(new Date(transaction.happenedAt)),
     }))
-}
-
-/**
- * Compacts large chart labels for better readability.
- */
-function compactAmount(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(amount)
 }
 
 interface TransactionFormState {

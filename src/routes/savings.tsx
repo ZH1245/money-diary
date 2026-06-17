@@ -446,12 +446,6 @@ function getDefaultSavingForm(): SavingFormState {
   }
 }
 
-function parseAmount(amount: string): number {
-  const parsedAmount = Number(amount)
-  if (!Number.isFinite(parsedAmount)) return 0
-  return parsedAmount
-}
-
 /**
  * Builds a human-friendly label for delete confirmations.
  */
@@ -462,14 +456,6 @@ function getSavingDeleteLabel(saving: { note: string | null; savedAt: string; am
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
-}
-
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amount)
 }
 
 interface SavingFormState {

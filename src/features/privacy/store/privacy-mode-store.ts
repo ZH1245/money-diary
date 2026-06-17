@@ -50,5 +50,5 @@ export function togglePrivacyMode() {
  * Sets privacy mode explicitly.
  */
 export function setPrivacyMode(isEnabled: boolean) {
-  privacyModeStore.setState({ isEnabled })
+  privacyModeStore.setState(() => ({ isEnabled }))
 }

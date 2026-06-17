@@ -436,14 +436,6 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
 }
 
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
-
 interface GoalFormState {
   title: string
   targetAmount: string

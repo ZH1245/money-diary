@@ -15,7 +15,7 @@ import {
 import { parseJsonBody } from '#/lib/server/request-body'
 import { apiNoteSchema, apiTitleSchema } from '#/lib/server/validation-schemas'
 
-const institutionSlugs = PAYMENT_INSTITUTIONS.map((institution) => institution.slug)
+const institutionSlugs = PAYMENT_INSTITUTIONS.map((institution) => institution.slug) as readonly string[]
 
 const institutionSlugSchema = z
   .string()

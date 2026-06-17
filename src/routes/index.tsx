@@ -299,7 +299,7 @@ interface DashboardStatsInput {
     title: string
     amount: string
     type: string
-    categoryId: number
+    categoryId: number | null
     happenedAt: string
   }>
   categories: Array<{
@@ -456,26 +456,6 @@ function parseAmount(amount: string): number {
   const parsedAmount = Number(amount)
   if (Number.isNaN(parsedAmount)) return 0
   return parsedAmount
-}
-
-/**
- * Formats numbers into INR currency strings for dashboard metrics.
- */
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
-
-function compactAmount(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(amount)
 }
 
 /**

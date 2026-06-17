@@ -240,24 +240,6 @@ function AnalyticsContent({ userCurrency }: { userCurrency: string }) {
   )
 }
 
-interface StatCardProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-}
-
-function StatCard({ icon, label, value }: StatCardProps) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-2">
-        {icon}
-        <p className="text-xs uppercase tracking-wide opacity-70">{label}</p>
-      </div>
-      <p className="mt-3 text-2xl font-semibold leading-none">{value}</p>
-    </div>
-  )
-}
-
 interface InsightTableProps {
   title: string
   rows: Array<{ label: string; amount: number }>
@@ -375,19 +357,3 @@ function parseAmount(amount: string): number {
   return parsedAmount
 }
 
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
-
-function compactAmount(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(amount)
-}

@@ -9,7 +9,7 @@ import {
   resolveTargetUserId,
 } from '#/lib/server/api-guards'
 
-const supportedCurrencyCodes = SUPPORTED_CURRENCIES.map((currency) => currency.code)
+const supportedCurrencyCodes = SUPPORTED_CURRENCIES.map((currency) => currency.code) as readonly string[]
 
 const updateCurrencySchema = z.object({
   userId: z.string().trim().min(1).optional(),
