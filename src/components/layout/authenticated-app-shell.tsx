@@ -292,6 +292,9 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setAiPanelOpen(true)}>
               <Sparkles className="size-4 text-primary" />
               AI
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                Soon
+              </span>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

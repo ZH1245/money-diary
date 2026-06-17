@@ -7,6 +7,8 @@ import type { FormEvent } from 'react'
 import { useRef, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+const AI_COMING_SOON = true
+
 interface ThreadMessage {
   role: 'user' | 'assistant'
   text: string
@@ -58,6 +60,8 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (AI_COMING_SOON) return
+
     const text = prompt.trim()
     if (!text) return
 
@@ -106,15 +110,40 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
           <SheetTitle className="flex items-center gap-2">
             <Sparkles className="size-4 text-primary" />
             AI Assistant
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+              Soon
+            </span>
           </SheetTitle>
           <SheetDescription>
-            Describe a transaction, saving, goal, or wishlist item in plain language.
+            Natural-language finance actions are coming soon. Scope and provider support are not decided yet.
           </SheetDescription>
         </SheetHeader>
 
         {/* Thread */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          {thread.length === 0 ? (
+          {AI_COMING_SOON ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-dashed border-amber-300/80 bg-amber-50/60 px-3 py-3 text-sm text-amber-900">
+                The AI assistant is in preview only. You will be able to log transactions, savings, goals, and wishlist
+                items in plain language once this ships.
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Planned examples (not available yet):
+              </p>
+              <div className="space-y-2 opacity-60">
+                {EXAMPLES.map((example) => (
+                  <div
+                    key={example}
+                    className="w-full text-left text-sm rounded-lg border border-border bg-muted/30 px-3 py-2"
+                  >
+                    {example}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {!AI_COMING_SOON && thread.length === 0 ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground text-center mt-6">
                 Try one of these or type your own:
@@ -134,7 +163,7 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
             </div>
           ) : null}
 
-          {thread.map((message, index) => (
+          {!AI_COMING_SOON ? thread.map((message, index) => (
             <div
               key={index}
               className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -159,9 +188,9 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                 ) : null}
               </div>
             </div>
-          ))}
+          )) : null}
 
-          {mutation.isPending ? (
+          {!AI_COMING_SOON && mutation.isPending ? (
             <div className="flex justify-start">
               <div className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground animate-pulse">
                 Thinking...
@@ -177,11 +206,11 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
           <Input
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
-            placeholder="Type anything about your finances..."
-            disabled={mutation.isPending}
+            placeholder={AI_COMING_SOON ? 'AI assistant coming soon...' : 'Type anything about your finances...'}
+            disabled={AI_COMING_SOON || mutation.isPending}
             className="flex-1"
           />
-          <Button type="submit" disabled={mutation.isPending || !prompt.trim()}>
+          <Button type="submit" disabled={AI_COMING_SOON || mutation.isPending || !prompt.trim()}>
             Send
           </Button>
         </form>

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
+import { AiSettingsSection } from '#/features/settings/components/ai-settings-section'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -177,7 +178,9 @@ function SettingsPage() {
         <section className="space-y-6">
           <div className="island-shell rounded-2xl p-6">
             <h1 className="display-title text-3xl">Settings</h1>
-            <p className="mt-2 text-sm opacity-80">Manage your account security and currency preferences.</p>
+            <p className="mt-2 text-sm opacity-80">
+              Manage your account security, currency preferences, and upcoming AI provider settings.
+            </p>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
@@ -281,6 +284,8 @@ function SettingsPage() {
               </form>
             </article>
           </div>
+
+          <AiSettingsSection />
         </section>
       </main>
     </AuthenticatedAppShell>
