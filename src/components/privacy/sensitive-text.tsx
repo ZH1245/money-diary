@@ -1,4 +1,8 @@
-import { formatSensitiveText, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
+import {
+  formatSensitiveText,
+  PRIVACY_MASK_CLASS,
+  usePrivacyModeEnabled,
+} from '#/lib/privacy/sensitive-format'
 import { cn } from '#/lib/utils'
 
 interface SensitiveTextProps {
@@ -13,7 +17,7 @@ export function SensitiveText({ text, className }: SensitiveTextProps) {
   const isPrivacyMode = usePrivacyModeEnabled()
 
   return (
-    <span className={cn(isPrivacyMode ? 'font-mono tracking-widest' : undefined, className)}>
+    <span className={cn(isPrivacyMode ? PRIVACY_MASK_CLASS : 'min-w-0', className)}>
       {formatSensitiveText(text, isPrivacyMode)}
     </span>
   )

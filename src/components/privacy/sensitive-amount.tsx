@@ -1,4 +1,8 @@
-import { usePrivacyModeEnabled, formatSensitiveCurrency } from '#/lib/privacy/sensitive-format'
+import {
+  formatSensitiveCurrency,
+  PRIVACY_MASK_CLASS,
+  usePrivacyModeEnabled,
+} from '#/lib/privacy/sensitive-format'
 import { cn } from '#/lib/utils'
 
 interface SensitiveAmountProps {
@@ -14,7 +18,7 @@ export function SensitiveAmount({ amount, currency, className }: SensitiveAmount
   const isPrivacyMode = usePrivacyModeEnabled()
 
   return (
-    <span className={cn(isPrivacyMode ? 'font-mono tracking-widest' : undefined, className)}>
+    <span className={cn(isPrivacyMode ? PRIVACY_MASK_CLASS : 'min-w-0', className)}>
       {formatSensitiveCurrency(amount, currency, isPrivacyMode)}
     </span>
   )

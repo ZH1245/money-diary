@@ -5,6 +5,12 @@ export const MASKED_AMOUNT = '••••••'
 export const MASKED_TEXT = '••••••••'
 
 /**
+ * Layout classes for masked values so bullets wrap instead of overflowing cells.
+ */
+export const PRIVACY_MASK_CLASS =
+  'inline-block min-w-0 max-w-full break-all wrap-break-word font-mono leading-snug'
+
+/**
  * Returns whether privacy mode is currently enabled.
  */
 export function isPrivacyModeEnabled(): boolean {

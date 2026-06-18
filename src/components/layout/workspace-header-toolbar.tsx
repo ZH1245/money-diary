@@ -24,7 +24,7 @@ interface WorkspaceHeaderToolbarProps {
  */
 export function WorkspaceHeaderToolbar({ onOpenAiPanel }: WorkspaceHeaderToolbarProps) {
   return (
-    <div className="ml-auto flex min-w-0 items-center justify-end gap-1 sm:gap-1.5">
+    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1 sm:gap-1.5">
       <DashboardDateRangeFilter />
 
       <div

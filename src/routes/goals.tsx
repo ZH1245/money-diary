@@ -153,7 +153,7 @@ function GoalsPage() {
           const goal = row.original
           const breakdown = buildGoalProgress(goal, linkedSavingsByGoalId[goal.id] ?? 0)
           return (
-            <div>
+            <div className="min-w-0 max-w-full wrap-break-word">
               <p className="text-sm font-medium">
                 <SensitiveAmount amount={breakdown.totalAchieved} currency={userCurrency} /> /{' '}
                 <SensitiveAmount amount={breakdown.targetAmount} currency={userCurrency} />

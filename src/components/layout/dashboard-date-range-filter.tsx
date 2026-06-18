@@ -57,18 +57,22 @@ export function DashboardDateRangeFilter() {
     setDashboardDateRange({ from: nextFrom, to: nextTo })
   }
 
+  const compactLabel = `${format(selectedRange.from!, 'MMM d')} – ${format(selectedRange.to!, 'MMM d')}`
+  const fullLabel = `${format(selectedRange.from!, 'MMM d, yyyy')} – ${format(selectedRange.to!, 'MMM d, yyyy')}`
+  const dateLabel = isCompact ? compactLabel : fullLabel
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="max-w-38 shrink-0 gap-1.5 overflow-hidden px-3 py-2 text-xs font-normal sm:max-w-44 xl:max-w-none xl:gap-2 xl:px-4"
+          title={dateLabel}
+          aria-label={`Date range: ${fullLabel}`}
+          className="max-w-10 shrink-0 gap-1.5 overflow-hidden px-2 py-2 text-xs font-normal sm:max-w-none sm:px-3 lg:gap-2 lg:px-4"
         >
           <CalendarRange className="size-3.5 shrink-0 opacity-70" />
-          <span className="truncate">
-            {isCompact
-              ? `${format(selectedRange.from!, 'MMM d')} – ${format(selectedRange.to!, 'MMM d')}`
-              : `${format(selectedRange.from!, 'MMM d, yyyy')} – ${format(selectedRange.to!, 'MMM d, yyyy')}`}
+          <span className="hidden min-w-0 truncate sm:inline lg:max-w-36 xl:max-w-none">
+            {dateLabel}
           </span>
         </Button>
       </DropdownMenuTrigger>

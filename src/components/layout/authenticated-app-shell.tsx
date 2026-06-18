@@ -279,15 +279,17 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
 
       <SidebarInset className="flex min-h-0 min-w-0 flex-col overflow-hidden">
         <header className="sticky top-0 z-20 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/85">
-          <div className="flex min-w-0 items-center gap-2 px-3 py-2 sm:px-4">
-            <SidebarTrigger />
-            <div className="hidden min-w-0 flex-1 sm:block">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 px-3 py-2 sm:px-4">
+            <SidebarTrigger className="shrink-0" />
+            <div className="hidden min-w-0 flex-1 overflow-hidden sm:block lg:max-w-[min(100%,24rem)] xl:max-w-none">
               <p className="truncate text-xs font-semibold uppercase tracking-wide sm:text-sm">{pageTitle}</p>
-              <p className="mt-0.5 truncate text-sm font-medium opacity-85">
+              <p className="mt-0.5 truncate text-sm font-medium opacity-85 max-xl:hidden">
                 Welcome{user.name ? `, ${user.name}` : ''}!
               </p>
             </div>
-            <WorkspaceHeaderToolbar onOpenAiPanel={() => setAiPanelOpen(true)} />
+            <div className="ml-auto min-w-0 shrink sm:ml-0 lg:ml-auto">
+              <WorkspaceHeaderToolbar onOpenAiPanel={() => setAiPanelOpen(true)} />
+            </div>
           </div>
           <div className="border-t px-3 py-2 sm:hidden sm:px-4">
             <p className="truncate text-xs font-semibold uppercase tracking-wide">{pageTitle}</p>
