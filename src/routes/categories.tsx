@@ -22,7 +22,7 @@ import {
 import { useCategoriesQuery, useCreateCategoryMutation, useDeleteCategoryMutation } from '#/features/categories/hooks/use-categories'
 import type { CategoryDto } from '#/features/categories/types/category'
 import { slugifyCategoryName } from '#/features/categories/utils/category-slug'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
@@ -43,7 +43,7 @@ const CATEGORY_KIND_OPTIONS = [
 ] as const
 
 function CategoriesPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
 
   if (isSessionPending) return <SessionLoadingSkeleton />
   if (!session?.user) return <Navigate to="/sign-in" />

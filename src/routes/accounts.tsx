@@ -32,7 +32,7 @@ import {
   formatPaymentAccountType,
 } from '#/features/payment-accounts/utils/account-label'
 import { getInstitutionName } from '#/features/payment-accounts/constants/institutions'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
@@ -54,7 +54,7 @@ const ACCOUNT_TYPE_OPTIONS: Array<{ value: PaymentAccountType; label: string }> 
 ]
 
 function AccountsPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
 
   if (isSessionPending) return <SessionLoadingSkeleton />
   if (!session?.user) return <Navigate to="/sign-in" />

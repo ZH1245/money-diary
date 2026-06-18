@@ -4,7 +4,7 @@ import { useCategoriesQuery } from '#/features/categories/hooks/use-categories'
 import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
 import { buildTrendSeriesForDateRange, isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { StatCard } from '#/components/feedback/stat-card'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
@@ -36,7 +36,7 @@ export const Route = createFileRoute('/analytics')({
 
 
 function AnalyticsPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
 
   if (isSessionPending) return <SessionLoadingSkeleton />
   if (!session?.user) return <Navigate to="/sign-in" />

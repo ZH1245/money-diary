@@ -9,7 +9,7 @@ import { useGoalsQuery } from '#/features/goals/hooks/use-goals'
 import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
 import { useWishlistQuery } from '#/features/wishlist/hooks/use-wishlist'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
@@ -25,9 +25,9 @@ import { useStore } from '@tanstack/react-store'
 export const Route = createFileRoute('/')({ component: Home })
 
 function Home() {
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session, isInitialPending } = useAuthSession()
 
-  if (isPending) {
+  if (isInitialPending) {
     return <SessionLoadingSkeleton />
   }
 

@@ -1,5 +1,5 @@
 import { PageContentSkeleton } from '#/components/feedback/page-state'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { AUTH_ROLES } from '#/lib/auth-roles'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
@@ -9,9 +9,9 @@ export const Route = createFileRoute('/swagger')({
 })
 
 function SwaggerPage() {
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session, isInitialPending } = useAuthSession()
 
-  if (isPending) {
+  if (isInitialPending) {
     return (
       <main className="page-wrap py-6">
         <section className="island-shell rounded-2xl p-4 md:p-6">

@@ -30,7 +30,7 @@ import {
   buildLinkedSavingsByGoalId,
 } from '#/features/goals/utils/goal-progress'
 import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
@@ -48,7 +48,7 @@ export const Route = createFileRoute('/goals')({
 })
 
 function GoalsPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
   const { data: goals = [], isPending, isError, error } = useGoalsQuery()
   const { data: savings = [] } = useSavingsQuery()
   const createGoalMutation = useCreateGoalMutation()

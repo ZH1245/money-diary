@@ -1,6 +1,5 @@
 import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
-import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { FormField } from '#/components/forms/form-field'
 import { AuthFeaturePanel } from '#/components/layout/auth-feature-panel'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
@@ -35,7 +34,7 @@ const signUpSchema = z.object({
 
 function SignUpPage() {
   const navigate = useNavigate()
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session } = authClient.useSession()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -44,10 +43,6 @@ function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  if (isSessionPending) {
-    return <SessionLoadingSkeleton />
-  }
 
   if (session?.user) {
     return <Navigate to="/" />

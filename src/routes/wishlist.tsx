@@ -22,7 +22,7 @@ import {
 } from '#/components/ui/sheet'
 import { useCreateWishlistMutation, useDeleteWishlistMutation, useUpdateWishlistMutation, useWishlistQuery } from '#/features/wishlist/hooks/use-wishlist'
 import type { WishlistItemDto } from '#/features/wishlist/types/wishlist'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
@@ -39,7 +39,7 @@ export const Route = createFileRoute('/wishlist')({
 })
 
 function WishlistPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
   const { data: wishlist = [], isPending, isError, error } = useWishlistQuery()
   const createWishlistMutation = useCreateWishlistMutation()
   const updateWishlistMutation = useUpdateWishlistMutation()

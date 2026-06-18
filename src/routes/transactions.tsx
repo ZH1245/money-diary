@@ -1,4 +1,4 @@
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import { Button } from '#/components/ui/button'
 import { DatePickerField } from '#/components/ui/date-picker'
@@ -79,7 +79,7 @@ function getDefaultTransactionForm(userCurrency: string): TransactionFormState {
 }
 
 function TransactionsPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
   const { data, isPending, isError, error } = useTransactionsQuery()
   const { data: categories = [] } = useCategoriesQuery()
   const { data: paymentAccounts = [] } = usePaymentAccountsQuery()

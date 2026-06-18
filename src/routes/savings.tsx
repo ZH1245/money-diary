@@ -37,7 +37,7 @@ import type { SavingDto } from '#/features/savings/types/saving'
 import { buildSavingsPageStats } from '#/features/savings/utils/savings-stats'
 import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
 import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
@@ -57,7 +57,7 @@ export const Route = createFileRoute('/savings')({
 })
 
 function SavingsPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
 
   if (isSessionPending) return <SessionLoadingSkeleton />
   if (!session?.user) return <Navigate to="/sign-in" />

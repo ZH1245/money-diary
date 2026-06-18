@@ -1,4 +1,4 @@
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { InlineError } from '#/components/feedback/inline-error'
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { FormField } from '#/components/forms/form-field'
@@ -38,7 +38,7 @@ const updateCurrencySchema = z.object({
 })
 
 function SettingsPage() {
-  const { data: session, isPending: isSessionPending, refetch: refetchSession } = authClient.useSession()
+  const { data: session, isInitialPending: isSessionPending, refetch: refetchSession } = useAuthSession()
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY)
   const [isCurrencySubmitting, setIsCurrencySubmitting] = useState(false)
   const [currencyError, setCurrencyError] = useState<string | null>(null)

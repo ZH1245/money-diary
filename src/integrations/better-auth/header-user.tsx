@@ -1,9 +1,10 @@
+import { useAuthSession } from '#/lib/use-auth-session'
 import { authClient } from '#/lib/auth-client'
 
 export default function BetterAuthHeader() {
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session, isInitialPending } = useAuthSession()
 
-  if (isPending) {
+  if (isInitialPending) {
     return (
       <div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
     )

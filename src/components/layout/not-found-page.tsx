@@ -1,7 +1,7 @@
 import { SiteFooter } from '#/components/layout/site-footer'
 import { ThemeToggle } from '#/components/layout/theme-toggle'
 import { Button } from '#/components/ui/button'
-import { authClient } from '#/lib/auth-client'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, CircleDollarSign, Home, LogIn } from 'lucide-react'
 import { useEffect } from 'react'
@@ -11,7 +11,7 @@ import { useEffect } from 'react'
  */
 export function NotFoundPage() {
   const navigate = useNavigate()
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session, isInitialPending } = useAuthSession()
   const isSignedIn = Boolean(session?.user)
   const homeTo = isSignedIn ? '/' : '/sign-in'
   const homeLabel = isSignedIn ? 'Go to dashboard' : 'Sign in'
@@ -68,10 +68,10 @@ export function NotFoundPage() {
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg" disabled={isPending} className="min-w-[11rem]">
+            <Button asChild size="lg" disabled={isInitialPending} className="min-w-[11rem]">
               <Link to={homeTo}>
                 {isSignedIn ? <Home /> : <LogIn />}
-                {isPending ? 'Loading...' : homeLabel}
+                {isInitialPending ? 'Loading...' : homeLabel}
               </Link>
             </Button>
             <Button
