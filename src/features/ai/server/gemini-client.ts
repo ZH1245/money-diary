@@ -139,34 +139,32 @@ export async function callGeminiChat({
 
   let response: Response
   try {
-    response = await fetch(
-      `${baseUrl.replace(/\/$/, '')}/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': trimmedKey,
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemPrompt }],
-          },
-          contents: messages,
-          tools: [{ functionDeclarations: toGeminiFunctionDeclarations(tools) }],
-          toolConfig: {
-            functionCallingConfig: {
-              mode: 'AUTO',
-            },
-          },
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 4096,
-          },
-        }),
-      },
-    )
+    response = await fetchGeminiGenerateContent({
+      baseUrl,
+      model,
+      apiKey: trimmedKey,
+      systemPrompt,
+      messages,
+      tools,
+    })
   } catch {
     return { ok: false, error: 'Could not reach Gemini API.' }
+  }
+
+  if (response.status === 503) {
+    await sleep(2000)
+    try {
+      response = await fetchGeminiGenerateContent({
+        baseUrl,
+        model,
+        apiKey: trimmedKey,
+        systemPrompt,
+        messages,
+        tools,
+      })
+    } catch {
+      return { ok: false, error: 'Could not reach Gemini API.' }
+    }
   }
 
   const payload = (await response.json().catch(() => null)) as GeminiGenerateResponse | null
@@ -205,3 +203,50 @@ export async function callGeminiChat({
 }
 
 export { DEFAULT_GEMINI_BASE_URL }
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Sends one generateContent request to the Gemini API.
+ */
+async function fetchGeminiGenerateContent({
+  baseUrl = DEFAULT_GEMINI_BASE_URL,
+  model,
+  apiKey,
+  systemPrompt,
+  messages,
+  tools,
+}: {
+  baseUrl?: string
+  model: string
+  apiKey: string
+  systemPrompt: string
+  messages: GeminiChatMessage[]
+  tools: ReturnType<typeof getAiToolsForProvider>
+}): Promise<Response> {
+  return fetch(`${baseUrl.replace(/\/$/, '')}/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: messages,
+      tools: [{ functionDeclarations: toGeminiFunctionDeclarations(tools) }],
+      toolConfig: {
+        functionCallingConfig: {
+          mode: 'AUTO',
+        },
+      },
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 4096,
+      },
+    }),
+  })
+}

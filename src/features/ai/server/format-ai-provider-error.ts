@@ -12,6 +12,10 @@ export function formatAiProviderError(raw: string, provider?: string): string {
         ? 'Ollama'
         : 'AI provider'
 
+  if (/high demand|overloaded|temporarily unavailable|service unavailable/i.test(normalized)) {
+    return `${providerName} is busy right now — too many requests for this model. Wait a minute and try again, or switch to another model in Settings → AI Provider (e.g. gemini-2.0-flash-lite).`
+  }
+
   if (/quota|rate limit|resource exhausted|too many requests/i.test(normalized)) {
     const retryMatch = normalized.match(/retry in ([\d.]+)s/i)
     const retrySeconds = retryMatch ? Math.ceil(Number.parseFloat(retryMatch[1])) : null
