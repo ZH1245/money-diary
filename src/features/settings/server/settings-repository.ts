@@ -30,10 +30,11 @@ export async function updateUserCurrency({
 
 export interface AiSettingsRecord {
   provider: string
-  baseUrl: string
-  model: string
+  baseUrl: string | null
+  model: string | null
   apiKeyMasked: string | null
   hasApiKey: boolean
+  useGlobalProvider: boolean
 }
 
 export async function getUserAiSettings({ userId }: { userId: string }): Promise<AiSettingsRecord | null> {
@@ -45,8 +46,8 @@ export async function getUserAiSettings({ userId }: { userId: string }): Promise
 
   if (!row) return null
 
-  const baseUrl = decryptSecret(row.baseUrlEncrypted)
-  const model = decryptSecret(row.modelEncrypted)
+  const baseUrl = row.baseUrlEncrypted ? decryptSecret(row.baseUrlEncrypted) : null
+  const model = row.modelEncrypted ? decryptSecret(row.modelEncrypted) : null
   const apiKey = row.apiKeyEncrypted ? decryptSecret(row.apiKeyEncrypted) : null
 
   return {
@@ -55,6 +56,7 @@ export async function getUserAiSettings({ userId }: { userId: string }): Promise
     model,
     apiKeyMasked: apiKey ? maskSecret(apiKey) : null,
     hasApiKey: Boolean(apiKey),
+    useGlobalProvider: row.useGlobalProvider,
   }
 }
 
@@ -66,12 +68,14 @@ export async function upsertUserAiSettings({
   baseUrl,
   model,
   apiKey,
+  useGlobalProvider = false,
 }: {
   userId: string
   provider: AiProviderId
   baseUrl: string
   model: string
   apiKey?: string | null
+  useGlobalProvider?: boolean
 }) {
   const [existing] = await db
     .select({ id: aiProviderSettings.id })
@@ -81,12 +85,14 @@ export async function upsertUserAiSettings({
 
   const nextValues: {
     provider: AiProviderId
+    useGlobalProvider: boolean
     baseUrlEncrypted: string
     modelEncrypted: string
     apiKeyEncrypted?: string | null
     updatedAt: Date
   } = {
     provider,
+    useGlobalProvider,
     baseUrlEncrypted: encryptSecret(baseUrl),
     modelEncrypted: encryptSecret(model),
     updatedAt: new Date(),
@@ -102,6 +108,7 @@ export async function upsertUserAiSettings({
     await db.insert(aiProviderSettings).values({
       userId,
       provider: nextValues.provider,
+      useGlobalProvider: nextValues.useGlobalProvider,
       baseUrlEncrypted: nextValues.baseUrlEncrypted,
       modelEncrypted: nextValues.modelEncrypted,
       apiKeyEncrypted: nextValues.apiKeyEncrypted ?? null,
@@ -114,6 +121,7 @@ export async function upsertUserAiSettings({
         ? nextValues
         : {
             provider: nextValues.provider,
+            useGlobalProvider: nextValues.useGlobalProvider,
             baseUrlEncrypted: nextValues.baseUrlEncrypted,
             modelEncrypted: nextValues.modelEncrypted,
             updatedAt: nextValues.updatedAt,
@@ -124,6 +132,45 @@ export async function upsertUserAiSettings({
       .set(updatePayload)
       .where(eq(aiProviderSettings.userId, userId))
   }
+}
+
+/**
+ * Sets whether the user relies on the app-wide AI provider or their own credentials.
+ */
+export async function setUserAiProviderSource({
+  userId,
+  useGlobalProvider,
+}: {
+  userId: string
+  useGlobalProvider: boolean
+}) {
+  const [existing] = await db
+    .select({ id: aiProviderSettings.id })
+    .from(aiProviderSettings)
+    .where(eq(aiProviderSettings.userId, userId))
+    .limit(1)
+
+  if (!existing) {
+    await db.insert(aiProviderSettings).values({
+      userId,
+      provider: 'gemini',
+      useGlobalProvider,
+      baseUrlEncrypted: null,
+      modelEncrypted: null,
+      apiKeyEncrypted: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return
+  }
+
+  await db
+    .update(aiProviderSettings)
+    .set({
+      useGlobalProvider,
+      updatedAt: new Date(),
+    })
+    .where(eq(aiProviderSettings.userId, userId))
 }
 
 /**
@@ -151,10 +198,13 @@ export async function getUserAiSettingsForRuntime({ userId }: { userId: string }
 
   if (!row) return null
 
+  const provider: AiProviderId = row.provider === 'gemini' ? 'gemini' : 'ollama'
+
   return {
-    provider: row.provider,
-    baseUrl: decryptSecret(row.baseUrlEncrypted),
-    model: decryptSecret(row.modelEncrypted),
+    provider,
+    useGlobalProvider: row.useGlobalProvider,
+    baseUrl: row.baseUrlEncrypted ? decryptSecret(row.baseUrlEncrypted) : null,
+    model: row.modelEncrypted ? decryptSecret(row.modelEncrypted) : null,
     apiKey: row.apiKeyEncrypted ? decryptSecret(row.apiKeyEncrypted) : null,
   }
 }

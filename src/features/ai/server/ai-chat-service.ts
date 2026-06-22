@@ -1,5 +1,6 @@
 import { buildLegalPolicyAnswer, isPrimarilyLegalQuestion } from '#/features/legal/utils/legal-knowledge'
 import { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
+import { resolveAiProviderForUser } from '#/features/admin/server/resolve-ai-provider'
 import {
   buildSecureSystemPrompt,
   evaluateAbuseState,
@@ -11,7 +12,6 @@ import {
 } from '#/features/ai/server/ai-security'
 import { executeAiTool, loadUserAiContext } from '#/features/ai/server/ai-tool-executor'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
-import { getUserAiSettingsForRuntime } from '#/features/settings/server/settings-repository'
 import {
   buildOllamaRequestHeaders,
   extractOllamaAssistantText,
@@ -311,36 +311,6 @@ function buildProviderChatState({
 }
 
 /**
- * Resolves runtime provider settings with sensible defaults.
- */
-function resolveProviderRuntime(
-  aiSettings: Awaited<ReturnType<typeof getUserAiSettingsForRuntime>>,
-): {
-  provider: AiProviderId
-  baseUrl: string
-  model: string
-  apiKey: string | null
-} {
-  const provider: AiProviderId = aiSettings?.provider === 'gemini' ? 'gemini' : 'ollama'
-
-  if (provider === 'gemini') {
-    return {
-      provider,
-      baseUrl: aiSettings?.baseUrl || DEFAULT_GEMINI_BASE_URL,
-      model: aiSettings?.model || 'gemini-2.0-flash',
-      apiKey: aiSettings?.apiKey ?? null,
-    }
-  }
-
-  return {
-    provider,
-    baseUrl: aiSettings?.baseUrl || 'http://127.0.0.1:11434',
-    model: aiSettings?.model || 'qwen3.5:4b',
-    apiKey: aiSettings?.apiKey ?? null,
-  }
-}
-
-/**
  * Runs secure AI chat with multi-step tool chaining for one authenticated user.
  */
 export async function runAiChat({
@@ -393,8 +363,13 @@ export async function runAiChat({
     }
   }
 
-  const aiSettings = await getUserAiSettingsForRuntime({ userId })
-  const runtime = resolveProviderRuntime(aiSettings)
+  const resolved = await resolveAiProviderForUser(userId)
+  const runtime = {
+    provider: resolved.provider,
+    baseUrl: resolved.baseUrl,
+    model: resolved.model,
+    apiKey: resolved.apiKey,
+  }
   const isOllamaProvider = runtime.provider === 'ollama'
   const aiTools = getAiToolsForProvider(runtime.provider)
 

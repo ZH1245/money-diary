@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { user } from './auth-schema'
 
@@ -155,19 +156,27 @@ export const wishlistItems = pgTable('wishlist_items', {
 
 export const aiProviderSettings = pgTable('ai_provider_settings', {
   id: serial().primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, {
-      onDelete: 'cascade',
-    }),
+  userId: text('user_id').references(() => user.id, {
+    onDelete: 'cascade',
+  }),
   provider: text().notNull().default('ollama'),
-  baseUrlEncrypted: text('base_url_encrypted').notNull(),
-  modelEncrypted: text('model_encrypted').notNull(),
+  useGlobalProvider: boolean('use_global_provider').notNull().default(true),
+  isEnabled: boolean('is_enabled').notNull().default(false),
+  baseUrlEncrypted: text('base_url_encrypted'),
+  modelEncrypted: text('model_encrypted'),
   apiKeyEncrypted: text('api_key_encrypted'),
+  updatedBy: text('updated_by').references(() => user.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
-  userUniqueIdx: uniqueIndex('ai_provider_settings_user_id_unique_idx').on(table.userId),
+  userUniqueIdx: uniqueIndex('ai_provider_settings_user_id_unique_idx')
+    .on(table.userId)
+    .where(sql`${table.userId} is not null`),
+  globalUniqueIdx: uniqueIndex('ai_provider_settings_global_unique_idx')
+    .on(sql`(1)`)
+    .where(sql`${table.userId} is null`),
   userIdIdx: index('ai_provider_settings_user_id_idx').on(table.userId),
 }))
 

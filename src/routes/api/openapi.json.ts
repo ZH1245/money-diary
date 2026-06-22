@@ -19,6 +19,8 @@ const openApiSpec = {
     { name: 'transactions', description: 'Transaction endpoints' },
     { name: 'exchange-rates', description: 'Currency exchange rate endpoints' },
     { name: 'wishlist', description: 'Wishlist endpoints' },
+    { name: 'settings', description: 'User settings endpoints' },
+    { name: 'admin', description: 'Admin-only global configuration endpoints' },
   ],
   paths: {
     '/api/auth/{path}': {
@@ -553,6 +555,89 @@ const openApiSpec = {
         responses: {
           '200': { description: 'API key removed' },
           '404': { description: 'No API key stored' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/global-ai': {
+      get: {
+        tags: ['admin'],
+        summary: 'Get global AI provider settings (admin)',
+        responses: {
+          '200': { description: 'Global AI settings' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+      patch: {
+        tags: ['admin'],
+        summary: 'Update global AI provider settings (admin)',
+        responses: {
+          '200': { description: 'Global AI settings saved' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/global-ai/test': {
+      post: {
+        tags: ['admin'],
+        summary: 'Test global AI provider connectivity (admin)',
+        responses: {
+          '200': { description: 'Probe result' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/global-ai/key': {
+      delete: {
+        tags: ['admin'],
+        summary: 'Remove stored global AI API key (admin)',
+        responses: {
+          '200': { description: 'API key removed' },
+          '404': { description: 'No API key stored' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/categories': {
+      get: {
+        tags: ['admin'],
+        summary: 'List global categories (admin)',
+        responses: {
+          '200': { description: 'Global categories list' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+      post: {
+        tags: ['admin'],
+        summary: 'Create global category (admin)',
+        responses: {
+          '201': { description: 'Global category created' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/categories/{id}': {
+      patch: {
+        tags: ['admin'],
+        summary: 'Update global category (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Global category updated' },
+          '404': { description: 'Category not found' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+      delete: {
+        tags: ['admin'],
+        summary: 'Delete global category (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Global category deleted' },
+          '404': { description: 'Category not found' },
+          '409': { description: 'Category in use' },
           '403': { description: 'Forbidden' },
         },
       },

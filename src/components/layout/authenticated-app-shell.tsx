@@ -54,7 +54,7 @@ interface AuthenticatedAppShellProps {
 
 interface SidebarItem {
   title: string
-  to?: '/' | '/transactions' | '/accounts' | '/savings' | '/wishlist' | '/goals' | '/analytics' | '/categories' | '/settings' | '/swagger'
+  to?: '/' | '/transactions' | '/accounts' | '/savings' | '/wishlist' | '/goals' | '/analytics' | '/categories' | '/settings' | '/admin' | '/swagger'
   icon: ReactNode
   show?: boolean
   isSoon?: boolean
@@ -136,6 +136,12 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
     {
       label: 'Admin',
       items: [
+        {
+          title: 'Global settings',
+          to: '/admin',
+          icon: <Shield />,
+          show: user.role === AUTH_ROLES.admin,
+        },
         {
           title: 'API Docs',
           to: '/swagger',
@@ -319,6 +325,7 @@ function getWorkspacePageTitle(pathname: string): string {
   if (pathname.startsWith('/wishlist')) return 'Wishlist'
   if (pathname.startsWith('/goals')) return 'Goals'
   if (pathname.startsWith('/settings')) return 'Settings'
+  if (pathname.startsWith('/admin')) return 'Global settings'
   if (pathname.startsWith('/swagger')) return 'API Docs'
   return 'Workspace'
 }

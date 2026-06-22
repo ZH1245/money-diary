@@ -16,6 +16,7 @@ import { Route as SwaggerRouteImport } from './routes/swagger'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as SavingsRouteImport } from './routes/savings'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as GoalsRouteImport } from './routes/goals'
@@ -46,6 +47,11 @@ import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
 import { Route as ApiSettingsAiRevealRouteImport } from './routes/api/settings/ai/reveal'
 import { Route as ApiSettingsAiKeyRouteImport } from './routes/api/settings/ai/key'
+import { Route as ApiAdminGlobalAiRouteImport } from './routes/api/admin/global-ai'
+import { Route as ApiAdminCategoriesRouteImport } from './routes/api/admin/categories'
+import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
+import { Route as ApiAdminGlobalAiTestRouteImport } from './routes/api/admin/global-ai/test'
+import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/global-ai/key'
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -81,6 +87,11 @@ const SignInRoute = SignInRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SavingsRoute = SavingsRouteImport.update({
@@ -233,6 +244,31 @@ const ApiSettingsAiKeyRoute = ApiSettingsAiKeyRouteImport.update({
   path: '/key',
   getParentRoute: () => ApiSettingsAiRoute,
 } as any)
+const ApiAdminGlobalAiRoute = ApiAdminGlobalAiRouteImport.update({
+  id: '/api/admin/global-ai',
+  path: '/api/admin/global-ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminCategoriesRoute = ApiAdminCategoriesRouteImport.update({
+  id: '/api/admin/categories',
+  path: '/api/admin/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminCategoriesIdRoute = ApiAdminCategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminCategoriesRoute,
+} as any)
+const ApiAdminGlobalAiTestRoute = ApiAdminGlobalAiTestRouteImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => ApiAdminGlobalAiRoute,
+} as any)
+const ApiAdminGlobalAiKeyRoute = ApiAdminGlobalAiKeyRouteImport.update({
+  id: '/key',
+  path: '/key',
+  getParentRoute: () => ApiAdminGlobalAiRoute,
+} as any)
 const ApiAiConversationsConversationIdRoute =
   ApiAiConversationsConversationIdRouteImport.update({
     id: '/$conversationId',
@@ -249,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
+  '/admin': typeof AdminRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
@@ -279,6 +316,11 @@ export interface FileRoutesByFullPath {
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
+  '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
+  '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -289,6 +331,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
+  '/admin': typeof AdminRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
@@ -319,6 +362,11 @@ export interface FileRoutesByTo {
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
+  '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
+  '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -330,6 +378,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/savings': typeof SavingsRoute
   '/settings': typeof SettingsRoute
+  '/admin': typeof AdminRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/swagger': typeof SwaggerRoute
@@ -360,6 +409,11 @@ export interface FileRoutesById {
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
+  '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
+  '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -372,6 +426,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/savings'
     | '/settings'
+    | '/admin'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
@@ -402,6 +457,11 @@ export interface FileRouteTypes {
     | '/api/settings/ai/reveal'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/admin/global-ai'
+    | '/api/admin/categories'
+    | '/api/admin/categories/$id'
+    | '/api/admin/global-ai/key'
+    | '/api/admin/global-ai/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -412,6 +472,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/savings'
     | '/settings'
+    | '/admin'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
@@ -442,6 +503,11 @@ export interface FileRouteTypes {
     | '/api/settings/ai/reveal'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/admin/global-ai'
+    | '/api/admin/categories'
+    | '/api/admin/categories/$id'
+    | '/api/admin/global-ai/key'
+    | '/api/admin/global-ai/test'
   id:
     | '__root__'
     | '/'
@@ -452,6 +518,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/savings'
     | '/settings'
+    | '/admin'
     | '/sign-in'
     | '/sign-up'
     | '/swagger'
@@ -482,6 +549,11 @@ export interface FileRouteTypes {
     | '/api/settings/ai/reveal'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/admin/global-ai'
+    | '/api/admin/categories'
+    | '/api/admin/categories/$id'
+    | '/api/admin/global-ai/key'
+    | '/api/admin/global-ai/test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -493,6 +565,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SavingsRoute: typeof SavingsRoute
   SettingsRoute: typeof SettingsRoute
+  AdminRoute: typeof AdminRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   SwaggerRoute: typeof SwaggerRoute
@@ -512,6 +585,8 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
   ApiSettingsAiRoute: typeof ApiSettingsAiRouteWithChildren
+  ApiAdminGlobalAiRoute: typeof ApiAdminGlobalAiRouteWithChildren
+  ApiAdminCategoriesRoute: typeof ApiAdminCategoriesRouteWithChildren
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
 }
 
@@ -564,6 +639,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/savings': {
@@ -776,6 +858,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSettingsAiKeyRouteImport
       parentRoute: typeof ApiSettingsAiRoute
     }
+    '/api/admin/global-ai': {
+      id: '/api/admin/global-ai'
+      path: '/api/admin/global-ai'
+      fullPath: '/api/admin/global-ai'
+      preLoaderRoute: typeof ApiAdminGlobalAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/categories': {
+      id: '/api/admin/categories'
+      path: '/api/admin/categories'
+      fullPath: '/api/admin/categories'
+      preLoaderRoute: typeof ApiAdminCategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/categories/$id': {
+      id: '/api/admin/categories/$id'
+      path: '/$id'
+      fullPath: '/api/admin/categories/$id'
+      preLoaderRoute: typeof ApiAdminCategoriesIdRouteImport
+      parentRoute: typeof ApiAdminCategoriesRoute
+    }
+    '/api/admin/global-ai/test': {
+      id: '/api/admin/global-ai/test'
+      path: '/test'
+      fullPath: '/api/admin/global-ai/test'
+      preLoaderRoute: typeof ApiAdminGlobalAiTestRouteImport
+      parentRoute: typeof ApiAdminGlobalAiRoute
+    }
+    '/api/admin/global-ai/key': {
+      id: '/api/admin/global-ai/key'
+      path: '/key'
+      fullPath: '/api/admin/global-ai/key'
+      preLoaderRoute: typeof ApiAdminGlobalAiKeyRouteImport
+      parentRoute: typeof ApiAdminGlobalAiRoute
+    }
     '/api/ai/conversations/$conversationId': {
       id: '/api/ai/conversations/$conversationId'
       path: '/$conversationId'
@@ -884,6 +1001,32 @@ const ApiSettingsAiRouteWithChildren = ApiSettingsAiRoute._addFileChildren(
   ApiSettingsAiRouteChildren,
 )
 
+interface ApiAdminGlobalAiRouteChildren {
+  ApiAdminGlobalAiKeyRoute: typeof ApiAdminGlobalAiKeyRoute
+  ApiAdminGlobalAiTestRoute: typeof ApiAdminGlobalAiTestRoute
+}
+
+const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
+  ApiAdminGlobalAiKeyRoute: ApiAdminGlobalAiKeyRoute,
+  ApiAdminGlobalAiTestRoute: ApiAdminGlobalAiTestRoute,
+}
+
+const ApiAdminGlobalAiRouteWithChildren = ApiAdminGlobalAiRoute._addFileChildren(
+  ApiAdminGlobalAiRouteChildren,
+)
+
+interface ApiAdminCategoriesRouteChildren {
+  ApiAdminCategoriesIdRoute: typeof ApiAdminCategoriesIdRoute
+}
+
+const ApiAdminCategoriesRouteChildren: ApiAdminCategoriesRouteChildren = {
+  ApiAdminCategoriesIdRoute: ApiAdminCategoriesIdRoute,
+}
+
+const ApiAdminCategoriesRouteWithChildren = ApiAdminCategoriesRoute._addFileChildren(
+  ApiAdminCategoriesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
@@ -893,6 +1036,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SavingsRoute: SavingsRoute,
   SettingsRoute: SettingsRoute,
+  AdminRoute: AdminRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   SwaggerRoute: SwaggerRoute,
@@ -912,6 +1056,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
   ApiSettingsAiRoute: ApiSettingsAiRouteWithChildren,
+  ApiAdminGlobalAiRoute: ApiAdminGlobalAiRouteWithChildren,
+  ApiAdminCategoriesRoute: ApiAdminCategoriesRouteWithChildren,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,
 }
 export const routeTree = rootRouteImport

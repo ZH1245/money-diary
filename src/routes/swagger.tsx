@@ -1,6 +1,7 @@
-import { PageContentSkeleton } from '#/components/feedback/page-state'
-import { useAuthSession } from '#/lib/use-auth-session'
+import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
+import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { AUTH_ROLES } from '#/lib/auth-roles'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
@@ -12,13 +13,7 @@ function SwaggerPage() {
   const { data: session, isInitialPending } = useAuthSession()
 
   if (isInitialPending) {
-    return (
-      <main className="page-wrap py-6">
-        <section className="island-shell rounded-2xl p-4 md:p-6">
-          <PageContentSkeleton tableRows={8} tableColumns={3} />
-        </section>
-      </main>
-    )
+    return <SessionLoadingSkeleton />
   }
 
   const role = (session?.user as { role?: string } | undefined)?.role
@@ -33,6 +28,32 @@ function SwaggerPage() {
     )
   }
 
+  return (
+    <AuthenticatedAppShell
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+        role,
+        currency: (session.user as { currency?: string }).currency,
+      }}
+    >
+      <main className="p-6 md:p-8">
+        <section className="island-shell rounded-2xl p-4 md:p-6">
+          <h1 className="display-title mb-3 text-2xl md:text-3xl">API Docs</h1>
+          <p className="mb-5 text-sm opacity-80">
+            OpenAPI spec is served from <code>/api/openapi/json</code>. Your personal data routes work
+            the same as for any other user.
+          </p>
+          <SwaggerUi />
+        </section>
+      </main>
+    </AuthenticatedAppShell>
+  )
+}
+
+/** Loads Swagger UI into the page after the admin shell is rendered. */
+function SwaggerUi() {
   useEffect(() => {
     if (document.getElementById('swagger-ui-css')) return
 
@@ -67,15 +88,5 @@ function SwaggerPage() {
     }
   }, [])
 
-  return (
-    <main className="page-wrap py-6">
-      <section className="island-shell rounded-2xl p-4 md:p-6">
-        <h1 className="display-title mb-3 text-2xl md:text-3xl">API Docs</h1>
-        <p className="mb-5 text-sm opacity-80">
-          OpenAPI spec is served from <code>/api/openapi/json</code>.
-        </p>
-        <div id="swagger-ui" />
-      </section>
-    </main>
-  )
+  return <div id="swagger-ui" />
 }

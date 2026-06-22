@@ -6,7 +6,9 @@ import {
   rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
-import { getUserAiSettings, getUserAiSettingsForRuntime, upsertUserAiSettings } from '#/features/settings/server/settings-repository'
+import { getUserAiSettings, getUserAiSettingsForRuntime, setUserAiProviderSource, upsertUserAiSettings } from '#/features/settings/server/settings-repository'
+import { getAiProviderStatusForUser } from '#/features/admin/server/resolve-ai-provider'
+import { getGlobalAiPublicStatus } from '#/features/admin/server/global-ai-settings-repository'
 import { DEFAULT_GEMINI_BASE_URL } from '#/features/ai/server/gemini-client'
 
 const saveOllamaSettingsSchema = z.object({
@@ -22,10 +24,16 @@ const saveGeminiSettingsSchema = z.object({
   apiKey: z.string().trim().optional(),
 })
 
+const setAiSourceSchema = z.object({
+  useGlobalProvider: z.boolean(),
+})
+
 const saveAiSettingsSchema = z.discriminatedUnion('provider', [
   saveOllamaSettingsSchema,
   saveGeminiSettingsSchema,
 ])
+
+const patchAiSettingsSchema = z.union([setAiSourceSchema, saveAiSettingsSchema])
 
 export const Route = createFileRoute('/api/settings/ai')({
   server: {
@@ -41,8 +49,20 @@ export const Route = createFileRoute('/api/settings/ai')({
         if (userIdRejected) return userIdRejected
 
         try {
-          const settings = await getUserAiSettings({ userId: userContext.id })
-          return Response.json({ success: true, data: settings })
+          const [settings, providerStatus] = await Promise.all([
+            getUserAiSettings({ userId: userContext.id }),
+            getAiProviderStatusForUser(userContext.id),
+          ])
+
+          return Response.json({
+            success: true,
+            data: {
+              user: settings,
+              global: providerStatus.global,
+              useGlobalProvider: providerStatus.useGlobalProvider,
+              hasCustomSettings: providerStatus.hasCustomSettings,
+            },
+          })
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unable to load AI settings'
 
@@ -87,7 +107,7 @@ export const Route = createFileRoute('/api/settings/ai')({
         )
         if (bodyUserIdRejected) return bodyUserIdRejected
 
-        const parsed = saveAiSettingsSchema.safeParse(body)
+        const parsed = patchAiSettingsSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
             { success: false, error: 'Invalid AI settings payload', details: parsed.error.flatten() },
@@ -96,13 +116,29 @@ export const Route = createFileRoute('/api/settings/ai')({
         }
 
         try {
-          if (parsed.data.provider === 'ollama') {
+          if ('useGlobalProvider' in parsed.data) {
+            if (parsed.data.useGlobalProvider) {
+              const globalStatus = await getGlobalAiPublicStatus()
+              if (!globalStatus.available || !globalStatus.enabled) {
+                return Response.json(
+                  { success: false, error: 'App AI service is not available yet. Ask an admin to enable it.' },
+                  { status: 400 },
+                )
+              }
+            }
+
+            await setUserAiProviderSource({
+              userId: userContext.id,
+              useGlobalProvider: parsed.data.useGlobalProvider,
+            })
+          } else if (parsed.data.provider === 'ollama') {
             await upsertUserAiSettings({
               userId: userContext.id,
               provider: 'ollama',
               baseUrl: parsed.data.baseUrl,
               model: parsed.data.model,
               apiKey: parsed.data.apiKey,
+              useGlobalProvider: false,
             })
           } else {
             const existing = await getUserAiSettingsForRuntime({ userId: userContext.id })
@@ -121,11 +157,24 @@ export const Route = createFileRoute('/api/settings/ai')({
               baseUrl: DEFAULT_GEMINI_BASE_URL,
               model: parsed.data.model,
               apiKey: nextApiKey,
+              useGlobalProvider: false,
             })
           }
 
-          const settings = await getUserAiSettings({ userId: userContext.id })
-          return Response.json({ success: true, data: settings })
+          const [settings, providerStatus] = await Promise.all([
+            getUserAiSettings({ userId: userContext.id }),
+            getAiProviderStatusForUser(userContext.id),
+          ])
+
+          return Response.json({
+            success: true,
+            data: {
+              user: settings,
+              global: providerStatus.global,
+              useGlobalProvider: providerStatus.useGlobalProvider,
+              hasCustomSettings: providerStatus.hasCustomSettings,
+            },
+          })
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unable to save AI settings'
 

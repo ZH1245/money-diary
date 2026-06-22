@@ -13,11 +13,22 @@ import { InlineError } from '#/components/feedback/inline-error'
 import { toast } from 'sonner'
 
 interface AiSettingsResponse {
-  provider: string
-  baseUrl: string
-  model: string
-  apiKeyMasked: string | null
-  hasApiKey: boolean
+  user: {
+    provider: string
+    baseUrl: string | null
+    model: string | null
+    apiKeyMasked: string | null
+    hasApiKey: boolean
+    useGlobalProvider: boolean
+  } | null
+  global: {
+    available: boolean
+    enabled: boolean
+    provider: string | null
+    model: string | null
+  }
+  useGlobalProvider: boolean
+  hasCustomSettings: boolean
 }
 
 type UrlProbeStatus = 'idle' | 'checking' | 'ok' | 'failed'
@@ -45,6 +56,9 @@ export function AiSettingsSection() {
   const [model, setModel] = useState('qwen3.5:4b')
   const [apiKey, setApiKey] = useState('')
   const [savedApiKeyMask, setSavedApiKeyMask] = useState<string | null>(null)
+  const [useGlobalProvider, setUseGlobalProvider] = useState(true)
+  const [globalAiStatus, setGlobalAiStatus] = useState<AiSettingsResponse['global'] | null>(null)
+  const [isSavingSource, setIsSavingSource] = useState(false)
   const [revealedApiKey, setRevealedApiKey] = useState('')
   const [isRevealingKey, setIsRevealingKey] = useState(false)
   const [isRemovingKey, setIsRemovingKey] = useState(false)
@@ -60,9 +74,16 @@ export function AiSettingsSection() {
   )
 
   const isProviderEnabled = ENABLED_PROVIDERS.has(providerId)
+  const globalServiceReady = Boolean(globalAiStatus?.available && globalAiStatus.enabled)
+  const showCustomSettings = !useGlobalProvider || !globalServiceReady
 
   const probeConnection = useCallback(
     async (nextProviderId: string, nextBaseUrl: string, nextApiKey: string) => {
+      if (useGlobalProvider) {
+        setUrlProbe(INITIAL_URL_PROBE)
+        return
+      }
+
       if (!ENABLED_PROVIDERS.has(nextProviderId)) {
         setUrlProbe(INITIAL_URL_PROBE)
         return
@@ -154,7 +175,7 @@ export function AiSettingsSection() {
         })
       }
     },
-    [revealedApiKey, savedApiKeyMask],
+    [revealedApiKey, savedApiKeyMask, useGlobalProvider],
   )
 
   useEffect(() => {
@@ -173,10 +194,18 @@ export function AiSettingsSection() {
         }
 
         if (payload.data) {
-          setProviderId(payload.data.provider)
-          setBaseUrl(payload.data.baseUrl)
-          setModel(payload.data.model)
-          setSavedApiKeyMask(payload.data.apiKeyMasked)
+          setUseGlobalProvider(payload.data.useGlobalProvider)
+          setGlobalAiStatus(payload.data.global)
+
+          const userSettings = payload.data.user
+          if (userSettings) {
+            setProviderId(userSettings.provider)
+            setBaseUrl(userSettings.baseUrl ?? 'http://127.0.0.1:11434')
+            setModel(userSettings.model ?? (userSettings.provider === 'gemini' ? 'gemini-2.0-flash' : 'qwen3.5:4b'))
+            setSavedApiKeyMask(userSettings.apiKeyMasked)
+          } else {
+            setSavedApiKeyMask(null)
+          }
           setRevealedApiKey('')
         }
       } catch (error) {
@@ -190,14 +219,44 @@ export function AiSettingsSection() {
   }, [])
 
   useEffect(() => {
-    if (!isProviderEnabled || isLoading) return
+    if (!isProviderEnabled || isLoading || useGlobalProvider) return
 
     const timer = window.setTimeout(() => {
       void probeConnection(providerId, baseUrl, apiKey)
     }, 600)
 
     return () => window.clearTimeout(timer)
-  }, [apiKey, baseUrl, isLoading, isProviderEnabled, probeConnection, providerId])
+  }, [apiKey, baseUrl, isLoading, isProviderEnabled, probeConnection, providerId, useGlobalProvider])
+
+  async function handleAiSourceChange(nextUseGlobal: boolean) {
+    setIsSavingSource(true)
+    setErrorMessage(null)
+    try {
+      const response = await fetch('/api/settings/ai', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ useGlobalProvider: nextUseGlobal }),
+      })
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean
+        error?: string
+        data?: AiSettingsResponse
+      } | null
+
+      if (!response.ok || !payload?.success || !payload.data) {
+        throw new Error(payload?.error ?? 'Unable to update AI source')
+      }
+
+      setUseGlobalProvider(payload.data.useGlobalProvider)
+      setGlobalAiStatus(payload.data.global)
+      setUrlProbe(INITIAL_URL_PROBE)
+      toast.success(nextUseGlobal ? 'Using app AI service' : 'Using your own AI provider')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to update AI source')
+    } finally {
+      setIsSavingSource(false)
+    }
+  }
 
   function handleProviderChange(nextProviderId: string) {
     setProviderId(nextProviderId)
@@ -218,7 +277,7 @@ export function AiSettingsSection() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!isProviderEnabled) return
+    if (!isProviderEnabled || useGlobalProvider) return
 
     setIsSubmitting(true)
     setErrorMessage(null)
@@ -274,7 +333,10 @@ export function AiSettingsSection() {
 
     try {
       const payload = await requestPromise
-      setSavedApiKeyMask(payload.data?.apiKeyMasked ?? null)
+      const userSettings = payload.data?.user
+      setSavedApiKeyMask(userSettings?.apiKeyMasked ?? null)
+      setUseGlobalProvider(payload.data?.useGlobalProvider ?? false)
+      setGlobalAiStatus(payload.data?.global ?? null)
       setApiKey('')
       setRevealedApiKey('')
     } catch (error) {
@@ -304,7 +366,7 @@ export function AiSettingsSection() {
         throw new Error(payload?.error ?? 'Unable to remove API key')
       }
 
-      setSavedApiKeyMask(payload.data?.apiKeyMasked ?? null)
+      setSavedApiKeyMask(payload.data?.user?.apiKeyMasked ?? null)
       setApiKey('')
       setRevealedApiKey('')
       setUrlProbe(INITIAL_URL_PROBE)
@@ -371,6 +433,56 @@ export function AiSettingsSection() {
       </div>
 
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        {globalServiceReady ? (
+          <fieldset className="space-y-3 rounded-lg border border-border/70 p-4">
+            <legend className="px-1 text-sm font-medium">AI source</legend>
+            <label className="flex cursor-pointer items-start gap-3 text-sm">
+              <input
+                type="radio"
+                name="ai-source"
+                checked={useGlobalProvider}
+                onChange={() => void handleAiSourceChange(true)}
+                disabled={isLoading || isSavingSource || isSubmitting}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Use app AI service</span>
+                <span className="mt-0.5 block text-xs opacity-70">
+                  Provider: {globalAiStatus?.provider ?? '—'} · Model: {globalAiStatus?.model ?? '—'}
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 text-sm">
+              <input
+                type="radio"
+                name="ai-source"
+                checked={!useGlobalProvider}
+                onChange={() => void handleAiSourceChange(false)}
+                disabled={isLoading || isSavingSource || isSubmitting}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Use my own provider</span>
+                <span className="mt-0.5 block text-xs opacity-70">
+                  Bring your own API key or Ollama endpoint.
+                </span>
+              </span>
+            </label>
+            {isSavingSource ? (
+              <p className="flex items-center gap-2 text-xs opacity-70">
+                <Loader2 className="size-3.5 animate-spin" />
+                Updating AI source...
+              </p>
+            ) : null}
+          </fieldset>
+        ) : (
+          <p className="rounded-md border border-border/70 bg-muted/40 px-3 py-2 text-xs opacity-80">
+            No app AI service is configured yet. Set up your own provider below.
+          </p>
+        )}
+
+        {showCustomSettings ? (
+          <>
         <div>
           <label htmlFor="ai-provider" className="mb-1 block text-sm font-medium">
             Provider
@@ -545,6 +657,14 @@ export function AiSettingsSection() {
           {isLoading || isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
           {saveButtonLabel}
         </button>
+          </>
+        ) : (
+          <p className="text-xs opacity-70">
+            You are using the app AI service. Switch to your own provider above if you want custom credentials.
+          </p>
+        )}
+
+        {errorMessage && !showCustomSettings ? <InlineError message={errorMessage} /> : null}
       </form>
     </article>
   )

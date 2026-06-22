@@ -6,6 +6,7 @@ import {
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { clearUserAiApiKey, getUserAiSettings } from '#/features/settings/server/settings-repository'
+import { getAiProviderStatusForUser } from '#/features/admin/server/resolve-ai-provider'
 
 export const Route = createFileRoute('/api/settings/ai/key')({
   server: {
@@ -30,8 +31,20 @@ export const Route = createFileRoute('/api/settings/ai/key')({
           return Response.json({ success: false, error: 'AI settings not found' }, { status: 404 })
         }
 
-        const settings = await getUserAiSettings({ userId: userContext.id })
-        return Response.json({ success: true, data: settings })
+        const [settings, providerStatus] = await Promise.all([
+          getUserAiSettings({ userId: userContext.id }),
+          getAiProviderStatusForUser(userContext.id),
+        ])
+
+        return Response.json({
+          success: true,
+          data: {
+            user: settings,
+            global: providerStatus.global,
+            useGlobalProvider: providerStatus.useGlobalProvider,
+            hasCustomSettings: providerStatus.hasCustomSettings,
+          },
+        })
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
     },
