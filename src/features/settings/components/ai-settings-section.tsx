@@ -248,10 +248,19 @@ export function AiSettingsSection() {
       const payload = (await response.json().catch(() => null)) as {
         success?: boolean
         error?: string
+        details?: {
+          fieldErrors?: Record<string, string[]>
+          formErrors?: string[]
+        }
         data?: AiSettingsResponse | null
       } | null
       if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error ?? 'Unable to save AI settings')
+        const fieldError = payload?.details?.fieldErrors
+          ? Object.values(payload.details.fieldErrors).flat().at(0)
+          : undefined
+        throw new Error(
+          fieldError ?? payload?.details?.formErrors?.at(0) ?? payload?.error ?? 'Unable to save AI settings',
+        )
       }
       return payload
     })
@@ -259,7 +268,7 @@ export function AiSettingsSection() {
     toast.promise(requestPromise, {
       loading: 'Saving AI settings...',
       success: 'AI settings saved',
-      error: 'Unable to save AI settings',
+      error: (error) => (error instanceof Error ? error.message : 'Unable to save AI settings'),
     })
 
     try {
@@ -413,6 +422,7 @@ export function AiSettingsSection() {
               value={apiKey}
               onChange={setApiKey}
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'AIza...'}
+              isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
             />
             <FormField
@@ -483,7 +493,7 @@ export function AiSettingsSection() {
 
         <button
           type="submit"
-          disabled={isLoading || isSubmitting || !isProviderEnabled || urlProbe.status === 'checking'}
+          disabled={isLoading || isSubmitting || !isProviderEnabled}
           className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium text-primary-foreground disabled:opacity-60 ${
             urlProbe.status === 'failed' ? 'bg-amber-600 hover:bg-amber-600/90' : 'bg-primary'
           }`}

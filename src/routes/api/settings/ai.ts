@@ -36,8 +36,35 @@ export const Route = createFileRoute('/api/settings/ai')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
-        const settings = await getUserAiSettings({ userId: userContext.id })
-        return Response.json({ success: true, data: settings })
+        try {
+          const settings = await getUserAiSettings({ userId: userContext.id })
+          return Response.json({ success: true, data: settings })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to load AI settings'
+
+          if (message.includes('Invalid encrypted payload')) {
+            return Response.json(
+              {
+                success: false,
+                error:
+                  'Saved AI settings could not be decrypted. ENV_SECRETS may have changed — re-save your provider settings.',
+              },
+              { status: 500 },
+            )
+          }
+
+          if (message.includes('ai_provider_settings') || message.includes('does not exist')) {
+            return Response.json(
+              {
+                success: false,
+                error: 'Database table ai_provider_settings is missing. Run migrations: pnpm db:migrate (or pnpm db:migrate:prod).',
+              },
+              { status: 500 },
+            )
+          }
+
+          return Response.json({ success: false, error: message }, { status: 500 })
+        }
       },
       PATCH: async ({ request }) => {
         const blockedResponse = guardApiRequest(request)
@@ -55,36 +82,62 @@ export const Route = createFileRoute('/api/settings/ai')({
           )
         }
 
-        if (parsed.data.provider === 'ollama') {
-          await upsertUserAiSettings({
-            userId: userContext.id,
-            provider: 'ollama',
-            baseUrl: parsed.data.baseUrl,
-            model: parsed.data.model,
-            apiKey: parsed.data.apiKey,
-          })
-        } else {
-          const existing = await getUserAiSettingsForRuntime({ userId: userContext.id })
-          const nextApiKey = parsed.data.apiKey?.trim() || existing?.apiKey
+        try {
+          if (parsed.data.provider === 'ollama') {
+            await upsertUserAiSettings({
+              userId: userContext.id,
+              provider: 'ollama',
+              baseUrl: parsed.data.baseUrl,
+              model: parsed.data.model,
+              apiKey: parsed.data.apiKey,
+            })
+          } else {
+            const existing = await getUserAiSettingsForRuntime({ userId: userContext.id })
+            const nextApiKey = parsed.data.apiKey?.trim() || existing?.apiKey
 
-          if (!nextApiKey) {
+            if (!nextApiKey) {
+              return Response.json(
+                { success: false, error: 'Gemini API key is required' },
+                { status: 400 },
+              )
+            }
+
+            await upsertUserAiSettings({
+              userId: userContext.id,
+              provider: 'gemini',
+              baseUrl: DEFAULT_GEMINI_BASE_URL,
+              model: parsed.data.model,
+              apiKey: nextApiKey,
+            })
+          }
+
+          const settings = await getUserAiSettings({ userId: userContext.id })
+          return Response.json({ success: true, data: settings })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to save AI settings'
+
+          if (message.includes('ENV_SECRETS') || message.includes('ENCRYPTION_KEY') || message.includes('BETTER_AUTH_SECRET')) {
             return Response.json(
-              { success: false, error: 'Gemini API key is required' },
-              { status: 400 },
+              {
+                success: false,
+                error: 'Server encryption is not configured. Set ENV_SECRETS in your environment and restart the app.',
+              },
+              { status: 500 },
             )
           }
 
-          await upsertUserAiSettings({
-            userId: userContext.id,
-            provider: 'gemini',
-            baseUrl: DEFAULT_GEMINI_BASE_URL,
-            model: parsed.data.model,
-            apiKey: nextApiKey,
-          })
-        }
+          if (message.includes('ai_provider_settings') || message.includes('does not exist')) {
+            return Response.json(
+              {
+                success: false,
+                error: 'Database table ai_provider_settings is missing. Run migrations: pnpm db:migrate (or pnpm db:migrate:prod).',
+              },
+              { status: 500 },
+            )
+          }
 
-        const settings = await getUserAiSettings({ userId: userContext.id })
-        return Response.json({ success: true, data: settings })
+          return Response.json({ success: false, error: message }, { status: 500 })
+        }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
     },
