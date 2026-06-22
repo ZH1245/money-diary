@@ -2,6 +2,7 @@ import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-she
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { AdminGlobalAiSection } from '#/features/admin/components/admin-global-ai-section'
 import { AdminGlobalCategoriesSection } from '#/features/admin/components/admin-global-categories-section'
+import { AdminUsersSection } from '#/features/admin/components/admin-users-section'
 import { AUTH_ROLES } from '#/lib/auth-roles'
 import { useAuthSession } from '#/lib/use-auth-session'
 import { createFileRoute } from '@tanstack/react-router'
@@ -52,6 +53,7 @@ function AdminPage() {
           <div className="grid gap-6 xl:grid-cols-2">
             <AdminGlobalAiSection />
             <AdminGlobalCategoriesSection />
+            <AdminUsersSection />
           </div>
         </section>
       </main>

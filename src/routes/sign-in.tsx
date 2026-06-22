@@ -81,6 +81,24 @@ function SignInPage() {
 
     setIsSubmitting(true)
 
+    const moderationResponse = await fetch('/api/auth/sign-in-moderation', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    const moderationPayload = (await moderationResponse.json().catch(() => null)) as {
+      success?: boolean
+      data?: { allowed?: boolean; accountStatus?: string; moderationReason?: string }
+    } | null
+
+    if (moderationPayload?.data?.allowed === false) {
+      setIsSubmitting(false)
+      setErrorMessage(
+        moderationPayload.data.moderationReason?.trim() || 'Access to this account is not available.',
+      )
+      return
+    }
+
     const requestPromise = authClient.signIn.email({
       email,
       password,

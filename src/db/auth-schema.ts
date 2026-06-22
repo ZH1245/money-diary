@@ -24,7 +24,13 @@ export const user = pgTable("user", {
     .notNull()
     .references(() => authRoles.slug),
   currency: text("currency").default("PKR").notNull(),
-});
+  accountStatus: text("account_status").default("active").notNull(),
+  moderationReason: text("moderation_reason"),
+  moderatedAt: timestamp("moderated_at"),
+  moderatedBy: text("moderated_by"),
+}, (table) => [
+  index("user_account_status_idx").on(table.accountStatus),
+]);
 
 export const userSecurityProfile = pgTable("user_security_profile", {
   userId: text("user_id")

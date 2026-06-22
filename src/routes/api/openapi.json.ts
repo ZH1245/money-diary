@@ -642,6 +642,65 @@ const openApiSpec = {
         },
       },
     },
+    '/api/admin/users': {
+      get: {
+        tags: ['admin'],
+        summary: 'List users for moderation (admin)',
+        responses: {
+          '200': { description: 'User list' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/users/{id}': {
+      patch: {
+        tags: ['admin'],
+        summary: 'Restrict, ban, or restore a user (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  {
+                    type: 'object',
+                    required: ['action', 'reason'],
+                    properties: {
+                      action: { type: 'string', enum: ['restrict', 'ban'] },
+                      reason: { type: 'string', minLength: 3 },
+                    },
+                  },
+                  {
+                    type: 'object',
+                    required: ['action'],
+                    properties: {
+                      action: { type: 'string', enum: ['restore'] },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'User moderation updated' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'User not found' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+      delete: {
+        tags: ['admin'],
+        summary: 'Permanently delete a user (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'User deleted' },
+          '404': { description: 'User not found' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
     '/api/goals/{id}': {
       patch: {
         tags: ['goals'],

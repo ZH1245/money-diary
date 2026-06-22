@@ -3,6 +3,8 @@ import { AUTH_ROLES } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { enforceRateLimit } from '#/lib/server/rate-limit'
 import { enforceSameOrigin } from '#/lib/server/same-origin'
+import { getUserModerationDetails } from '#/features/admin/server/admin-users-repository'
+import { revokeAllUserSessions } from '#/features/auth/server/user-security-repository'
 
 interface AuthenticatedUserContext {
   id: string
@@ -36,10 +38,28 @@ export async function requireUserContext(request: Request): Promise<Authenticate
     )
   }
 
+  const role = user.role ?? AUTH_ROLES.user
+  if (role !== AUTH_ROLES.admin) {
+    const moderation = await getUserModerationDetails(user.id)
+    if (moderation && moderation.accountStatus !== 'active') {
+      await revokeAllUserSessions(user.id)
+
+      return Response.json(
+        {
+          success: false,
+          error: moderation.moderationReason?.trim() || 'Access to this account is not available.',
+          accountStatus: moderation.accountStatus,
+          moderationReason: moderation.moderationReason,
+        },
+        { status: 403 },
+      )
+    }
+  }
+
   return {
     id: user.id,
     currency: (user.currency ?? DEFAULT_CURRENCY).toUpperCase(),
-    role: user.role ?? AUTH_ROLES.user,
+    role,
   }
 }
 

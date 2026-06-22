@@ -1,6 +1,7 @@
 import type { AppShellUser } from '#/components/types/app-shell'
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { useSecurityProfile } from '#/features/auth/hooks/use-security-profile'
+import { useAccountModerationGuard } from '#/features/auth/hooks/use-account-moderation-guard'
 import { authClient } from '#/lib/auth-client'
 import { AUTH_ROLES } from '#/lib/auth-roles'
 import { Link, Navigate, useRouterState } from '@tanstack/react-router'
@@ -69,6 +70,7 @@ interface SidebarSection {
 
 export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellProps) {
   const { data: profile, isLoading: isProfileLoading } = useSecurityProfile()
+  useAccountModerationGuard(user.role)
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const fallbackText = user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'
   const pathname = useRouterState({

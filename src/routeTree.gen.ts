@@ -25,6 +25,7 @@ import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountsRouteImport } from './routes/accounts'
+import { Route as AccountSuspendedRouteImport } from './routes/account-suspended'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWishlistRouteImport } from './routes/api/wishlist'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
@@ -42,12 +43,15 @@ import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-a
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
 import { Route as ApiCategoriesIdRouteImport } from './routes/api/categories/$id'
+import { Route as ApiAuthSignInModerationRouteImport } from './routes/api/auth/sign-in-moderation'
 import { Route as ApiAuthSecurityProfileRouteImport } from './routes/api/auth/security-profile'
+import { Route as ApiAuthModerationStatusRouteImport } from './routes/api/auth/moderation-status'
 import { Route as ApiAuthChangePasswordRouteImport } from './routes/api/auth/change-password'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transaction'
 import { Route as ApiAiConversationsRouteImport } from './routes/api/ai/conversations'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as ApiAdminGlobalAiRouteImport } from './routes/api/admin/global-ai'
 import { Route as ApiAdminCategoriesRouteImport } from './routes/api/admin/categories'
 import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
@@ -56,6 +60,7 @@ import { Route as ApiSettingsAiKeyRouteImport } from './routes/api/settings/ai/k
 import { Route as ApiAuthRecoveryResetRouteImport } from './routes/api/auth/recovery/reset'
 import { Route as ApiAuthRecoveryChallengeRouteImport } from './routes/api/auth/recovery/challenge'
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
+import { Route as ApiAdminUsersIdRouteImport } from './routes/api/admin/users/$id'
 import { Route as ApiAdminGlobalAiTestRouteImport } from './routes/api/admin/global-ai/test'
 import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/global-ai/key'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
@@ -138,6 +143,11 @@ const AdminRoute = AdminRouteImport.update({
 const AccountsRoute = AccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountSuspendedRoute = AccountSuspendedRouteImport.update({
+  id: '/account-suspended',
+  path: '/account-suspended',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -225,9 +235,19 @@ const ApiCategoriesIdRoute = ApiCategoriesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiCategoriesRoute,
 } as any)
+const ApiAuthSignInModerationRoute = ApiAuthSignInModerationRouteImport.update({
+  id: '/api/auth/sign-in-moderation',
+  path: '/api/auth/sign-in-moderation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSecurityProfileRoute = ApiAuthSecurityProfileRouteImport.update({
   id: '/api/auth/security-profile',
   path: '/api/auth/security-profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthModerationStatusRoute = ApiAuthModerationStatusRouteImport.update({
+  id: '/api/auth/moderation-status',
+  path: '/api/auth/moderation-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthChangePasswordRoute = ApiAuthChangePasswordRouteImport.update({
@@ -253,6 +273,11 @@ const ApiAiConversationsRoute = ApiAiConversationsRouteImport.update({
 const ApiAiChatRoute = ApiAiChatRouteImport.update({
   id: '/api/ai/chat',
   path: '/api/ai/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin/users',
+  path: '/api/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminGlobalAiRoute = ApiAdminGlobalAiRouteImport.update({
@@ -297,6 +322,11 @@ const ApiAiConversationsConversationIdRoute =
     path: '/$conversationId',
     getParentRoute: () => ApiAiConversationsRoute,
   } as any)
+const ApiAdminUsersIdRoute = ApiAdminUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminUsersRoute,
+} as any)
 const ApiAdminGlobalAiTestRoute = ApiAdminGlobalAiTestRouteImport.update({
   id: '/test',
   path: '/test',
@@ -315,6 +345,7 @@ const ApiAdminCategoriesIdRoute = ApiAdminCategoriesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account-suspended': typeof AccountSuspendedRoute
   '/accounts': typeof AccountsRoute
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
@@ -340,12 +371,15 @@ export interface FileRoutesByFullPath {
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
   '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/users': typeof ApiAdminUsersRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/moderation-status': typeof ApiAuthModerationStatusRoute
   '/api/auth/security-profile': typeof ApiAuthSecurityProfileRoute
+  '/api/auth/sign-in-moderation': typeof ApiAuthSignInModerationRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
@@ -358,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
+  '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
@@ -367,6 +402,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account-suspended': typeof AccountSuspendedRoute
   '/accounts': typeof AccountsRoute
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
@@ -392,12 +428,15 @@ export interface FileRoutesByTo {
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
   '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/users': typeof ApiAdminUsersRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/moderation-status': typeof ApiAuthModerationStatusRoute
   '/api/auth/security-profile': typeof ApiAuthSecurityProfileRoute
+  '/api/auth/sign-in-moderation': typeof ApiAuthSignInModerationRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
@@ -410,6 +449,7 @@ export interface FileRoutesByTo {
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
+  '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
@@ -420,6 +460,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account-suspended': typeof AccountSuspendedRoute
   '/accounts': typeof AccountsRoute
   '/admin': typeof AdminRoute
   '/analytics': typeof AnalyticsRoute
@@ -445,12 +486,15 @@ export interface FileRoutesById {
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
   '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/users': typeof ApiAdminUsersRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
+  '/api/auth/moderation-status': typeof ApiAuthModerationStatusRoute
   '/api/auth/security-profile': typeof ApiAuthSecurityProfileRoute
+  '/api/auth/sign-in-moderation': typeof ApiAuthSignInModerationRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
@@ -463,6 +507,7 @@ export interface FileRoutesById {
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
+  '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
@@ -474,6 +519,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account-suspended'
     | '/accounts'
     | '/admin'
     | '/analytics'
@@ -499,12 +545,15 @@ export interface FileRouteTypes {
     | '/api/wishlist'
     | '/api/admin/categories'
     | '/api/admin/global-ai'
+    | '/api/admin/users'
     | '/api/ai/chat'
     | '/api/ai/conversations'
     | '/api/ai/transaction'
     | '/api/auth/$'
     | '/api/auth/change-password'
+    | '/api/auth/moderation-status'
     | '/api/auth/security-profile'
+    | '/api/auth/sign-in-moderation'
     | '/api/categories/$id'
     | '/api/goals/$id'
     | '/api/openapi/json'
@@ -517,6 +566,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
     | '/api/admin/global-ai/test'
+    | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
     | '/api/auth/recovery/reset'
@@ -526,6 +576,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account-suspended'
     | '/accounts'
     | '/admin'
     | '/analytics'
@@ -551,12 +602,15 @@ export interface FileRouteTypes {
     | '/api/wishlist'
     | '/api/admin/categories'
     | '/api/admin/global-ai'
+    | '/api/admin/users'
     | '/api/ai/chat'
     | '/api/ai/conversations'
     | '/api/ai/transaction'
     | '/api/auth/$'
     | '/api/auth/change-password'
+    | '/api/auth/moderation-status'
     | '/api/auth/security-profile'
+    | '/api/auth/sign-in-moderation'
     | '/api/categories/$id'
     | '/api/goals/$id'
     | '/api/openapi/json'
@@ -569,6 +623,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
     | '/api/admin/global-ai/test'
+    | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
     | '/api/auth/recovery/reset'
@@ -578,6 +633,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account-suspended'
     | '/accounts'
     | '/admin'
     | '/analytics'
@@ -603,12 +659,15 @@ export interface FileRouteTypes {
     | '/api/wishlist'
     | '/api/admin/categories'
     | '/api/admin/global-ai'
+    | '/api/admin/users'
     | '/api/ai/chat'
     | '/api/ai/conversations'
     | '/api/ai/transaction'
     | '/api/auth/$'
     | '/api/auth/change-password'
+    | '/api/auth/moderation-status'
     | '/api/auth/security-profile'
+    | '/api/auth/sign-in-moderation'
     | '/api/categories/$id'
     | '/api/goals/$id'
     | '/api/openapi/json'
@@ -621,6 +680,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
     | '/api/admin/global-ai/test'
+    | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
     | '/api/auth/recovery/reset'
@@ -631,6 +691,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountSuspendedRoute: typeof AccountSuspendedRoute
   AccountsRoute: typeof AccountsRoute
   AdminRoute: typeof AdminRoute
   AnalyticsRoute: typeof AnalyticsRoute
@@ -656,12 +717,15 @@ export interface RootRouteChildren {
   ApiWishlistRoute: typeof ApiWishlistRouteWithChildren
   ApiAdminCategoriesRoute: typeof ApiAdminCategoriesRouteWithChildren
   ApiAdminGlobalAiRoute: typeof ApiAdminGlobalAiRouteWithChildren
+  ApiAdminUsersRoute: typeof ApiAdminUsersRouteWithChildren
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiAiConversationsRoute: typeof ApiAiConversationsRouteWithChildren
   ApiAiTransactionRoute: typeof ApiAiTransactionRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthChangePasswordRoute: typeof ApiAuthChangePasswordRoute
+  ApiAuthModerationStatusRoute: typeof ApiAuthModerationStatusRoute
   ApiAuthSecurityProfileRoute: typeof ApiAuthSecurityProfileRoute
+  ApiAuthSignInModerationRoute: typeof ApiAuthSignInModerationRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
   ApiSettingsAiRoute: typeof ApiSettingsAiRouteWithChildren
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
@@ -783,6 +847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account-suspended': {
+      id: '/account-suspended'
+      path: '/account-suspended'
+      fullPath: '/account-suspended'
+      preLoaderRoute: typeof AccountSuspendedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -902,11 +973,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCategoriesIdRouteImport
       parentRoute: typeof ApiCategoriesRoute
     }
+    '/api/auth/sign-in-moderation': {
+      id: '/api/auth/sign-in-moderation'
+      path: '/api/auth/sign-in-moderation'
+      fullPath: '/api/auth/sign-in-moderation'
+      preLoaderRoute: typeof ApiAuthSignInModerationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/security-profile': {
       id: '/api/auth/security-profile'
       path: '/api/auth/security-profile'
       fullPath: '/api/auth/security-profile'
       preLoaderRoute: typeof ApiAuthSecurityProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/moderation-status': {
+      id: '/api/auth/moderation-status'
+      path: '/api/auth/moderation-status'
+      fullPath: '/api/auth/moderation-status'
+      preLoaderRoute: typeof ApiAuthModerationStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/change-password': {
@@ -942,6 +1027,13 @@ declare module '@tanstack/react-router' {
       path: '/api/ai/chat'
       fullPath: '/api/ai/chat'
       preLoaderRoute: typeof ApiAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/users': {
+      id: '/api/admin/users'
+      path: '/api/admin/users'
+      fullPath: '/api/admin/users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/global-ai': {
@@ -999,6 +1091,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/ai/conversations/$conversationId'
       preLoaderRoute: typeof ApiAiConversationsConversationIdRouteImport
       parentRoute: typeof ApiAiConversationsRoute
+    }
+    '/api/admin/users/$id': {
+      id: '/api/admin/users/$id'
+      path: '/$id'
+      fullPath: '/api/admin/users/$id'
+      preLoaderRoute: typeof ApiAdminUsersIdRouteImport
+      parentRoute: typeof ApiAdminUsersRoute
     }
     '/api/admin/global-ai/test': {
       id: '/api/admin/global-ai/test'
@@ -1119,6 +1218,18 @@ const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
 const ApiAdminGlobalAiRouteWithChildren =
   ApiAdminGlobalAiRoute._addFileChildren(ApiAdminGlobalAiRouteChildren)
 
+interface ApiAdminUsersRouteChildren {
+  ApiAdminUsersIdRoute: typeof ApiAdminUsersIdRoute
+}
+
+const ApiAdminUsersRouteChildren: ApiAdminUsersRouteChildren = {
+  ApiAdminUsersIdRoute: ApiAdminUsersIdRoute,
+}
+
+const ApiAdminUsersRouteWithChildren = ApiAdminUsersRoute._addFileChildren(
+  ApiAdminUsersRouteChildren,
+)
+
 interface ApiAiConversationsRouteChildren {
   ApiAiConversationsConversationIdRoute: typeof ApiAiConversationsConversationIdRoute
 }
@@ -1148,6 +1259,7 @@ const ApiSettingsAiRouteWithChildren = ApiSettingsAiRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountSuspendedRoute: AccountSuspendedRoute,
   AccountsRoute: AccountsRoute,
   AdminRoute: AdminRoute,
   AnalyticsRoute: AnalyticsRoute,
@@ -1173,12 +1285,15 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWishlistRoute: ApiWishlistRouteWithChildren,
   ApiAdminCategoriesRoute: ApiAdminCategoriesRouteWithChildren,
   ApiAdminGlobalAiRoute: ApiAdminGlobalAiRouteWithChildren,
+  ApiAdminUsersRoute: ApiAdminUsersRouteWithChildren,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiAiConversationsRoute: ApiAiConversationsRouteWithChildren,
   ApiAiTransactionRoute: ApiAiTransactionRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthChangePasswordRoute: ApiAuthChangePasswordRoute,
+  ApiAuthModerationStatusRoute: ApiAuthModerationStatusRoute,
   ApiAuthSecurityProfileRoute: ApiAuthSecurityProfileRoute,
+  ApiAuthSignInModerationRoute: ApiAuthSignInModerationRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
   ApiSettingsAiRoute: ApiSettingsAiRouteWithChildren,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,

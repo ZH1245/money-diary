@@ -148,6 +148,13 @@
       "when": 1782384000000,
       "tag": "0021_security_profile_single_question",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782484000000,
+      "tag": "0022_user_moderation",
+      "breakpoints": true
     }
   ]
 }
