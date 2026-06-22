@@ -1,16 +1,25 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { probeOllamaBaseUrl } from '#/features/ai/server/ollama-client'
+import { probeGeminiApiKey } from '#/features/ai/server/gemini-client'
 import {
   buildOptionsResponse,
   guardApiRequest,
   requireUserContext,
 } from '#/lib/server/api-guards'
 
-const testAiBaseUrlSchema = z.object({
+const testOllamaSchema = z.object({
+  provider: z.literal('ollama'),
   baseUrl: z.string().trim().url('Enter a valid URL'),
   apiKey: z.string().trim().optional(),
 })
+
+const testGeminiSchema = z.object({
+  provider: z.literal('gemini'),
+  apiKey: z.string().trim().min(1, 'Gemini API key is required'),
+})
+
+const testAiSettingsSchema = z.discriminatedUnion('provider', [testOllamaSchema, testGeminiSchema])
 
 export const Route = createFileRoute('/api/settings/ai/test')({
   server: {
@@ -23,7 +32,7 @@ export const Route = createFileRoute('/api/settings/ai/test')({
         if (userContext instanceof Response) return userContext
 
         const body = await request.json().catch(() => null)
-        const parsed = testAiBaseUrlSchema.safeParse(body)
+        const parsed = testAiSettingsSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
             { success: false, error: 'Invalid test payload', details: parsed.error.flatten() },
@@ -31,10 +40,13 @@ export const Route = createFileRoute('/api/settings/ai/test')({
           )
         }
 
-        const result = await probeOllamaBaseUrl({
-          baseUrl: parsed.data.baseUrl,
-          apiKey: parsed.data.apiKey,
-        })
+        const result =
+          parsed.data.provider === 'gemini'
+            ? await probeGeminiApiKey({ apiKey: parsed.data.apiKey })
+            : await probeOllamaBaseUrl({
+                baseUrl: parsed.data.baseUrl,
+                apiKey: parsed.data.apiKey,
+              })
 
         return Response.json({
           success: true,

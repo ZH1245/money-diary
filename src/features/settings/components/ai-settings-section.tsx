@@ -34,8 +34,10 @@ const INITIAL_URL_PROBE: UrlProbeState = {
   statusCode: null,
 }
 
+const ENABLED_PROVIDERS = new Set(['ollama', 'gemini'])
+
 /**
- * Stores user AI provider settings with Ollama enabled and others marked as coming soon.
+ * Stores user AI provider settings with Ollama and Gemini enabled.
  */
 export function AiSettingsSection() {
   const [providerId, setProviderId] = useState('ollama')
@@ -56,74 +58,103 @@ export function AiSettingsSection() {
     [providerId],
   )
 
-  const probeBaseUrl = useCallback(async (nextBaseUrl: string, nextApiKey: string) => {
-    const trimmedUrl = nextBaseUrl.trim()
-    if (!trimmedUrl) {
-      setUrlProbe(INITIAL_URL_PROBE)
-      return
-    }
+  const isProviderEnabled = ENABLED_PROVIDERS.has(providerId)
 
-    try {
-      new URL(trimmedUrl)
-    } catch {
-      setUrlProbe({
-        status: 'failed',
-        message: 'Enter a valid URL.',
-        statusCode: null,
-      })
-      return
-    }
-
-    const requestId = probeRequestIdRef.current + 1
-    probeRequestIdRef.current = requestId
-    setUrlProbe({
-      status: 'checking',
-      message: 'Checking connection...',
-      statusCode: null,
-    })
-
-    try {
-      const response = await fetch('/api/settings/ai/test', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          baseUrl: trimmedUrl,
-          apiKey: nextApiKey.trim() || undefined,
-        }),
-      })
-
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: {
-          ok: boolean
-          statusCode: number | null
-          message: string
-        }
-      } | null
-
-      if (probeRequestIdRef.current !== requestId) return
-
-      if (!response.ok || !payload?.success || !payload.data) {
-        throw new Error(payload?.error ?? 'Unable to test Ollama URL')
+  const probeConnection = useCallback(
+    async (nextProviderId: string, nextBaseUrl: string, nextApiKey: string) => {
+      if (!ENABLED_PROVIDERS.has(nextProviderId)) {
+        setUrlProbe(INITIAL_URL_PROBE)
+        return
       }
 
+      if (nextProviderId === 'ollama') {
+        const trimmedUrl = nextBaseUrl.trim()
+        if (!trimmedUrl) {
+          setUrlProbe(INITIAL_URL_PROBE)
+          return
+        }
+
+        try {
+          new URL(trimmedUrl)
+        } catch {
+          setUrlProbe({
+            status: 'failed',
+            message: 'Enter a valid URL.',
+            statusCode: null,
+          })
+          return
+        }
+      }
+
+      if (nextProviderId === 'gemini' && !nextApiKey.trim() && !savedApiKeyMask) {
+        setUrlProbe({
+          status: 'failed',
+          message: 'Enter a Gemini API key to test.',
+          statusCode: null,
+        })
+        return
+      }
+
+      const requestId = probeRequestIdRef.current + 1
+      probeRequestIdRef.current = requestId
       setUrlProbe({
-        status: payload.data.ok ? 'ok' : 'failed',
-        message: payload.data.message,
-        statusCode: payload.data.statusCode,
-      })
-    } catch (error) {
-      if (probeRequestIdRef.current !== requestId) return
-      setUrlProbe({
-        status: 'failed',
-        message: error instanceof Error ? error.message : 'Unable to test Ollama URL',
+        status: 'checking',
+        message: 'Checking connection...',
         statusCode: null,
       })
-    }
-  }, [])
+
+      try {
+        const response = await fetch('/api/settings/ai/test', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(
+            nextProviderId === 'gemini'
+              ? {
+                  provider: 'gemini',
+                  apiKey: nextApiKey.trim() || revealedApiKey,
+                }
+              : {
+                  provider: 'ollama',
+                  baseUrl: nextBaseUrl.trim(),
+                  apiKey: nextApiKey.trim() || undefined,
+                },
+          ),
+        })
+
+        const payload = (await response.json().catch(() => null)) as {
+          success?: boolean
+          error?: string
+          data?: {
+            ok: boolean
+            statusCode: number | null
+            message: string
+          }
+        } | null
+
+        if (probeRequestIdRef.current !== requestId) return
+
+        if (!response.ok || !payload?.success || !payload.data) {
+          throw new Error(payload?.error ?? 'Unable to test AI provider connection')
+        }
+
+        setUrlProbe({
+          status: payload.data.ok ? 'ok' : 'failed',
+          message: payload.data.message,
+          statusCode: payload.data.statusCode,
+        })
+      } catch (error) {
+        if (probeRequestIdRef.current !== requestId) return
+        setUrlProbe({
+          status: 'failed',
+          message: error instanceof Error ? error.message : 'Unable to test AI provider connection',
+          statusCode: null,
+        })
+      }
+    },
+    [revealedApiKey, savedApiKeyMask],
+  )
 
   useEffect(() => {
     async function loadSettings() {
@@ -158,33 +189,61 @@ export function AiSettingsSection() {
   }, [])
 
   useEffect(() => {
-    if (providerId !== 'ollama' || isLoading) return
+    if (!isProviderEnabled || isLoading) return
 
     const timer = window.setTimeout(() => {
-      void probeBaseUrl(baseUrl, apiKey)
+      void probeConnection(providerId, baseUrl, apiKey)
     }, 600)
 
     return () => window.clearTimeout(timer)
-  }, [apiKey, baseUrl, isLoading, probeBaseUrl, providerId])
+  }, [apiKey, baseUrl, isLoading, isProviderEnabled, probeConnection, providerId])
+
+  function handleProviderChange(nextProviderId: string) {
+    setProviderId(nextProviderId)
+    setUrlProbe(INITIAL_URL_PROBE)
+    setApiKey('')
+    setRevealedApiKey('')
+
+    if (nextProviderId === 'gemini') {
+      setModel('gemini-2.0-flash')
+      return
+    }
+
+    if (nextProviderId === 'ollama') {
+      setBaseUrl('http://127.0.0.1:11434')
+      setModel('qwen3.5:4b')
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (providerId !== 'ollama') return
+    if (!isProviderEnabled) return
 
     setIsSubmitting(true)
     setErrorMessage(null)
+
+    const requestBody =
+      providerId === 'gemini'
+        ? {
+            provider: 'gemini' as const,
+            model: model.trim(),
+            ...(apiKey.trim() || revealedApiKey
+              ? { apiKey: apiKey.trim() || revealedApiKey }
+              : {}),
+          }
+        : {
+            provider: 'ollama' as const,
+            baseUrl: baseUrl.trim(),
+            model: model.trim(),
+            apiKey: apiKey.trim() || undefined,
+          }
 
     const requestPromise = fetch('/api/settings/ai', {
       method: 'PATCH',
       headers: {
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        provider: 'ollama',
-        baseUrl: baseUrl.trim(),
-        model: model.trim(),
-        apiKey: apiKey.trim() || undefined,
-      }),
+      body: JSON.stringify(requestBody),
     }).then(async (response) => {
       const payload = (await response.json().catch(() => null)) as {
         success?: boolean
@@ -261,7 +320,7 @@ export function AiSettingsSection() {
             AI Provider
           </h2>
           <p className="mt-1 text-xs opacity-70">
-            Ollama is enabled now. Other providers stay visible as coming soon.
+            Ollama and Google Gemini are live. OpenRouter and others are listed for upcoming support.
           </p>
         </div>
         <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
@@ -274,7 +333,7 @@ export function AiSettingsSection() {
           <label htmlFor="ai-provider" className="mb-1 block text-sm font-medium">
             Provider
           </label>
-          <Select value={providerId} onValueChange={setProviderId}>
+          <Select value={providerId} onValueChange={handleProviderChange}>
             <SelectTrigger id="ai-provider" className="h-10 w-full">
               <SelectValue placeholder="Select provider" />
             </SelectTrigger>
@@ -344,26 +403,42 @@ export function AiSettingsSection() {
               isRequired={false}
               isDisabled={isLoading || isSubmitting}
             />
-            {savedApiKeyMask ? (
-              <div className="space-y-2 rounded-md border border-border/70 p-3">
-                <p className="text-xs opacity-80">Stored API key: {savedApiKeyMask}</p>
-                <button
-                  type="button"
-                  onClick={() => void handleRevealApiKey()}
-                  disabled={isRevealingKey || isSubmitting || isLoading}
-                  className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium disabled:opacity-60"
-                >
-                  {isRevealingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                  Reveal full key
-                </button>
-                {revealedApiKey ? (
-                  <p className="break-all rounded-md bg-muted px-2 py-1 text-xs font-medium">{revealedApiKey}</p>
-                ) : null}
-              </div>
+          </>
+        ) : providerId === 'gemini' ? (
+          <>
+            <FormField
+              id="ai-gemini-api-key"
+              label="Gemini API key"
+              type="password"
+              value={apiKey}
+              onChange={setApiKey}
+              placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'AIza...'}
+              isDisabled={isLoading || isSubmitting}
+            />
+            <FormField
+              id="ai-gemini-model"
+              label="Model"
+              type="text"
+              value={model}
+              onChange={setModel}
+              placeholder="gemini-2.0-flash"
+              isDisabled={isLoading || isSubmitting}
+            />
+            {urlProbe.message ? (
+              <p
+                className={`-mt-2 text-xs ${
+                  urlProbe.status === 'ok'
+                    ? 'text-emerald-700'
+                    : urlProbe.status === 'failed'
+                      ? 'text-amber-700'
+                      : 'opacity-70'
+                }`}
+              >
+                {urlProbeIcon ? <span className="mr-1.5 inline-flex align-middle">{urlProbeIcon}</span> : null}
+                {urlProbe.message}
+                {urlProbe.statusCode != null ? ` (HTTP ${urlProbe.statusCode})` : null}
+              </p>
             ) : null}
-            <p className="text-xs opacity-70">
-              Sensitive values are encrypted before storage. Saved key shows in masked form.
-            </p>
           </>
         ) : (
           selectedProvider.fields.map((field) => (
@@ -380,11 +455,35 @@ export function AiSettingsSection() {
           ))
         )}
 
+        {savedApiKeyMask && isProviderEnabled ? (
+          <div className="space-y-2 rounded-md border border-border/70 p-3">
+            <p className="text-xs opacity-80">Stored API key: {savedApiKeyMask}</p>
+            <button
+              type="button"
+              onClick={() => void handleRevealApiKey()}
+              disabled={isRevealingKey || isSubmitting || isLoading}
+              className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium disabled:opacity-60"
+            >
+              {isRevealingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              Reveal full key
+            </button>
+            {revealedApiKey ? (
+              <p className="break-all rounded-md bg-muted px-2 py-1 text-xs font-medium">{revealedApiKey}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {isProviderEnabled ? (
+          <p className="text-xs opacity-70">
+            Sensitive values are encrypted with ENV_SECRETS before storage. Saved keys show in masked form.
+          </p>
+        ) : null}
+
         {errorMessage ? <InlineError message={errorMessage} /> : null}
 
         <button
           type="submit"
-          disabled={isLoading || isSubmitting || providerId !== 'ollama' || urlProbe.status === 'checking'}
+          disabled={isLoading || isSubmitting || !isProviderEnabled || urlProbe.status === 'checking'}
           className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium text-primary-foreground disabled:opacity-60 ${
             urlProbe.status === 'failed' ? 'bg-amber-600 hover:bg-amber-600/90' : 'bg-primary'
           }`}

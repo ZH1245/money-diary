@@ -5,14 +5,26 @@ import {
   guardApiRequest,
   requireUserContext,
 } from '#/lib/server/api-guards'
-import { getUserAiSettings, upsertUserAiSettings } from '#/features/settings/server/settings-repository'
+import { getUserAiSettings, getUserAiSettingsForRuntime, upsertUserAiSettings } from '#/features/settings/server/settings-repository'
+import { DEFAULT_GEMINI_BASE_URL } from '#/features/ai/server/gemini-client'
 
-const saveAiSettingsSchema = z.object({
+const saveOllamaSettingsSchema = z.object({
   provider: z.literal('ollama'),
   baseUrl: z.string().trim().url('Enter a valid URL'),
   model: z.string().trim().min(1, 'Model is required'),
   apiKey: z.string().trim().optional(),
 })
+
+const saveGeminiSettingsSchema = z.object({
+  provider: z.literal('gemini'),
+  model: z.string().trim().min(1, 'Model is required'),
+  apiKey: z.string().trim().optional(),
+})
+
+const saveAiSettingsSchema = z.discriminatedUnion('provider', [
+  saveOllamaSettingsSchema,
+  saveGeminiSettingsSchema,
+])
 
 export const Route = createFileRoute('/api/settings/ai')({
   server: {
@@ -43,13 +55,33 @@ export const Route = createFileRoute('/api/settings/ai')({
           )
         }
 
-        await upsertUserAiSettings({
-          userId: userContext.id,
-          provider: 'ollama',
-          baseUrl: parsed.data.baseUrl,
-          model: parsed.data.model,
-          apiKey: parsed.data.apiKey,
-        })
+        if (parsed.data.provider === 'ollama') {
+          await upsertUserAiSettings({
+            userId: userContext.id,
+            provider: 'ollama',
+            baseUrl: parsed.data.baseUrl,
+            model: parsed.data.model,
+            apiKey: parsed.data.apiKey,
+          })
+        } else {
+          const existing = await getUserAiSettingsForRuntime({ userId: userContext.id })
+          const nextApiKey = parsed.data.apiKey?.trim() || existing?.apiKey
+
+          if (!nextApiKey) {
+            return Response.json(
+              { success: false, error: 'Gemini API key is required' },
+              { status: 400 },
+            )
+          }
+
+          await upsertUserAiSettings({
+            userId: userContext.id,
+            provider: 'gemini',
+            baseUrl: DEFAULT_GEMINI_BASE_URL,
+            model: parsed.data.model,
+            apiKey: nextApiKey,
+          })
+        }
 
         const settings = await getUserAiSettings({ userId: userContext.id })
         return Response.json({ success: true, data: settings })

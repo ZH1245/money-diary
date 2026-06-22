@@ -4,9 +4,13 @@ const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 12
 
 function getEncryptionKey(): Buffer {
-  const source = process.env.AI_SETTINGS_ENCRYPTION_KEY ?? process.env.BETTER_AUTH_SECRET ?? ''
+  const source =
+    process.env.ENV_SECRETS ??
+    process.env.AI_SETTINGS_ENCRYPTION_KEY ??
+    process.env.BETTER_AUTH_SECRET ??
+    ''
   if (!source.trim()) {
-    throw new Error('Missing AI_SETTINGS_ENCRYPTION_KEY or BETTER_AUTH_SECRET')
+    throw new Error('Missing ENV_SECRETS (or AI_SETTINGS_ENCRYPTION_KEY / BETTER_AUTH_SECRET fallback)')
   }
 
   return createHash('sha256').update(source).digest()

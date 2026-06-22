@@ -58,6 +58,8 @@ export async function getUserAiSettings({ userId }: { userId: string }): Promise
   }
 }
 
+export type AiProviderId = 'ollama' | 'gemini'
+
 export async function upsertUserAiSettings({
   userId,
   provider,
@@ -66,7 +68,7 @@ export async function upsertUserAiSettings({
   apiKey,
 }: {
   userId: string
-  provider: 'ollama'
+  provider: AiProviderId
   baseUrl: string
   model: string
   apiKey?: string | null
@@ -77,24 +79,49 @@ export async function upsertUserAiSettings({
     .where(eq(aiProviderSettings.userId, userId))
     .limit(1)
 
-  const nextValues = {
+  const nextValues: {
+    provider: AiProviderId
+    baseUrlEncrypted: string
+    modelEncrypted: string
+    apiKeyEncrypted?: string | null
+    updatedAt: Date
+  } = {
     provider,
     baseUrlEncrypted: encryptSecret(baseUrl),
     modelEncrypted: encryptSecret(model),
-    apiKeyEncrypted: apiKey?.trim() ? encryptSecret(apiKey.trim()) : null,
     updatedAt: new Date(),
+  }
+
+  if (apiKey?.trim()) {
+    nextValues.apiKeyEncrypted = encryptSecret(apiKey.trim())
+  } else if (!existing) {
+    nextValues.apiKeyEncrypted = null
   }
 
   if (!existing) {
     await db.insert(aiProviderSettings).values({
       userId,
-      ...nextValues,
+      provider: nextValues.provider,
+      baseUrlEncrypted: nextValues.baseUrlEncrypted,
+      modelEncrypted: nextValues.modelEncrypted,
+      apiKeyEncrypted: nextValues.apiKeyEncrypted ?? null,
       createdAt: new Date(),
+      updatedAt: nextValues.updatedAt,
     })
   } else {
+    const updatePayload =
+      nextValues.apiKeyEncrypted !== undefined
+        ? nextValues
+        : {
+            provider: nextValues.provider,
+            baseUrlEncrypted: nextValues.baseUrlEncrypted,
+            modelEncrypted: nextValues.modelEncrypted,
+            updatedAt: nextValues.updatedAt,
+          }
+
     await db
       .update(aiProviderSettings)
-      .set(nextValues)
+      .set(updatePayload)
       .where(eq(aiProviderSettings.userId, userId))
   }
 }
