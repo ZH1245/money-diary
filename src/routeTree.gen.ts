@@ -45,6 +45,7 @@ import { Route as ApiAiConversationsRouteImport } from './routes/api/ai/conversa
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
 import { Route as ApiSettingsAiRevealRouteImport } from './routes/api/settings/ai/reveal'
+import { Route as ApiSettingsAiKeyRouteImport } from './routes/api/settings/ai/key'
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -227,6 +228,11 @@ const ApiSettingsAiRevealRoute = ApiSettingsAiRevealRouteImport.update({
   path: '/reveal',
   getParentRoute: () => ApiSettingsAiRoute,
 } as any)
+const ApiSettingsAiKeyRoute = ApiSettingsAiKeyRouteImport.update({
+  id: '/key',
+  path: '/key',
+  getParentRoute: () => ApiSettingsAiRoute,
+} as any)
 const ApiAiConversationsConversationIdRoute =
   ApiAiConversationsConversationIdRouteImport.update({
     id: '/$conversationId',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
+  '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRoutesByTo {
@@ -310,6 +317,7 @@ export interface FileRoutesByTo {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
+  '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRoutesById {
@@ -350,6 +358,7 @@ export interface FileRoutesById {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
+  '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRouteTypes {
@@ -391,6 +400,7 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/settings/ai/reveal'
+    | '/api/settings/ai/key'
     | '/api/settings/ai/test'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/settings/ai/reveal'
+    | '/api/settings/ai/key'
     | '/api/settings/ai/test'
   id:
     | '__root__'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/settings/ai/reveal'
+    | '/api/settings/ai/key'
     | '/api/settings/ai/test'
   fileRoutesById: FileRoutesById
 }
@@ -757,6 +769,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSettingsAiRevealRouteImport
       parentRoute: typeof ApiSettingsAiRoute
     }
+    '/api/settings/ai/key': {
+      id: '/api/settings/ai/key'
+      path: '/key'
+      fullPath: '/api/settings/ai/key'
+      preLoaderRoute: typeof ApiSettingsAiKeyRouteImport
+      parentRoute: typeof ApiSettingsAiRoute
+    }
     '/api/ai/conversations/$conversationId': {
       id: '/api/ai/conversations/$conversationId'
       path: '/$conversationId'
@@ -851,11 +870,13 @@ const ApiAiConversationsRouteWithChildren =
 
 interface ApiSettingsAiRouteChildren {
   ApiSettingsAiRevealRoute: typeof ApiSettingsAiRevealRoute
+  ApiSettingsAiKeyRoute: typeof ApiSettingsAiKeyRoute
   ApiSettingsAiTestRoute: typeof ApiSettingsAiTestRoute
 }
 
 const ApiSettingsAiRouteChildren: ApiSettingsAiRouteChildren = {
   ApiSettingsAiRevealRoute: ApiSettingsAiRevealRoute,
+  ApiSettingsAiKeyRoute: ApiSettingsAiKeyRoute,
   ApiSettingsAiTestRoute: ApiSettingsAiTestRoute,
 }
 

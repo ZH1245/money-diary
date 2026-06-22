@@ -546,6 +546,17 @@ const openApiSpec = {
         },
       },
     },
+    '/api/settings/ai/key': {
+      delete: {
+        tags: ['settings'],
+        summary: 'Remove stored AI provider API key',
+        responses: {
+          '200': { description: 'API key removed' },
+          '404': { description: 'No API key stored' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
     '/api/goals/{id}': {
       patch: {
         tags: ['goals'],

@@ -47,6 +47,7 @@ export function AiSettingsSection() {
   const [savedApiKeyMask, setSavedApiKeyMask] = useState<string | null>(null)
   const [revealedApiKey, setRevealedApiKey] = useState('')
   const [isRevealingKey, setIsRevealingKey] = useState(false)
+  const [isRemovingKey, setIsRemovingKey] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -283,6 +284,38 @@ export function AiSettingsSection() {
     }
   }
 
+  async function handleRemoveApiKey() {
+    if (!savedApiKeyMask) return
+
+    const confirmed = window.confirm('Remove the stored API key? You will need to enter it again before using providers that require one.')
+    if (!confirmed) return
+
+    setIsRemovingKey(true)
+    setErrorMessage(null)
+    try {
+      const response = await fetch('/api/settings/ai/key', { method: 'DELETE' })
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean
+        error?: string
+        data?: AiSettingsResponse | null
+      } | null
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error ?? 'Unable to remove API key')
+      }
+
+      setSavedApiKeyMask(payload.data?.apiKeyMasked ?? null)
+      setApiKey('')
+      setRevealedApiKey('')
+      setUrlProbe(INITIAL_URL_PROBE)
+      toast.success('API key removed')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to remove API key')
+    } finally {
+      setIsRemovingKey(false)
+    }
+  }
+
   async function handleRevealApiKey() {
     setIsRevealingKey(true)
     setErrorMessage(null)
@@ -468,15 +501,26 @@ export function AiSettingsSection() {
         {savedApiKeyMask && isProviderEnabled ? (
           <div className="space-y-2 rounded-md border border-border/70 p-3">
             <p className="text-xs opacity-80">Stored API key: {savedApiKeyMask}</p>
-            <button
-              type="button"
-              onClick={() => void handleRevealApiKey()}
-              disabled={isRevealingKey || isSubmitting || isLoading}
-              className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium disabled:opacity-60"
-            >
-              {isRevealingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
-              Reveal full key
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void handleRevealApiKey()}
+                disabled={isRevealingKey || isRemovingKey || isSubmitting || isLoading}
+                className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium disabled:opacity-60"
+              >
+                {isRevealingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                Reveal full key
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRemoveApiKey()}
+                disabled={isRevealingKey || isRemovingKey || isSubmitting || isLoading}
+                className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-60"
+              >
+                {isRemovingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                Remove stored key
+              </button>
+            </div>
             {revealedApiKey ? (
               <p className="break-all rounded-md bg-muted px-2 py-1 text-xs font-medium">{revealedApiKey}</p>
             ) : null}

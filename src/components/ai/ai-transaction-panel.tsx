@@ -37,6 +37,7 @@ interface ThreadMessage {
   text: string
   ok?: boolean
   isError?: boolean
+  isWarning?: boolean
   action?: string
   steps?: Array<{ action: string; success: boolean }>
 }
@@ -97,11 +98,37 @@ function mapConversationMessage(message: AiConversationMessage): ThreadMessage {
 }
 
 /**
+ * Builds an optimistic assistant row for the chat thread.
+ */
+function buildAssistantThreadMessage(
+  content: string,
+  options: {
+    isError?: boolean
+    isWarning?: boolean
+    ok?: boolean
+    action?: string
+    steps?: Array<{ action: string; success: boolean }>
+  } = {},
+): ThreadMessage {
+  return {
+    id: -(Date.now() + 1),
+    role: 'assistant',
+    text: formatThreadMessageText(content, options.isError),
+    isError: options.isError,
+    isWarning: options.isWarning,
+    ok: options.ok,
+    action: options.action,
+    steps: options.steps,
+  }
+}
+
+/**
  * Side panel AI assistant with persisted conversations across navigation.
  */
 export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelProps) {
   const [prompt, setPrompt] = useState('')
   const [pendingMessages, setPendingMessages] = useState<ThreadMessage[]>([])
+  const [historyFeedback, setHistoryFeedback] = useState<string | null>(null)
   const activeConversationId = useStore(activeAiConversationStore, (state) => state.conversationId)
   const mutation = useAiChatMutation()
   const navigate = useNavigate()
@@ -110,6 +137,50 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
   const conversationsQuery = useAiConversationsQuery(open)
   const conversationQuery = useAiConversationQuery(activeConversationId)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const panelOpenRef = useRef(open)
+
+  useEffect(() => {
+    panelOpenRef.current = open
+  }, [open])
+
+  /** Sonner only when the chat panel is closed — inline bubbles handle feedback while open. */
+  function shouldUseToast() {
+    return !panelOpenRef.current
+  }
+
+  function appendAssistantMessageToThread(
+    conversationId: number | null,
+    assistantMessage: ThreadMessage,
+  ) {
+    if (conversationId == null) {
+      setPendingMessages((current) => [...current, assistantMessage])
+      return
+    }
+
+    queryClient.setQueryData<AiConversationDetail | undefined>(
+      queryKeys.ai.conversation(conversationId),
+      (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          messages: [
+            ...current.messages,
+            {
+              id: assistantMessage.id ?? -(Date.now() + 1),
+              role: 'assistant' as const,
+              content: assistantMessage.text,
+              metadata: {
+                action: assistantMessage.isError ? 'provider_error' : assistantMessage.action,
+                ok: assistantMessage.ok,
+                steps: assistantMessage.steps,
+              },
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }
+      },
+    )
+  }
 
   const persistedThread = useMemo(
     () => (conversationQuery.data?.messages ?? []).map(mapConversationMessage),
@@ -147,15 +218,23 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
   }
 
   async function handleDeleteConversation(conversationId: number) {
+    setHistoryFeedback(null)
     try {
       await deleteConversationMutation.mutateAsync(conversationId)
       if (activeConversationId === conversationId) {
         const fallback = savedChats.find((entry) => entry.id !== conversationId)
         setActiveAiConversationId(fallback?.id ?? null)
       }
-      toast.success('Chat deleted')
+      if (shouldUseToast()) {
+        toast.success('Chat deleted')
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to delete chat')
+      const message = error instanceof Error ? error.message : 'Unable to delete chat'
+      if (shouldUseToast()) {
+        toast.error(message)
+      } else {
+        setHistoryFeedback(message)
+      }
     }
   }
 
@@ -259,17 +338,28 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
       }
 
       if (result.closeChat) {
-        toast.error('AI chat closed for security reasons.')
+        if (shouldUseToast()) {
+          toast.error('AI chat closed for security reasons.')
+        }
         return
       }
 
       if (!result.success && result.error) {
-        toast.error(result.error)
+        if (shouldUseToast()) {
+          toast.error(result.error)
+        }
         return
       }
 
       if (result.warning) {
-        toast.warning(result.warning)
+        if (shouldUseToast()) {
+          toast.warning(result.warning)
+        } else if (result.conversationId) {
+          appendAssistantMessageToThread(
+            result.conversationId,
+            buildAssistantThreadMessage(result.warning, { isWarning: true }),
+          )
+        }
       }
 
       if (result.action === 'clarification') {
@@ -278,14 +368,16 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
 
       if (result.steps?.length) {
         const allOk = result.steps.every((step) => step.success)
-        if (allOk) {
-          const label =
-            result.action === 'chained'
-              ? `${result.steps.length} entries created`
-              : ACTION_LABELS[result.action ?? ''] ?? 'Entry created'
-          toast.success(label)
-        } else {
-          toast.error('Some actions could not be completed.')
+        if (shouldUseToast()) {
+          if (allOk) {
+            const label =
+              result.action === 'chained'
+                ? `${result.steps.length} entries created`
+                : ACTION_LABELS[result.action ?? ''] ?? 'Entry created'
+            toast.success(label)
+          } else {
+            toast.error('Some actions could not be completed.')
+          }
         }
         if (allOk && result.navigateTo) {
           void navigate({ to: result.navigateTo })
@@ -294,15 +386,27 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
       }
 
       if (result.success && result.message && result.action && result.action !== 'chained') {
-        toast.success(ACTION_LABELS[result.action] ?? 'Entry created')
+        if (shouldUseToast()) {
+          toast.success(ACTION_LABELS[result.action] ?? 'Entry created')
+        }
         if (result.navigateTo) {
           void navigate({ to: result.navigateTo })
         }
       }
     } catch (error) {
-      setPendingMessages([])
       const message = error instanceof Error ? error.message : 'Request failed.'
-      toast.error(message)
+      const errorMessage = buildAssistantThreadMessage(message, { isError: true, action: 'provider_error' })
+      const conversationId = activeConversationId ?? mutation.data?.conversationId ?? null
+
+      if (conversationId == null) {
+        setPendingMessages((current) => [...current, errorMessage])
+      } else {
+        appendAssistantMessageToThread(conversationId, errorMessage)
+      }
+
+      if (shouldUseToast()) {
+        toast.error(message)
+      }
     }
   }
 
@@ -388,6 +492,10 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
               <MessageSquarePlus className="size-4" />
             </Button>
           </div>
+
+          {historyFeedback ? (
+            <p className="mt-2 text-xs text-destructive">{historyFeedback}</p>
+          ) : null}
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
@@ -448,6 +556,8 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                     ? 'bg-primary text-primary-foreground'
                     : message.isError
                       ? 'border border-destructive/30 bg-destructive/10 text-destructive'
+                      : message.isWarning
+                        ? 'border border-amber-300/60 bg-amber-50 text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100'
                       : message.ok
                         ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800'
                         : 'bg-muted text-foreground'

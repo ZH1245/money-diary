@@ -126,6 +126,22 @@ export async function upsertUserAiSettings({
   }
 }
 
+/**
+ * Removes the stored AI provider API key for one user.
+ */
+export async function clearUserAiApiKey({ userId }: { userId: string }): Promise<boolean> {
+  const result = await db
+    .update(aiProviderSettings)
+    .set({
+      apiKeyEncrypted: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(aiProviderSettings.userId, userId))
+    .returning({ id: aiProviderSettings.id })
+
+  return result.length > 0
+}
+
 export async function getUserAiSettingsForRuntime({ userId }: { userId: string }) {
   const [row] = await db
     .select()
