@@ -12,7 +12,16 @@ import {
 import { executeAiTool, loadUserAiContext } from '#/features/ai/server/ai-tool-executor'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { getUserAiSettingsForRuntime } from '#/features/settings/server/settings-repository'
-import { buildOllamaRequestHeaders, formatOllamaHttpError } from '#/features/ai/server/ollama-client'
+import {
+  buildOllamaRequestHeaders,
+  extractOllamaAssistantText,
+  formatOllamaHttpError,
+} from '#/features/ai/server/ollama-client'
+import {
+  callGeminiChat,
+  DEFAULT_GEMINI_BASE_URL,
+  type GeminiChatMessage,
+} from '#/features/ai/server/gemini-client'
 import {
   isWeakAssistantReply,
   resolveFallbackToolInvocation,
@@ -57,10 +66,24 @@ interface OllamaChatMessage {
 
 interface OllamaResponse {
   message?: OllamaChatMessage
+  done_reason?: string
+}
+
+interface ProviderToolCall {
+  name: string
+  arguments: unknown
+}
+
+type AiProviderId = 'ollama' | 'gemini'
+
+interface ProviderChatState {
+  provider: AiProviderId
+  ollamaMessages: OllamaChatMessage[]
+  geminiMessages: GeminiChatMessage[]
 }
 
 /**
- * Parses tool arguments when Ollama returns JSON as a string.
+ * Parses tool arguments when providers return JSON as a string.
  */
 function parseToolArguments(raw: unknown): unknown {
   if (typeof raw === 'string') {
@@ -76,9 +99,12 @@ function parseToolArguments(raw: unknown): unknown {
 /**
  * Normalizes tool calls from an Ollama assistant message.
  */
-function extractToolCalls(message: OllamaChatMessage | undefined): OllamaToolCall[] {
+function extractOllamaToolCalls(message: OllamaChatMessage | undefined): ProviderToolCall[] {
   if (!message?.tool_calls?.length) return []
-  return message.tool_calls
+  return message.tool_calls.map((toolCall) => ({
+    name: toolCall.function.name,
+    arguments: parseToolArguments(toolCall.function.arguments),
+  }))
 }
 
 /**
@@ -96,7 +122,10 @@ async function callOllamaChat({
   apiKey: string | null
   messages: OllamaChatMessage[]
   tools: ReturnType<typeof getAiToolsForProvider>
-}): Promise<{ ok: true; data: OllamaResponse } | { ok: false; error: string; status?: number }> {
+}): Promise<
+  | { ok: true; assistantText: string; toolCalls: ProviderToolCall[]; truncated: boolean }
+  | { ok: false; error: string; status?: number }
+> {
   let response: Response
   try {
     response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/chat`, {
@@ -108,6 +137,10 @@ async function callOllamaChat({
         think: false,
         messages,
         tools,
+        options: {
+          num_predict: 4096,
+          temperature: 0.3,
+        },
       }),
     })
   } catch {
@@ -119,7 +152,191 @@ async function callOllamaChat({
   }
 
   const data = (await response.json()) as OllamaResponse
-  return { ok: true, data }
+  const assistantMessage = data.message
+
+  return {
+    ok: true,
+    assistantText: extractOllamaAssistantText(assistantMessage),
+    toolCalls: extractOllamaToolCalls(assistantMessage),
+    truncated: data.done_reason === 'length',
+  }
+}
+
+/**
+ * Dispatches one provider chat turn and returns normalized assistant output.
+ */
+async function callProviderChat({
+  provider,
+  systemPrompt,
+  state,
+  settings,
+  tools,
+}: {
+  provider: AiProviderId
+  systemPrompt: string
+  state: ProviderChatState
+  settings: {
+    baseUrl: string
+    model: string
+    apiKey: string | null
+  }
+  tools: ReturnType<typeof getAiToolsForProvider>
+}): Promise<
+  | { ok: true; assistantText: string; toolCalls: ProviderToolCall[]; truncated: boolean }
+  | { ok: false; error: string; status?: number }
+> {
+  if (provider === 'gemini') {
+    return callGeminiChat({
+      baseUrl: settings.baseUrl || DEFAULT_GEMINI_BASE_URL,
+      model: settings.model,
+      apiKey: settings.apiKey ?? '',
+      systemPrompt,
+      messages: state.geminiMessages,
+      tools,
+    })
+  }
+
+  return callOllamaChat({
+    baseUrl: settings.baseUrl,
+    model: settings.model,
+    apiKey: settings.apiKey,
+    messages: state.ollamaMessages,
+    tools,
+  })
+}
+
+/**
+ * Appends assistant and tool messages to the active provider thread.
+ */
+function appendProviderTurn({
+  state,
+  assistantText,
+  toolCalls,
+  toolResults,
+}: {
+  state: ProviderChatState
+  assistantText: string
+  toolCalls: ProviderToolCall[]
+  toolResults: Array<{ toolName: string; content: string }>
+}) {
+  if (state.provider === 'gemini') {
+    if (toolCalls.length === 0) {
+      if (assistantText) {
+        state.geminiMessages.push({
+          role: 'model',
+          parts: [{ text: assistantText }],
+        })
+      }
+      return
+    }
+
+    state.geminiMessages.push({
+      role: 'model',
+      parts: toolCalls.map((toolCall) => ({
+        functionCall: {
+          name: toolCall.name,
+          args:
+            typeof toolCall.arguments === 'object' && toolCall.arguments != null
+              ? (toolCall.arguments as Record<string, unknown>)
+              : {},
+        },
+      })),
+    })
+
+    for (const result of toolResults) {
+      state.geminiMessages.push({
+        role: 'function',
+        parts: [
+          {
+            functionResponse: {
+              name: result.toolName,
+              response: JSON.parse(result.content) as Record<string, unknown>,
+            },
+          },
+        ],
+      })
+    }
+    return
+  }
+
+  state.ollamaMessages.push({
+    role: 'assistant',
+    content: assistantText,
+    tool_calls: toolCalls.map((toolCall) => ({
+      function: {
+        name: toolCall.name,
+        arguments: toolCall.arguments,
+      },
+    })),
+  })
+
+  for (const result of toolResults) {
+    state.ollamaMessages.push({
+      role: 'tool',
+      tool_name: result.toolName,
+      content: result.content,
+    })
+  }
+}
+
+/**
+ * Builds initial provider thread state from sanitized user/assistant history.
+ */
+function buildProviderChatState({
+  provider,
+  systemPrompt,
+  sanitized,
+}: {
+  provider: AiProviderId
+  systemPrompt: string
+  sanitized: Array<{ role: 'user' | 'assistant'; content: string }>
+}): ProviderChatState {
+  if (provider === 'gemini') {
+    return {
+      provider,
+      ollamaMessages: [],
+      geminiMessages: sanitized.map((message) => ({
+        role: message.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: message.content }],
+      })),
+    }
+  }
+
+  return {
+    provider,
+    ollamaMessages: [{ role: 'system', content: systemPrompt }, ...sanitized],
+    geminiMessages: [],
+  }
+}
+
+/**
+ * Resolves runtime provider settings with sensible defaults.
+ */
+function resolveProviderRuntime(
+  aiSettings: Awaited<ReturnType<typeof getUserAiSettingsForRuntime>>,
+): {
+  provider: AiProviderId
+  baseUrl: string
+  model: string
+  apiKey: string | null
+} {
+  const provider: AiProviderId = aiSettings?.provider === 'gemini' ? 'gemini' : 'ollama'
+
+  if (provider === 'gemini') {
+    return {
+      provider,
+      baseUrl: aiSettings?.baseUrl || DEFAULT_GEMINI_BASE_URL,
+      model: aiSettings?.model || 'gemini-2.0-flash',
+      apiKey: aiSettings?.apiKey ?? null,
+    }
+  }
+
+  return {
+    provider,
+    baseUrl: aiSettings?.baseUrl || 'http://127.0.0.1:11434',
+    model: aiSettings?.model || 'qwen3.5:4b',
+    apiKey: aiSettings?.apiKey ?? null,
+  }
 }
 
 /**
@@ -176,8 +393,9 @@ export async function runAiChat({
   }
 
   const aiSettings = await getUserAiSettingsForRuntime({ userId })
-  const isOllamaProvider = aiSettings?.provider == null || aiSettings.provider === 'ollama'
-  const aiTools = getAiToolsForProvider(aiSettings?.provider)
+  const runtime = resolveProviderRuntime(aiSettings)
+  const isOllamaProvider = runtime.provider === 'ollama'
+  const aiTools = getAiToolsForProvider(runtime.provider)
 
   const userContext = await loadUserAiContext(userId)
   const systemPrompt = buildSecureSystemPrompt({
@@ -191,39 +409,43 @@ export async function runAiChat({
   })
 
   const sanitized = sanitizeChatMessages(messages)
-  const ollamaMessages: OllamaChatMessage[] = [
-    { role: 'system', content: systemPrompt },
-    ...sanitized,
-  ]
-
-  const ollamaBaseUrl = isOllamaProvider && aiSettings?.baseUrl ? aiSettings.baseUrl : 'http://127.0.0.1:11434'
-  const ollamaModel = isOllamaProvider && aiSettings?.model ? aiSettings.model : 'qwen3.5:4b'
-  const ollamaApiKey = isOllamaProvider ? (aiSettings?.apiKey ?? null) : null
+  const chatState = buildProviderChatState({
+    provider: runtime.provider,
+    systemPrompt,
+    sanitized,
+  })
 
   const executedSteps: AiChatStep[] = []
+  let truncationWarning: string | undefined
 
   for (let step = 0; step < MAX_TOOL_CHAIN_STEPS; step += 1) {
-    const ollamaResult = await callOllamaChat({
-      baseUrl: ollamaBaseUrl,
-      model: ollamaModel,
-      apiKey: ollamaApiKey,
-      messages: ollamaMessages,
+    const providerResult = await callProviderChat({
+      provider: runtime.provider,
+      systemPrompt,
+      state: chatState,
+      settings: runtime,
       tools: aiTools,
     })
 
-    if (!ollamaResult.ok) {
+    if (!providerResult.ok) {
+      const providerLabel = runtime.provider === 'gemini' ? 'Gemini' : 'Ollama'
       return {
         success: false,
-        error: ollamaResult.error,
+        error: providerResult.error.includes(providerLabel)
+          ? providerResult.error
+          : `${providerLabel}: ${providerResult.error}`,
         steps: executedSteps.length > 0 ? executedSteps : undefined,
       }
     }
 
-    const assistantMessage = ollamaResult.data.message
-    const toolCalls = extractToolCalls(assistantMessage)
+    if (providerResult.truncated) {
+      truncationWarning = 'The model response was truncated. Try a shorter question or a larger model.'
+    }
+
+    const toolCalls = providerResult.toolCalls
+    const reply = sanitizeAssistantUserFacingMessage(providerResult.assistantText)
 
     if (toolCalls.length === 0) {
-      const reply = sanitizeAssistantUserFacingMessage(assistantMessage?.content?.trim() ?? '')
       if (executedSteps.length > 0) {
         return {
           success: executedSteps.every((entry) => entry.success),
@@ -231,6 +453,7 @@ export async function runAiChat({
           message: reply || summarizeSteps(executedSteps),
           steps: executedSteps,
           navigateTo: pickNavigateTo(executedSteps),
+          warning: truncationWarning,
         }
       }
 
@@ -254,6 +477,7 @@ export async function runAiChat({
               action: stepResult.action,
               message: stepResult.message,
               steps: [stepResult],
+              warning: truncationWarning,
             }
           }
         }
@@ -265,22 +489,16 @@ export async function runAiChat({
         success: true,
         action: 'clarification',
         message: reply || fallbackMessage,
+        warning: truncationWarning,
       }
     }
 
-    ollamaMessages.push({
-      role: 'assistant',
-      content: assistantMessage?.content ?? '',
-      tool_calls: toolCalls,
-    })
+    const toolResults: Array<{ toolName: string; content: string }> = []
 
     for (const toolCall of toolCalls) {
-      const toolName = toolCall.function.name
-      const toolArgs = parseToolArguments(toolCall.function.arguments)
-
       const stepResult = await executeAiTool({
-        toolName,
-        toolArgs,
+        toolName: toolCall.name,
+        toolArgs: toolCall.arguments,
         context: {
           userId,
           currency,
@@ -291,9 +509,8 @@ export async function runAiChat({
 
       executedSteps.push(stepResult)
 
-      ollamaMessages.push({
-        role: 'tool',
-        tool_name: toolName,
+      toolResults.push({
+        toolName: toolCall.name,
         content: JSON.stringify({
           success: stepResult.success,
           message: stepResult.message,
@@ -301,6 +518,13 @@ export async function runAiChat({
         }),
       })
     }
+
+    appendProviderTurn({
+      state: chatState,
+      assistantText: providerResult.assistantText,
+      toolCalls,
+      toolResults,
+    })
   }
 
   return {
@@ -309,7 +533,9 @@ export async function runAiChat({
     message: summarizeSteps(executedSteps),
     steps: executedSteps,
     navigateTo: pickNavigateTo(executedSteps),
-    warning: 'Stopped after maximum tool steps. Review results and continue if needed.',
+    warning:
+      truncationWarning ??
+      'Stopped after maximum tool steps. Review results and continue if needed.',
   }
 }
 

@@ -143,11 +143,10 @@ export function detectAssistantInternalLeak(content: string): boolean {
 
   return (
     /\(\s*id\s*:\s*\d+\s*\)/i.test(normalized) ||
-    /\b(ref|ID|id)\s*[:=#]\s*\d+/i.test(normalized) ||
-    /\b(account|category|goal)\s+ids?\b/i.test(normalized) ||
-    /\b(paymentAccountId|categoryId|goalId)\b/.test(normalized) ||
+    /\b(paymentAccountId|categoryId|goalId)\s*[:=]/i.test(normalized) ||
+    /\bref\s*[:=]\s*\d+/i.test(normalized) ||
     /\bdatabase\s+id\b/i.test(normalized) ||
-    /\b(internal|numeric)\s+id\b/i.test(normalized)
+    /\binternal\s+ref\b/i.test(normalized)
   )
 }
 
@@ -163,9 +162,8 @@ export function sanitizeAssistantUserFacingMessage(content: string): string {
   const redacted = trimmed
     .replace(/\(\s*id\s*:\s*\d+\s*\)/gi, '')
     .replace(/\[\s*ref\s+\d+\s*\]/gi, '')
-    .replace(/\b(ref|id)\s*[:=#]\s*\d+/gi, '')
-    .replace(/\b(account|category|goal)\s+ids?\b/gi, 'account')
-    .replace(/\b(paymentAccountId|categoryId|goalId)\b/gi, '')
+    .replace(/\b(paymentAccountId|categoryId|goalId)\s*[:=]\s*\d+/gi, '')
+    .replace(/\bref\s*[:=]\s*\d+/gi, '')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s+([,.?!])/g, '$1')
     .trim()
@@ -205,7 +203,13 @@ export function buildSecureSystemPrompt({
 - create_transaction still converts server-side when logging — use get_exchange_rate for quotes and explanations only.`
     : `- The server converts foreign amounts to ledger currency (${ledgerCurrency}) using live exchange rates — you do not calculate FX yourself.`
 
-  return `You are Money Diary AI, a finance and product-policy assistant inside one private user workspace.
+  return `You are Money Diary AI — a focused finance assistant inside one private user workspace.
+
+PERSONALITY:
+- Be concise, warm, and practical. Use complete sentences.
+- Confirm actions clearly: what was logged, amount, currency, account name, and date.
+- For data questions, summarize tool results in plain language with amounts in ${ledgerCurrency}.
+- Never say you are "just a language model" or that you cannot access their data — use tools instead.
 
 SECURITY RULES (never break these):
 - You help with this user's Money Diary finance tasks, reading their summaries, AND questions about published Privacy Policy and Terms of Service (see LEGAL KNOWLEDGE).
@@ -235,9 +239,7 @@ READ RULES (in scope — always call query_user_data):
 - For ANY question about the user's transactions, expenses, income, savings, goals, or wishlist, call query_user_data — never answer from memory or guess.
 - Use groupBy "date" for date-wise or per-date breakdowns; "category" for category totals; "none" for a flat list.
 - Never compute totals, sums, or averages yourself — tools return pre-calculated numbers; repeat those exactly.
-- Never say you cannot access their data or that you are only a language model — you can read their ledger via tools.
 - "This month" means ${today.slice(0, 7)}-01 through ${today}. "This week" means the current calendar week through today.
-- Summarize tool results in plain language with amounts in ${ledgerCurrency}.
 
 DATE RULES:
 - Tool date field format: YYYY-MM-DD (transaction/saving happened date, not "today" label).
@@ -261,8 +263,8 @@ TASK RULES:
 - Expense/transfer require categoryId in tools, or categoryId -1 plus categoryName for a new category.
 - For transfers between accounts: use type "transfer", pick the best category (e.g. Savings Transfer), set paymentAccountId to the source account ref, destination name in note if needed.
 - Resolve account names yourself — never ask the user for an account ID.
-- If details are unclear, ask in plain language without internal jargon.
-- After tools succeed, confirm in plain language: title, amount, currency, account name, and date.
+- If details are unclear, ask one short follow-up in plain language without internal jargon.
+- After tools succeed, write a full confirmation (not a single word): title, amount, currency, account name, and date.
 
 LEGAL KNOWLEDGE:
 ${buildLegalKnowledgeForAi()}`

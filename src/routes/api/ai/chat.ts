@@ -133,7 +133,7 @@ export const Route = createFileRoute('/api/ai/chat')({
           return Response.json(responseBody, { status: 403 })
         }
 
-        if (!result.success && result.error?.includes('Ollama')) {
+        if (!result.success && result.error && /Ollama|Gemini/.test(result.error)) {
           return Response.json(responseBody, {
             status: result.error.includes('Could not reach') ? 503 : 502,
           })

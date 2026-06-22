@@ -53,6 +53,36 @@ export interface OllamaProbeResult {
   message: string
 }
 
+export interface OllamaAssistantMessage {
+  content?: string
+  thinking?: string
+  tool_calls?: Array<{
+    function: {
+      name: string
+      arguments: unknown
+    }
+  }>
+}
+
+/**
+ * Extracts the full user-facing text from an Ollama assistant message.
+ * Reasoning models may leave content empty and place the reply in thinking.
+ */
+export function extractOllamaAssistantText(message: OllamaAssistantMessage | undefined): string {
+  if (!message) return ''
+
+  const direct = message.content?.trim() ?? ''
+  if (direct.length > 0) return direct
+
+  const thinking = message.thinking?.trim() ?? ''
+  if (!thinking) return ''
+
+  const afterThinkTag = thinking.split(/<\/think>/i).pop()?.trim()
+  if (afterThinkTag && afterThinkTag.length > 0) return afterThinkTag
+
+  return thinking
+}
+
 /**
  * Probes an Ollama base URL by calling GET /api/tags.
  */
