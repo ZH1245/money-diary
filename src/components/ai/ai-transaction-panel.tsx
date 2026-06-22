@@ -1,5 +1,5 @@
 import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
+import { Textarea } from '#/components/ui/textarea'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,7 @@ import {
 import type { AiConversationDetail, AiConversationMessage } from '#/features/ai/types/ai-conversation'
 import { toolbarIconButtonClass } from '#/components/layout/toolbar-control-styles'
 import { AlertTriangle, CheckCircle2, History, MessageSquarePlus, Sparkles, Trash2 } from 'lucide-react'
-import type { FormEvent } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
@@ -263,7 +263,6 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
           toast.error('Some actions could not be completed.')
         }
         if (allOk && result.navigateTo) {
-          onOpenChange(false)
           void navigate({ to: result.navigateTo })
         }
         return
@@ -272,7 +271,6 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
       if (result.success && result.message && result.action && result.action !== 'chained') {
         toast.success(ACTION_LABELS[result.action] ?? 'Entry created')
         if (result.navigateTo) {
-          onOpenChange(false)
           void navigate({ to: result.navigateTo })
         }
       }
@@ -280,6 +278,13 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
       setPendingMessages([])
       const message = error instanceof Error ? error.message : 'Request failed.'
       toast.error(message)
+    }
+  }
+
+  function handlePromptKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      event.currentTarget.form?.requestSubmit()
     }
   }
 
@@ -452,21 +457,27 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 border-t px-4 py-3">
-          <div className="flex gap-2">
-            <Input
+          <div className="flex items-end gap-2">
+            <Textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
+              onKeyDown={handlePromptKeyDown}
               placeholder={chatClosed ? 'Chat closed' : 'Ask about your finances...'}
               disabled={chatClosed || mutation.isPending || isLoadingConversation}
-              className="flex-1"
+              className="min-h-[44px] max-h-32 flex-1 resize-none"
+              rows={2}
             />
             <Button
               type="submit"
               disabled={chatClosed || mutation.isPending || isLoadingConversation || !prompt.trim()}
+              className="shrink-0"
             >
               Send
             </Button>
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Shift+Enter for a new line · Enter to send
+          </p>
           <p className="text-[11px] text-muted-foreground">
             <Link to="/privacy" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>
               Privacy Policy
