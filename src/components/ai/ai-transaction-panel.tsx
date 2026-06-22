@@ -28,6 +28,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { queryKeys } from '#/features/query-keys'
+import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
 import { toast } from 'sonner'
 
 interface ThreadMessage {
@@ -35,6 +36,7 @@ interface ThreadMessage {
   role: 'user' | 'assistant'
   text: string
   ok?: boolean
+  isError?: boolean
   action?: string
   steps?: Array<{ action: string; success: boolean }>
 }
@@ -65,14 +67,29 @@ const EXAMPLES = [
 ]
 
 /**
+ * Formats assistant text for display, including legacy raw provider errors.
+ */
+function formatThreadMessageText(content: string, isError?: boolean): string {
+  if (
+    isError ||
+    /generativelanguage\.googleapis|help\.googleapis|Quota exceeded for metric|google\.rpc/i.test(content)
+  ) {
+    return formatAiProviderError(content)
+  }
+  return content
+}
+
+/**
  * Maps persisted conversation messages into renderable thread bubbles.
  */
 function mapConversationMessage(message: AiConversationMessage): ThreadMessage {
+  const isError = message.metadata?.action === 'provider_error'
   return {
     id: message.id,
     role: message.role,
-    text: message.content,
-    ok: message.metadata?.ok,
+    text: formatThreadMessageText(message.content, isError),
+    ok: isError ? false : message.metadata?.ok,
+    isError,
     action: message.metadata?.action,
     steps: message.metadata?.steps,
   }
@@ -194,15 +211,17 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
               metadata: null,
               createdAt: new Date().toISOString(),
             }
+            const assistantText = result.message ?? result.error
             const assistantMessage =
-              result.message != null
+              assistantText != null
                 ? {
                     id: -(Date.now() + 1),
                     role: 'assistant' as const,
-                    content: result.message,
+                    content: assistantText,
                     metadata: {
-                      action: result.action,
+                      action: result.action === 'provider_error' ? 'provider_error' : result.action,
                       ok:
+                        result.action !== 'provider_error' &&
                         result.action !== 'clarification' &&
                         (result.steps?.length
                           ? result.steps.every((step) => step.success)
@@ -240,6 +259,11 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
 
       if (result.closeChat) {
         toast.error('AI chat closed for security reasons.')
+        return
+      }
+
+      if (!result.success && result.error) {
+        toast.error(result.error)
         return
       }
 
@@ -412,16 +436,20 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
               key={message.id ?? index}
               className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {message.role === 'assistant' && message.ok ? (
+              {message.role === 'assistant' && message.isError ? (
+                <AlertTriangle className="mt-1 size-4 shrink-0 text-destructive" />
+              ) : message.role === 'assistant' && message.ok ? (
                 <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-500" />
               ) : null}
               <div
                 className={`rounded-xl px-3 py-2 text-sm max-w-[84%] whitespace-pre-wrap ${
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
-                    : message.ok
-                      ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800'
-                      : 'bg-muted text-foreground'
+                    : message.isError
+                      ? 'border border-destructive/30 bg-destructive/10 text-destructive'
+                      : message.ok
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800'
+                        : 'bg-muted text-foreground'
                 }`}
               >
                 {message.text}

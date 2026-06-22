@@ -18,6 +18,7 @@ import {
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
 import { sanitizeAssistantUserFacingMessage } from '#/features/ai/server/ai-security'
+import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
 
 export const Route = createFileRoute('/api/ai/chat')({
   server: {
@@ -86,20 +87,27 @@ export const Route = createFileRoute('/api/ai/chat')({
           messages,
         })
 
-        const assistantMetadata: AiMessageMetadata = {
-          action: result.action,
-          ok:
-            result.action !== 'clarification' &&
-            (result.steps?.length ? result.steps.every((step) => step.success) : result.success),
-          steps: result.steps?.map((step) => ({
-            action: step.action,
-            success: step.success,
-          })),
-        }
+        const userFacingError = result.error
+          ? formatAiProviderError(result.error)
+          : undefined
+
+        const assistantMetadata: AiMessageMetadata =
+          result.action === 'provider_error' || (userFacingError && !result.success)
+            ? { action: 'provider_error', ok: false }
+            : {
+                action: result.action,
+                ok:
+                  result.action !== 'clarification' &&
+                  (result.steps?.length ? result.steps.every((step) => step.success) : result.success),
+                steps: result.steps?.map((step) => ({
+                  action: step.action,
+                  success: step.success,
+                })),
+              }
 
         const assistantContent = sanitizeAssistantUserFacingMessage(
           result.message ??
-            result.error ??
+            userFacingError ??
             (result.action === 'clarification' ? 'Could you clarify?' : 'Something went wrong.'),
         )
 
@@ -122,7 +130,10 @@ export const Route = createFileRoute('/api/ai/chat')({
         const responseBody = {
           ...result,
           conversationId,
-          message: result.message ? sanitizeAssistantUserFacingMessage(result.message) : result.message,
+          error: userFacingError ?? result.error,
+          message: result.message
+            ? sanitizeAssistantUserFacingMessage(result.message)
+            : userFacingError,
         }
 
         if (result.closeChat) {

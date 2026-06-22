@@ -1,4 +1,5 @@
 import type { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
+import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
 
 const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 
@@ -84,7 +85,7 @@ export async function probeGeminiApiKey({
     return {
       ok: false,
       statusCode: response.status,
-      message: payload?.error?.message ?? `Gemini error: ${response.status}`,
+      message: formatAiProviderError(payload?.error?.message ?? `Gemini error: ${response.status}`, 'gemini'),
     }
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
@@ -173,7 +174,7 @@ export async function callGeminiChat({
   if (!response.ok) {
     return {
       ok: false,
-      error: payload?.error?.message ?? `Gemini error: ${response.status}`,
+      error: formatAiProviderError(payload?.error?.message ?? `Gemini error: ${response.status}`, 'gemini'),
       status: response.status,
     }
   }

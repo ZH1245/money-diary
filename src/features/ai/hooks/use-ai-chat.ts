@@ -18,6 +18,7 @@ export interface AiChatResponse {
     | AiToolAction
     | 'clarification'
     | 'chained'
+    | 'provider_error'
   message?: string
   steps?: AiChatStep[]
   navigateTo?: string

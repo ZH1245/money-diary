@@ -26,6 +26,7 @@ import {
   isWeakAssistantReply,
   resolveFallbackToolInvocation,
 } from '#/features/ai/server/ai-tool-fallback'
+import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
 
 const MAX_TOOL_CHAIN_STEPS = 5
 
@@ -39,7 +40,7 @@ export interface AiChatStep {
 
 export interface AiChatServiceResult {
   success: boolean
-  action?: AiToolAction | 'clarification' | 'chained'
+  action?: AiToolAction | 'clarification' | 'chained' | 'provider_error'
   message?: string
   steps?: AiChatStep[]
   navigateTo?: string
@@ -429,11 +430,14 @@ export async function runAiChat({
 
     if (!providerResult.ok) {
       const providerLabel = runtime.provider === 'gemini' ? 'Gemini' : 'Ollama'
+      const rawError = providerResult.error.includes(providerLabel)
+        ? providerResult.error
+        : `${providerLabel}: ${providerResult.error}`
+
       return {
         success: false,
-        error: providerResult.error.includes(providerLabel)
-          ? providerResult.error
-          : `${providerLabel}: ${providerResult.error}`,
+        action: 'provider_error',
+        error: formatAiProviderError(rawError, runtime.provider),
         steps: executedSteps.length > 0 ? executedSteps : undefined,
       }
     }
