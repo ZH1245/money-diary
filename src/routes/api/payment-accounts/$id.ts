@@ -1,39 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
-import { PAYMENT_INSTITUTIONS } from '#/features/payment-accounts/constants/institutions'
 import {
   deleteUserPaymentAccount,
   updateUserPaymentAccount,
 } from '#/features/payment-accounts/server/payment-accounts-repository'
-import { PAYMENT_ACCOUNT_TYPES } from '#/features/payment-accounts/types/payment-account'
+import { updatePaymentAccountSchema } from '#/features/payment-accounts/schemas/payment-account'
 import { buildOptionsResponse, guardApiRequest, requireUserContext } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
-import { apiNoteSchema, apiTitleSchema } from '#/lib/server/validation-schemas'
-
-const institutionSlugs = PAYMENT_INSTITUTIONS.map((institution) => institution.slug) as readonly string[]
-
-const institutionSlugSchema = z
-  .string()
-  .nullable()
-  .optional()
-  .refine((value) => value === undefined || value === null || institutionSlugs.includes(value), {
-    message: 'Invalid institution',
-  })
-
-const updatePaymentAccountSchema = z.object({
-  name: apiTitleSchema.optional(),
-  institutionSlug: institutionSlugSchema,
-  accountType: z.enum(PAYMENT_ACCOUNT_TYPES).optional(),
-  lastFour: z
-    .string()
-    .trim()
-    .regex(/^\d{4}$/)
-    .nullable()
-    .optional(),
-  note: apiNoteSchema.nullable(),
-  isActive: z.boolean().optional(),
-})
 
 export const Route = createFileRoute('/api/payment-accounts/$id')({
   server: {

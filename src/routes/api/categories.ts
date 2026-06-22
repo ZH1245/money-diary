@@ -1,22 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import {
   createUserCategory,
   getVisibleCategoriesForUser,
 } from '#/features/categories/server/categories-repository'
-import { CATEGORY_KINDS } from '#/features/categories/types/category'
+import { createCategorySchema } from '#/features/categories/schemas/category'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
-  resolveTargetUserId,
 } from '#/lib/server/api-guards'
-
-const createCategorySchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1),
-  kind: z.enum(CATEGORY_KINDS),
-})
 
 export const Route = createFileRoute('/api/categories')({
   server: {
@@ -27,13 +20,10 @@ export const Route = createFileRoute('/api/categories')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
-        const requestedUserId = new URL(request.url).searchParams.get('userId')
-        const targetUserId = resolveTargetUserId({
-          requester: userContext,
-          requestedUserId,
-        })
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
-        const rows = await getVisibleCategoriesForUser(targetUserId)
+        const rows = await getVisibleCategoriesForUser(userContext.id)
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
@@ -41,13 +31,14 @@ export const Route = createFileRoute('/api/categories')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
-        const requestedUserId = new URL(request.url).searchParams.get('userId')
-        const targetUserId = resolveTargetUserId({
-          requester: userContext,
-          requestedUserId,
-        })
 
         const body = await request.json().catch(() => null)
+        const userIdRejected = rejectClientSuppliedUserId(
+          request,
+          body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+        )
+        if (userIdRejected) return userIdRejected
+
         const parsed = createCategorySchema.safeParse(body)
 
         if (!parsed.success) {
@@ -58,7 +49,7 @@ export const Route = createFileRoute('/api/categories')({
         }
 
         const row = await createUserCategory({
-          userId: targetUserId,
+          userId: userContext.id,
           name: parsed.data.name,
           slug: parsed.data.slug,
           kind: parsed.data.kind,

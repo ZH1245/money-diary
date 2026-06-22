@@ -68,7 +68,7 @@ export function DashboardDateRangeFilter() {
           variant="outline"
           title={dateLabel}
           aria-label={`Date range: ${fullLabel}`}
-          className="max-w-10 shrink-0 gap-1.5 overflow-hidden px-2 py-2 text-xs font-normal sm:max-w-none sm:px-3 lg:gap-2 lg:px-4"
+          className="shrink-0 gap-1.5 overflow-hidden px-2 py-2 text-xs font-normal max-w-9 sm:max-w-44 sm:px-3 md:max-w-52 lg:max-w-60 lg:gap-2 lg:px-4 xl:max-w-none"
         >
           <CalendarRange className="size-3.5 shrink-0 opacity-70" />
           <span className="hidden min-w-0 truncate sm:inline lg:max-w-36 xl:max-w-none">

@@ -1,33 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import { createUserGoal, getUserGoals } from '#/features/goals/server/goals-repository'
+import { createGoalSchema } from '#/features/goals/schemas/goal'
 import {
   buildOptionsResponse,
   guardApiRequest,
-  assertTargetUserId,
+  rejectClientSuppliedUserId,
   requireUserContext,
-  resolveTargetUserId,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
 import {
-  apiAmountSchema,
-  apiNoteSchema,
-  apiOptionalUserIdSchema,
-  apiTitleSchema,
   parseNonNegativeAmount,
   parsePositiveAmount,
 } from '#/lib/server/validation-schemas'
-
-const createGoalSchema = z.object({
-  title: apiTitleSchema,
-  targetAmount: apiAmountSchema,
-  currentAmount: apiAmountSchema.optional(),
-  savingsAmount: apiAmountSchema.optional(),
-  status: z.enum(['active', 'paused', 'completed']).optional(),
-  targetDate: z.string().datetime().optional(),
-  note: apiNoteSchema,
-  userId: apiOptionalUserIdSchema,
-})
 
 export const Route = createFileRoute('/api/goals')({
   server: {
@@ -37,13 +21,10 @@ export const Route = createFileRoute('/api/goals')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
-        const requestedUserId = new URL(request.url).searchParams.get('userId')
-        const targetUserId = resolveTargetUserId({
-          requester: userContext,
-          requestedUserId,
-        })
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
-        const rows = await getUserGoals(targetUserId)
+        const rows = await getUserGoals(userContext.id)
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
@@ -54,6 +35,9 @@ export const Route = createFileRoute('/api/goals')({
 
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+        const userIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (userIdRejected) return userIdRejected
+
         const parsed = createGoalSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
@@ -77,14 +61,8 @@ export const Route = createFileRoute('/api/goals')({
           return Response.json({ success: false, error: 'Savings amount must be a valid number' }, { status: 400 })
         }
 
-        const targetUserId = assertTargetUserId({
-          requester: userContext,
-          requestedUserId: parsed.data.userId,
-        })
-        if (targetUserId instanceof Response) return targetUserId
-
         const row = await createUserGoal({
-          userId: targetUserId,
+          userId: userContext.id,
           title: parsed.data.title,
           targetAmount: targetAmount.toString(),
           currentAmount: currentAmount.toString(),

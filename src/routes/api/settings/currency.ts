@@ -5,14 +5,13 @@ import { SUPPORTED_CURRENCIES } from '#/lib/currency'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
-  resolveTargetUserId,
 } from '#/lib/server/api-guards'
 
 const supportedCurrencyCodes = SUPPORTED_CURRENCIES.map((currency) => currency.code) as readonly string[]
 
 const updateCurrencySchema = z.object({
-  userId: z.string().trim().min(1).optional(),
   currency: z
     .string()
     .trim()
@@ -31,6 +30,12 @@ export const Route = createFileRoute('/api/settings/currency')({
         if (userContext instanceof Response) return userContext
 
         const body = await request.json().catch(() => null)
+        const userIdRejected = rejectClientSuppliedUserId(
+          request,
+          body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+        )
+        if (userIdRejected) return userIdRejected
+
         const parsed = updateCurrencySchema.safeParse(body)
 
         if (!parsed.success) {
@@ -40,13 +45,8 @@ export const Route = createFileRoute('/api/settings/currency')({
           )
         }
 
-        const targetUserId = resolveTargetUserId({
-          requester: userContext,
-          requestedUserId: parsed.data.userId,
-        })
-
         const updatedUser = await updateUserCurrency({
-          userId: targetUserId,
+          userId: userContext.id,
           currency: parsed.data.currency,
         })
 

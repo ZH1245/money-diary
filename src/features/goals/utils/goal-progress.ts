@@ -1,21 +1,8 @@
-/**
- * Parses API amount strings into numbers.
- */
-export function parseLedgerAmount(amount: string): number {
-  const parsedAmount = Number(amount)
-  if (!Number.isFinite(parsedAmount)) return 0
-  return parsedAmount
-}
+import { parseLedgerAmount } from '#/features/shared/utils/amount'
+import type { GoalProgressBreakdown, GoalsPageStats } from '#/features/goals/types/goal-stats'
 
-export interface GoalProgressBreakdown {
-  progressAmount: number
-  declaredSavingsAmount: number
-  linkedSavingsAmount: number
-  savingsForGoal: number
-  totalAchieved: number
-  targetAmount: number
-  stillNeeded: number
-}
+export { parseLedgerAmount } from '#/features/shared/utils/amount'
+export type { GoalProgressBreakdown, GoalsPageStats } from '#/features/goals/types/goal-stats'
 
 interface GoalProgressInput {
   targetAmount: string
@@ -57,13 +44,6 @@ export function buildLinkedSavingsByGoalId(
     accumulator[saving.goalId] = (accumulator[saving.goalId] ?? 0) + amount
     return accumulator
   }, {})
-}
-
-export interface GoalsPageStats {
-  activeCount: number
-  totalTarget: number
-  totalAchieved: number
-  totalStillNeeded: number
 }
 
 interface GoalWithStatus extends GoalProgressInput {

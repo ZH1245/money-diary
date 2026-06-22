@@ -1,29 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import { createUserSaving, getUserSavings } from '#/features/savings/server/savings-repository'
+import { createSavingSchema, DEFAULT_SAVING_TITLE } from '#/features/savings/schemas/saving'
 import { getUserGoalById } from '#/features/goals/server/goals-repository'
 import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/server/payment-accounts-repository'
 import {
   buildOptionsResponse,
   guardApiRequest,
-  assertTargetUserId,
+  rejectClientSuppliedUserId,
   requireUserContext,
-  resolveTargetUserId,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
-import { apiAmountSchema, apiNoteSchema, apiOptionalUserIdSchema, apiTitleSchema, parsePositiveAmount } from '#/lib/server/validation-schemas'
-
-const createSavingSchema = z.object({
-  title: apiTitleSchema.optional(),
-  amount: apiAmountSchema,
-  note: apiNoteSchema,
-  savedAt: z.string().datetime().optional(),
-  goalId: z.number().int().positive().nullable().optional(),
-  paymentAccountId: z.number().int().positive().nullable().optional(),
-  userId: apiOptionalUserIdSchema,
-})
-
-const DEFAULT_SAVING_TITLE = 'Savings deposit'
+import { parsePositiveAmount } from '#/lib/server/validation-schemas'
 
 export const Route = createFileRoute('/api/savings')({
   server: {
@@ -33,13 +20,10 @@ export const Route = createFileRoute('/api/savings')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
-        const requestedUserId = new URL(request.url).searchParams.get('userId')
-        const targetUserId = resolveTargetUserId({
-          requester: userContext,
-          requestedUserId,
-        })
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
-        const rows = await getUserSavings(targetUserId)
+        const rows = await getUserSavings(userContext.id)
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
@@ -50,6 +34,9 @@ export const Route = createFileRoute('/api/savings')({
 
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+        const userIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (userIdRejected) return userIdRejected
+
         const parsed = createSavingSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
@@ -58,12 +45,6 @@ export const Route = createFileRoute('/api/savings')({
           )
         }
 
-        const targetUserId = assertTargetUserId({
-          requester: userContext,
-          requestedUserId: parsed.data.userId,
-        })
-        if (targetUserId instanceof Response) return targetUserId
-
         const amount = parsePositiveAmount(parsed.data.amount)
         if (amount === null) {
           return Response.json({ success: false, error: 'Amount must be a positive number' }, { status: 400 })
@@ -71,7 +52,7 @@ export const Route = createFileRoute('/api/savings')({
 
         let goalId: number | null = parsed.data.goalId ?? null
         if (goalId) {
-          const goal = await getUserGoalById(targetUserId, goalId)
+          const goal = await getUserGoalById(userContext.id, goalId)
           if (!goal) {
             return Response.json({ success: false, error: 'Goal not found' }, { status: 404 })
           }
@@ -80,7 +61,7 @@ export const Route = createFileRoute('/api/savings')({
         let paymentAccountId: number | null = parsed.data.paymentAccountId ?? null
         if (paymentAccountId) {
           const canUseAccount = await isPaymentAccountAccessibleByUser({
-            userId: targetUserId,
+            userId: userContext.id,
             paymentAccountId,
           })
           if (!canUseAccount) {
@@ -89,7 +70,7 @@ export const Route = createFileRoute('/api/savings')({
         }
 
         const row = await createUserSaving({
-          userId: targetUserId,
+          userId: userContext.id,
           goalId,
           paymentAccountId,
           title: parsed.data.title?.trim() || DEFAULT_SAVING_TITLE,

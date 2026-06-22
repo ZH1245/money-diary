@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import {
   deleteUserTransaction,
   getUserTransactionById,
@@ -19,25 +18,7 @@ import {
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
-import {
-  apiAmountSchema,
-  apiNoteSchema,
-  apiSourceSchema,
-  apiTitleSchema,
-} from '#/lib/server/validation-schemas'
-
-const updateTransactionSchema = z.object({
-  title: apiTitleSchema.optional(),
-  amount: apiAmountSchema.optional(),
-  currency: z.string().trim().length(3).optional(),
-  exchangeRate: z.string().trim().min(1).optional(),
-  type: z.enum(['income', 'expense', 'transfer']).optional(),
-  categoryId: z.number().int().positive().nullable().optional(),
-  paymentAccountId: z.number().int().positive().nullable().optional(),
-  source: apiSourceSchema.nullable(),
-  note: apiNoteSchema.nullable(),
-  happenedAt: z.string().datetime().optional(),
-})
+import { updateTransactionSchema } from '#/features/transactions/schemas/transaction'
 
 export const Route = createFileRoute('/api/transactions/$id')({
   server: {

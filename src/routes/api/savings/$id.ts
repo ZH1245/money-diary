@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import {
   deleteUserSaving,
   updateUserSaving,
@@ -13,21 +12,8 @@ import {
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
-import {
-  apiAmountSchema,
-  apiNoteSchema,
-  apiTitleSchema,
-  parsePositiveAmount,
-} from '#/lib/server/validation-schemas'
-
-const updateSavingSchema = z.object({
-  title: apiTitleSchema.optional(),
-  amount: apiAmountSchema.optional(),
-  note: apiNoteSchema.nullable(),
-  savedAt: z.string().datetime().optional(),
-  goalId: z.number().int().positive().nullable().optional(),
-  paymentAccountId: z.number().int().positive().nullable().optional(),
-})
+import { updateSavingSchema } from '#/features/savings/schemas/saving'
+import { parsePositiveAmount } from '#/lib/server/validation-schemas'
 
 export const Route = createFileRoute('/api/savings/$id')({
   server: {

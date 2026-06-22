@@ -7,7 +7,6 @@ export const apiTitleSchema = z.string().trim().min(1).max(120)
 export const apiNoteSchema = z.string().trim().max(500).optional()
 export const apiSourceSchema = z.string().trim().max(120).optional()
 export const apiAmountSchema = z.string().trim().min(1).max(24)
-export const apiOptionalUserIdSchema = z.string().trim().min(1).max(128).optional()
 export const apiIdParamSchema = z.coerce.number().int().positive()
 
 /**

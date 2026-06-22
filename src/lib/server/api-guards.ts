@@ -62,33 +62,27 @@ export function buildOptionsResponse(request: Request): Response {
 }
 
 /**
- * Resolves the target user id while allowing admin overrides.
+ * Rejects API calls that try to scope data with a client-supplied userId.
+ * All user data access must come from the authenticated session only.
  */
-export function resolveTargetUserId({
-  requester,
-  requestedUserId,
-}: {
-  requester: AuthenticatedUserContext
-  requestedUserId?: string | null
-}) {
-  if (!requestedUserId || requestedUserId === requester.id) return requester.id
-  if (requester.role !== AUTH_ROLES.admin) return requester.id
-  return requestedUserId
-}
-
-/**
- * Resolves target user id and rejects non-admin cross-user access.
- */
-export function assertTargetUserId({
-  requester,
-  requestedUserId,
-}: {
-  requester: AuthenticatedUserContext
-  requestedUserId?: string | null
-}): string | Response {
-  if (!requestedUserId || requestedUserId === requester.id) return requester.id
-  if (requester.role !== AUTH_ROLES.admin) {
-    return Response.json({ success: false, error: 'Forbidden' }, { status: 403 })
+export function rejectClientSuppliedUserId(
+  request: Request,
+  body?: Record<string, unknown> | null,
+): Response | null {
+  const url = new URL(request.url)
+  if (url.searchParams.has('userId')) {
+    return Response.json(
+      { success: false, error: 'userId must not be supplied in query parameters' },
+      { status: 400 },
+    )
   }
-  return requestedUserId
+
+  if (body && Object.prototype.hasOwnProperty.call(body, 'userId')) {
+    return Response.json(
+      { success: false, error: 'userId must not be supplied in request body' },
+      { status: 400 },
+    )
+  }
+
+  return null
 }

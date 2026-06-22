@@ -279,15 +279,15 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
 
       <SidebarInset className="flex min-h-0 min-w-0 flex-col overflow-hidden">
         <header className="sticky top-0 z-20 shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/85">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 px-3 py-2 sm:px-4">
-            <SidebarTrigger className="shrink-0" />
-            <div className="hidden min-w-0 flex-1 overflow-hidden sm:block lg:max-w-[min(100%,24rem)] xl:max-w-none">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 px-3 py-2 sm:px-4 xl:grid-cols-[auto_minmax(0,1fr)_auto]">
+            <SidebarTrigger className="relative z-10 shrink-0" />
+            <div className="hidden min-w-0 overflow-hidden sm:block xl:col-start-2">
               <p className="truncate text-xs font-semibold uppercase tracking-wide sm:text-sm">{pageTitle}</p>
               <p className="mt-0.5 truncate text-sm font-medium opacity-85 max-xl:hidden">
                 Welcome{user.name ? `, ${user.name}` : ''}!
               </p>
             </div>
-            <div className="ml-auto min-w-0 shrink sm:ml-0 lg:ml-auto">
+            <div className="col-span-2 flex min-w-0 justify-end xl:col-span-1 xl:col-start-3">
               <WorkspaceHeaderToolbar onOpenAiPanel={() => setAiPanelOpen(true)} />
             </div>
           </div>

@@ -1,12 +1,7 @@
-import { parseLedgerAmount } from '#/features/goals/utils/goal-progress'
+import { parseLedgerAmount } from '#/features/shared/utils/amount'
+import type { SavingsPageStats } from '#/features/savings/types/savings-stats'
 
-export interface SavingsPageStats {
-  totalSaved: number
-  linkedToGoals: number
-  generalSavings: number
-  entryCount: number
-  linkedEntryCount: number
-}
+export type { SavingsPageStats } from '#/features/savings/types/savings-stats'
 
 /**
  * Builds descriptive stats for the savings page header.

@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import {
   deleteUserWishlistItem,
   updateUserWishlistItem,
@@ -11,22 +10,11 @@ import {
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
+import { updateWishlistSchema } from '#/features/wishlist/schemas/wishlist'
 import {
-  apiAmountSchema,
-  apiNoteSchema,
-  apiTitleSchema,
   parseNonNegativeAmount,
   parsePositiveAmount,
 } from '#/lib/server/validation-schemas'
-
-const updateWishlistSchema = z.object({
-  title: apiTitleSchema.optional(),
-  targetAmount: apiAmountSchema.optional(),
-  currentAmount: apiAmountSchema.optional(),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
-  status: z.enum(['active', 'paused', 'completed']).optional(),
-  note: apiNoteSchema.nullable(),
-})
 
 export const Route = createFileRoute('/api/wishlist/$id')({
   server: {

@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import {
   deleteUserGoal,
   updateUserGoal,
@@ -11,23 +10,11 @@ import {
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
+import { updateGoalSchema } from '#/features/goals/schemas/goal'
 import {
-  apiAmountSchema,
-  apiNoteSchema,
-  apiTitleSchema,
   parseNonNegativeAmount,
   parsePositiveAmount,
 } from '#/lib/server/validation-schemas'
-
-const updateGoalSchema = z.object({
-  title: apiTitleSchema.optional(),
-  targetAmount: apiAmountSchema.optional(),
-  currentAmount: apiAmountSchema.optional(),
-  savingsAmount: apiAmountSchema.optional(),
-  status: z.enum(['active', 'paused', 'completed']).optional(),
-  targetDate: z.string().datetime().nullable().optional(),
-  note: apiNoteSchema.nullable(),
-})
 
 export const Route = createFileRoute('/api/goals/$id')({
   server: {

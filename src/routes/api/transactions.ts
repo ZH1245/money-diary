@@ -1,16 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import {
   createUserTransaction,
   getUserTransactions,
   isCategoryAccessibleByUser,
 } from '#/features/transactions/server/transactions-repository'
+import { createTransactionSchema } from '#/features/transactions/schemas/transaction'
 import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/server/payment-accounts-repository'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
-  resolveTargetUserId,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
 import {
@@ -18,19 +18,6 @@ import {
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
-
-const createTransactionSchema = z.object({
-  title: z.string().min(1),
-  amount: z.string().min(1),
-  currency: z.string().trim().length(3).optional(),
-  exchangeRate: z.string().trim().min(1).optional(),
-  type: z.enum(['income', 'expense', 'transfer']),
-  categoryId: z.number().int().positive().nullable().optional(),
-  paymentAccountId: z.number().int().positive().nullable().optional(),
-  source: z.string().optional(),
-  note: z.string().optional(),
-  happenedAt: z.string().datetime().optional(),
-})
 
 export const Route = createFileRoute('/api/transactions')({
   server: {
@@ -40,13 +27,10 @@ export const Route = createFileRoute('/api/transactions')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
-        const requestedUserId = new URL(request.url).searchParams.get('userId')
-        const targetUserId = resolveTargetUserId({
-          requester: userContext,
-          requestedUserId,
-        })
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
-        const rows = await getUserTransactions(targetUserId)
+        const rows = await getUserTransactions(userContext.id)
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
