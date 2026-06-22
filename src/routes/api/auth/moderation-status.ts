@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { getUserModerationDetails } from '#/features/admin/server/admin-users-repository'
-import { buildOptionsResponse, guardApiRequest, requireUserContext } from '#/lib/server/api-guards'
+import { auth } from '#/lib/auth'
+import { buildOptionsResponse, guardApiRequest } from '#/lib/server/api-guards'
 
 export const Route = createFileRoute('/api/auth/moderation-status')({
   server: {
@@ -9,10 +10,16 @@ export const Route = createFileRoute('/api/auth/moderation-status')({
         const blockedResponse = guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
-        const userContext = await requireUserContext(request)
-        if (userContext instanceof Response) return userContext
+        const session = await auth.api.getSession({
+          headers: request.headers,
+        })
 
-        const moderation = await getUserModerationDetails(userContext.id)
+        const userId = session?.user?.id
+        if (!userId) {
+          return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const moderation = await getUserModerationDetails(userId)
         if (!moderation) {
           return Response.json({ success: false, error: 'User not found' }, { status: 404 })
         }

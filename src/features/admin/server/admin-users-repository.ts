@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { user } from '#/db/auth-schema'
 import { revokeAllUserSessions } from '#/features/auth/server/user-security-repository'
@@ -222,7 +222,7 @@ export async function getSignInModerationBlock(email: string) {
       moderationReason: user.moderationReason,
     })
     .from(user)
-    .where(eq(user.email, email.trim()))
+    .where(sql`lower(${user.email}) = lower(${email.trim()})`)
     .limit(1)
 
   if (!row) return null

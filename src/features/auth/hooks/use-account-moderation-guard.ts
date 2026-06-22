@@ -8,27 +8,29 @@ import { useEffect } from 'react'
  */
 export function useAccountModerationGuard(role: string | undefined) {
   const navigate = useNavigate()
+  const { data: session, isPending } = authClient.useSession()
 
   useEffect(() => {
     if (role === AUTH_ROLES.admin) return
+    if (isPending || !session?.user) return
 
     async function checkModeration() {
       const response = await fetch('/api/auth/moderation-status', { method: 'GET' })
       const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        accountStatus?: string
-        moderationReason?: string | null
         data?: {
           accountStatus?: string
           moderationReason?: string | null
         }
       } | null
 
-      const accountStatus = payload?.accountStatus ?? payload?.data?.accountStatus
-      if (response.ok && accountStatus === 'active') return
-      if (response.status !== 403 && response.ok) return
+      if (!response.ok) return
 
-      const moderationReason = payload?.moderationReason ?? payload?.data?.moderationReason ?? ''
+      const accountStatus = payload?.data?.accountStatus
+      if (accountStatus === 'active' || !accountStatus) return
+
+      if (accountStatus !== 'restricted' && accountStatus !== 'banned') return
+
+      const moderationReason = payload?.data?.moderationReason ?? ''
       await authClient.signOut()
       await navigate({
         to: '/account-suspended',
@@ -40,5 +42,5 @@ export function useAccountModerationGuard(role: string | undefined) {
     }
 
     void checkModeration()
-  }, [navigate, role])
+  }, [isPending, navigate, role, session?.user])
 }
