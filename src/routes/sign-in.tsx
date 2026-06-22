@@ -99,6 +99,12 @@ function SignInPage() {
       return
     }
 
+    if (!moderationResponse.ok) {
+      setIsSubmitting(false)
+      setErrorMessage('Unable to verify account status. Try again in a moment.')
+      return
+    }
+
     const requestPromise = authClient.signIn.email({
       email,
       password,

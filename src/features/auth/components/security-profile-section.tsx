@@ -5,6 +5,12 @@ import {
   getDefaultSecurityProfileFormValues,
 } from '#/features/auth/components/security-profile-fields'
 import type { SecurityQuestionKey } from '#/features/auth/constants/security-questions'
+import {
+  createSecurityProfileRequest,
+  fetchSecurityProfile,
+  SecurityProfileRequestError,
+  updateSecurityProfileRequest,
+} from '#/features/auth/api/security-profile-api'
 import { createSecurityProfileSchema, updateSecurityProfileSchema } from '#/features/auth/schemas/security-profile'
 import { queryKeys } from '#/features/query-keys'
 import { useQueryClient } from '@tanstack/react-query'
@@ -27,22 +33,12 @@ export function SecurityProfileSection() {
     async function loadProfile() {
       setIsLoading(true)
       try {
-        const response = await fetch('/api/auth/security-profile', { method: 'GET' })
-        const payload = (await response.json().catch(() => null)) as {
-          success?: boolean
-          data?: {
-            recoveryEmail: string
-            questionOneKey: string
-          } | null
-        } | null
-
-        if (!response.ok || !payload?.success) return
-
-        if (payload.data) {
+        const profile = await fetchSecurityProfile()
+        if (profile) {
           setHasProfile(true)
           setForm({
-            recoveryEmail: payload.data.recoveryEmail,
-            questionOneKey: payload.data.questionOneKey as SecurityQuestionKey,
+            recoveryEmail: profile.recoveryEmail,
+            questionOneKey: profile.questionOneKey as SecurityQuestionKey,
             answerOne: '',
           })
         }
@@ -85,28 +81,15 @@ export function SecurityProfileSection() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/auth/security-profile', {
-        method: hasProfile ? 'PATCH' : 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(
-          hasProfile
-            ? {
-                currentPassword,
-                recoveryEmail: form.recoveryEmail,
-                questionOneKey: form.questionOneKey,
-                answerOne: form.answerOne || undefined,
-              }
-            : form,
-        ),
-      })
-
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-      } | null
-
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error ?? 'Unable to save recovery settings')
+      if (hasProfile) {
+        await updateSecurityProfileRequest({
+          currentPassword,
+          recoveryEmail: form.recoveryEmail,
+          questionOneKey: form.questionOneKey,
+          answerOne: form.answerOne || undefined,
+        })
+      } else {
+        await createSecurityProfileRequest(form)
       }
 
       setHasProfile(true)
@@ -115,6 +98,9 @@ export function SecurityProfileSection() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.securityProfile })
       toast.success('Recovery settings saved')
     } catch (error) {
+      if (error instanceof SecurityProfileRequestError && error.fieldErrors) {
+        setFieldErrors(error.fieldErrors)
+      }
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save recovery settings')
     } finally {
       setIsSubmitting(false)

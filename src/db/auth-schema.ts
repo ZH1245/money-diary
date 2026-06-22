@@ -1,5 +1,5 @@
-import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { pgTable, text, timestamp, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const authRoles = pgTable("auth_roles", {
   slug: text("slug").primaryKey(),
@@ -45,7 +45,11 @@ export const userSecurityProfile = pgTable("user_security_profile", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-});
+}, (table) => [
+  uniqueIndex("user_security_profile_recovery_email_lower_unique_idx").on(
+    sql`lower(${table.recoveryEmail})`,
+  ),
+]);
 
 export const session = pgTable(
   "session",

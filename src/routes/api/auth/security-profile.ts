@@ -5,6 +5,7 @@ import {
   updateSecurityProfile,
   verifyUserCurrentPassword,
 } from '#/features/auth/server/user-security-repository'
+import { RecoveryEmailInUseError } from '#/features/auth/errors/recovery-email-errors'
 import {
   createSecurityProfileSchema,
   updateSecurityProfileSchema,
@@ -68,6 +69,17 @@ export const Route = createFileRoute('/api/auth/security-profile')({
           const profile = await getSecurityProfileForUser(userContext.id)
           return Response.json({ success: true, data: profile }, { status: 201 })
         } catch (error) {
+          if (error instanceof RecoveryEmailInUseError) {
+            return Response.json(
+              {
+                success: false,
+                error: error.message,
+                details: { fieldErrors: { recoveryEmail: [error.message] } },
+              },
+              { status: 409 },
+            )
+          }
+
           const message = error instanceof Error ? error.message : 'Unable to save security profile'
           const status = message.includes('already exists') ? 409 : 500
           return Response.json({ success: false, error: message }, { status })
@@ -118,6 +130,17 @@ export const Route = createFileRoute('/api/auth/security-profile')({
           const profile = await getSecurityProfileForUser(userContext.id)
           return Response.json({ success: true, data: profile })
         } catch (error) {
+          if (error instanceof RecoveryEmailInUseError) {
+            return Response.json(
+              {
+                success: false,
+                error: error.message,
+                details: { fieldErrors: { recoveryEmail: [error.message] } },
+              },
+              { status: 409 },
+            )
+          }
+
           const message = error instanceof Error ? error.message : 'Unable to update security profile'
           return Response.json({ success: false, error: message }, { status: 500 })
         }

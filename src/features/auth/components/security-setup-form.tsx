@@ -5,7 +5,7 @@ import {
 } from '#/features/auth/components/security-profile-fields'
 import type { SecurityQuestionKey } from '#/features/auth/constants/security-questions'
 import { createSecurityProfileSchema } from '#/features/auth/schemas/security-profile'
-import { createSecurityProfileRequest } from '#/features/auth/api/security-profile-api'
+import { createSecurityProfileRequest, SecurityProfileRequestError } from '#/features/auth/api/security-profile-api'
 import { queryKeys } from '#/features/query-keys'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -47,6 +47,9 @@ export function SecuritySetupForm() {
       toast.success('Account recovery saved')
       await navigate({ to: '/' })
     } catch (error) {
+      if (error instanceof SecurityProfileRequestError && error.fieldErrors) {
+        setFieldErrors(error.fieldErrors)
+      }
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save recovery settings')
     } finally {
       setIsSubmitting(false)

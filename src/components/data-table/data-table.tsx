@@ -32,6 +32,7 @@ interface DataTableProps<TData> {
   initialSorting?: SortingState
   maxBodyHeight?: number
   rowHeightEstimate?: number
+  fillWidth?: boolean
 }
 
 /**
@@ -47,6 +48,7 @@ export function DataTable<TData>({
   initialSorting = [],
   maxBodyHeight = 460,
   rowHeightEstimate = 56,
+  fillWidth = false,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting)
   const [globalFilter, setGlobalFilter] = useState('')
@@ -94,15 +96,19 @@ export function DataTable<TData>({
             value={globalFilter}
             onChange={(event) => setGlobalFilter(event.target.value)}
             placeholder={filterPlaceholder}
-            className="max-w-sm w-full sm:w-auto"
+            className={fillWidth ? 'w-full' : 'max-w-sm w-full sm:w-auto'}
             aria-label="Filter table rows"
           />
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <div ref={scrollContainerRef} className="overflow-auto" style={{ maxHeight: `${maxBodyHeight}px` }}>
-          <Table className="min-w-[720px]">
+      <div className={cn('rounded-xl border border-border', fillWidth ? 'w-full' : 'overflow-x-auto')}>
+        <div
+          ref={scrollContainerRef}
+          className={maxBodyHeight != null ? 'overflow-auto' : undefined}
+          style={maxBodyHeight != null ? { maxHeight: `${maxBodyHeight}px` } : undefined}
+        >
+          <Table className={fillWidth ? 'w-full table-fixed' : 'min-w-[720px]'}>
             <TableHeader className="sticky top-0 z-10 bg-muted/40">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

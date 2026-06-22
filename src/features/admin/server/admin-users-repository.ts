@@ -216,22 +216,28 @@ export async function getAdminUserById(userId: string): Promise<AdminUserRecord 
  * Blocks sign-in for restricted or banned accounts by email lookup.
  */
 export async function getSignInModerationBlock(email: string) {
-  const [row] = await db
-    .select({
-      accountStatus: user.accountStatus,
-      moderationReason: user.moderationReason,
-    })
-    .from(user)
-    .where(sql`lower(${user.email}) = lower(${email.trim()})`)
-    .limit(1)
+  const normalizedEmail = email.trim().toLowerCase()
 
-  if (!row) return null
+  try {
+    const [row] = await db
+      .select({
+        accountStatus: user.accountStatus,
+        moderationReason: user.moderationReason,
+      })
+      .from(user)
+      .where(sql`lower(${user.email}) = ${normalizedEmail}`)
+      .limit(1)
 
-  const accountStatus = (row.accountStatus as UserAccountStatus) ?? 'active'
-  if (accountStatus === 'active') return null
+    if (!row) return null
 
-  return {
-    accountStatus,
-    moderationReason: row.moderationReason ?? 'Access to this account is not available.',
+    const accountStatus = (row.accountStatus as UserAccountStatus) ?? 'active'
+    if (accountStatus === 'active') return null
+
+    return {
+      accountStatus,
+      moderationReason: row.moderationReason ?? 'Access to this account is not available.',
+    }
+  } catch {
+    return null
   }
 }

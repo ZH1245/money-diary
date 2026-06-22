@@ -92,14 +92,17 @@ export function AdminGlobalCategoriesSection() {
       {
         accessorKey: 'name',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+        meta: { cellClassName: 'w-[28%]' },
       },
       {
         accessorKey: 'slug',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Slug" />,
+        meta: { cellClassName: 'w-[28%]' },
       },
       {
         accessorKey: 'kind',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Kind" />,
+        meta: { cellClassName: 'w-[24%]' },
         cell: ({ row }) => <span className="capitalize">{row.original.kind}</span>,
       },
       {
@@ -162,7 +165,7 @@ export function AdminGlobalCategoriesSection() {
   }
 
   return (
-    <article className="feature-card rounded-xl border border-border p-5">
+    <article className="feature-card rounded-xl border border-border p-5 xl:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -197,6 +200,8 @@ export function AdminGlobalCategoriesSection() {
             data={categories}
             filterPlaceholder="Filter by name, slug, or kind..."
             emptyMessage="No global categories found."
+            fillWidth
+            maxBodyHeight={undefined}
           />
         ) : (
           <PageEmptyState message="No global categories yet. Add one to share it with all users." />

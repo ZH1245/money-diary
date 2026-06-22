@@ -23,19 +23,24 @@ export const Route = createFileRoute('/api/auth/sign-in-moderation')({
           )
         }
 
-        const block = await getSignInModerationBlock(parsed.data.email)
-        if (!block) {
-          return Response.json({ success: true, data: { allowed: true } })
-        }
+        try {
+          const block = await getSignInModerationBlock(parsed.data.email)
+          if (!block) {
+            return Response.json({ success: true, data: { allowed: true } })
+          }
 
-        return Response.json({
-          success: true,
-          data: {
-            allowed: false,
-            accountStatus: block.accountStatus,
-            moderationReason: block.moderationReason,
-          },
-        })
+          return Response.json({
+            success: true,
+            data: {
+              allowed: false,
+              accountStatus: block.accountStatus,
+              moderationReason: block.moderationReason,
+            },
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to check account status'
+          return Response.json({ success: false, error: message }, { status: 500 })
+        }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
     },

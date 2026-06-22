@@ -3,6 +3,10 @@ import { hashPassword, verifyPassword } from 'better-auth/crypto'
 import { db } from '#/db/index'
 import { account, session, user, userSecurityProfile } from '#/db/auth-schema'
 import { getSecurityQuestionLabel } from '#/features/auth/constants/security-questions'
+import {
+  normalizeRecoveryEmail,
+  RecoveryEmailInUseError,
+} from '#/features/auth/errors/recovery-email-errors'
 import { hashSecurityAnswer, maskRecoveryEmail, verifySecurityAnswer } from '#/lib/server/security-answer'
 
 export interface SecurityProfileRecord {
@@ -35,6 +39,33 @@ export async function getSecurityProfileForUser(userId: string): Promise<Securit
 }
 
 /**
+ * Ensures a recovery email is not already linked to another account.
+ */
+async function assertRecoveryEmailAvailable({
+  recoveryEmail,
+  excludeUserId,
+}: {
+  recoveryEmail: string
+  excludeUserId?: string
+}) {
+  const normalizedEmail = normalizeRecoveryEmail(recoveryEmail)
+
+  const [existing] = await db
+    .select({ userId: userSecurityProfile.userId })
+    .from(userSecurityProfile)
+    .where(
+      excludeUserId
+        ? sql`lower(${userSecurityProfile.recoveryEmail}) = ${normalizedEmail} AND ${userSecurityProfile.userId} <> ${excludeUserId}`
+        : sql`lower(${userSecurityProfile.recoveryEmail}) = ${normalizedEmail}`,
+    )
+    .limit(1)
+
+  if (existing) {
+    throw new RecoveryEmailInUseError()
+  }
+}
+
+/**
  * Creates a security profile for a newly registered user.
  */
 export async function createSecurityProfile({
@@ -58,11 +89,14 @@ export async function createSecurityProfile({
     throw new Error('Security profile already exists')
   }
 
+  const normalizedRecoveryEmail = normalizeRecoveryEmail(recoveryEmail)
+  await assertRecoveryEmailAvailable({ recoveryEmail: normalizedRecoveryEmail })
+
   const answerOneHash = await hashSecurityAnswer(answerOne)
 
   await db.insert(userSecurityProfile).values({
     userId,
-    recoveryEmail: recoveryEmail.trim(),
+    recoveryEmail: normalizedRecoveryEmail,
     recoveryEmailVerified: false,
     questionOneKey,
     answerOneHash,
@@ -100,7 +134,12 @@ export async function updateSecurityProfile({
   }
 
   if (recoveryEmail !== undefined) {
-    nextValues.recoveryEmail = recoveryEmail.trim()
+    const normalizedRecoveryEmail = normalizeRecoveryEmail(recoveryEmail)
+    await assertRecoveryEmailAvailable({
+      recoveryEmail: normalizedRecoveryEmail,
+      excludeUserId: userId,
+    })
+    nextValues.recoveryEmail = normalizedRecoveryEmail
     nextValues.recoveryEmailVerified = false
   }
 

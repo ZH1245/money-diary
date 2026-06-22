@@ -294,7 +294,7 @@ export function AdminUsersSection() {
         ) : users.length === 0 ? (
           <PageEmptyState message="No registered users yet." />
         ) : (
-          <DataTable columns={columns} data={users} />
+          <DataTable columns={columns} data={users} fillWidth maxBodyHeight={undefined} />
         )}
       </div>
 
