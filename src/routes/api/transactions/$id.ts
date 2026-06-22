@@ -9,6 +9,7 @@ import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/se
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
@@ -29,6 +30,9 @@ export const Route = createFileRoute('/api/transactions/$id')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const transactionId = parseRouteId(params.id)
         if (!transactionId) {
           return Response.json({ success: false, error: 'Invalid transaction id' }, { status: 400 })
@@ -36,6 +40,10 @@ export const Route = createFileRoute('/api/transactions/$id')({
 
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+
+        const bodyUserIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (bodyUserIdRejected) return bodyUserIdRejected
+
         const parsed = updateTransactionSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
@@ -140,6 +148,9 @@ export const Route = createFileRoute('/api/transactions/$id')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const transactionId = parseRouteId(params.id)
         if (!transactionId) {

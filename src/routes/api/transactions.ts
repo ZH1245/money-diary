@@ -41,6 +41,10 @@ export const Route = createFileRoute('/api/transactions')({
 
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+
+        const userIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (userIdRejected) return userIdRejected
+
         const parsed = createTransactionSchema.safeParse(body)
 
         if (!parsed.success) {

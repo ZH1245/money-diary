@@ -6,6 +6,7 @@ import {
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
@@ -25,6 +26,9 @@ export const Route = createFileRoute('/api/wishlist/$id')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const itemId = parseRouteId(params.id)
         if (!itemId) {
           return Response.json({ success: false, error: 'Invalid wishlist id' }, { status: 400 })
@@ -32,6 +36,8 @@ export const Route = createFileRoute('/api/wishlist/$id')({
 
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+        const bodyUserIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (bodyUserIdRejected) return bodyUserIdRejected
         const parsed = updateWishlistSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
@@ -80,6 +86,9 @@ export const Route = createFileRoute('/api/wishlist/$id')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const itemId = parseRouteId(params.id)
         if (!itemId) {

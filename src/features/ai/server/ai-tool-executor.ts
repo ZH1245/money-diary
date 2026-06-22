@@ -14,7 +14,7 @@ import {
   isPaymentAccountAccessibleByUser,
 } from '#/features/payment-accounts/server/payment-accounts-repository'
 import { createUserSaving } from '#/features/savings/server/savings-repository'
-import { createUserGoal, deleteUserGoal, getUserGoals, updateUserGoal } from '#/features/goals/server/goals-repository'
+import { createUserGoal, deleteUserGoal, getUserGoalById, getUserGoals, updateUserGoal } from '#/features/goals/server/goals-repository'
 import {
   createUserWishlistItem,
   deleteUserWishlistItem,
@@ -362,7 +362,7 @@ export async function executeAiTool({
 
     let goalId: number | null = null
     if (rawGoalId != null) {
-      const goal = context.userGoals.find((entry) => entry.id === rawGoalId)
+      const goal = await getUserGoalById(context.userId, rawGoalId)
       if (!goal) return { action: 'create_saving', success: false, message: 'Goal not accessible.' }
       goalId = rawGoalId
     }
@@ -520,7 +520,7 @@ export async function executeAiTool({
     }
 
     const { goalId, title, targetAmount, status, targetDate, note } = args.data
-    const goal = context.userGoals.find((entry) => entry.id === goalId)
+    const goal = await getUserGoalById(context.userId, goalId)
     if (!goal) {
       return { action: 'update_goal', success: false, message: 'Goal not accessible.' }
     }
@@ -562,7 +562,7 @@ export async function executeAiTool({
       return { action: 'delete_goal', success: false, message: 'Invalid goal delete arguments.' }
     }
 
-    const goal = context.userGoals.find((entry) => entry.id === args.data.goalId)
+    const goal = await getUserGoalById(context.userId, args.data.goalId)
     if (!goal) {
       return { action: 'delete_goal', success: false, message: 'Goal not accessible.' }
     }

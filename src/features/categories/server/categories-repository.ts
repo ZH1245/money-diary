@@ -41,15 +41,26 @@ export async function createUserCategory(params: CreateUserCategoryParams) {
 /**
  * Deletes a user-owned category when it is not referenced by transactions.
  */
-export async function deleteUserCategory(userId: string, categoryId: number) {
+export async function deleteUserCategory(
+  userId: string,
+  categoryId: number,
+): Promise<{ status: 'deleted'; id: number } | { status: 'blocked' } | { status: 'not_found' } | { status: 'protected' }> {
   const [category] = await db
     .select()
     .from(categories)
-    .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
+    .where(eq(categories.id, categoryId))
     .limit(1)
 
   if (!category) {
-    return null
+    return { status: 'not_found' }
+  }
+
+  if (category.userId == null) {
+    return { status: 'protected' }
+  }
+
+  if (category.userId !== userId) {
+    return { status: 'not_found' }
   }
 
   const [{ transactionCount }] = await db
@@ -58,13 +69,17 @@ export async function deleteUserCategory(userId: string, categoryId: number) {
     .where(and(eq(transactions.categoryId, categoryId), eq(transactions.userId, userId)))
 
   if (Number(transactionCount) > 0) {
-    return { blocked: true as const }
+    return { status: 'blocked' }
   }
 
   const [deleted] = await db
     .delete(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
-    .returning()
+    .returning({ id: categories.id })
 
-  return deleted ?? null
+  if (!deleted) {
+    return { status: 'not_found' }
+  }
+
+  return { status: 'deleted', id: deleted.id }
 }

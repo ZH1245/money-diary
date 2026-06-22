@@ -2,6 +2,7 @@ import { and, desc, eq, exists } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { aiConversations, aiMessages } from '#/db/schema'
 import type { AiMessageMetadata } from '#/features/ai/types/ai-conversation'
+import { userOwnsAiConversation } from '#/lib/server/ownership-guards'
 
 const MAX_MESSAGES_PER_CONVERSATION = 100
 
@@ -91,19 +92,25 @@ export async function createUserAiConversation({
 }
 
 /**
- * Appends a message to a conversation and bumps updatedAt.
+ * Appends a message to a conversation owned by the user and bumps updatedAt.
  */
 export async function appendAiConversationMessage({
+  userId,
   conversationId,
   role,
   content,
   metadata,
 }: {
+  userId: string
   conversationId: number
   role: 'user' | 'assistant'
   content: string
   metadata?: AiMessageMetadata | null
 }) {
+  if (!(await userOwnsAiConversation(userId, conversationId))) {
+    return null
+  }
+
   const [message] = await db
     .insert(aiMessages)
     .values({
@@ -117,15 +124,19 @@ export async function appendAiConversationMessage({
   await db
     .update(aiConversations)
     .set({ updatedAt: new Date() })
-    .where(eq(aiConversations.id, conversationId))
+    .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.userId, userId)))
 
   return message
 }
 
 /**
- * Loads chat messages formatted for the AI model.
+ * Loads chat messages formatted for the AI model when the user owns the conversation.
  */
-export async function getAiConversationModelMessages(conversationId: number) {
+export async function getAiConversationModelMessages(userId: string, conversationId: number) {
+  if (!(await userOwnsAiConversation(userId, conversationId))) {
+    return []
+  }
+
   const messages = await db
     .select({
       role: aiMessages.role,
@@ -144,25 +155,36 @@ export async function getAiConversationModelMessages(conversationId: number) {
 }
 
 /**
- * Updates conversation title from the first user message.
+ * Updates conversation title from the first user message when the user owns it.
  */
 export async function maybeSetAiConversationTitle({
+  userId,
   conversationId,
   title,
 }: {
+  userId: string
   conversationId: number
   title: string
 }) {
   const trimmed = title.trim().slice(0, 80)
-  if (!trimmed) return
+  if (!trimmed) return false
 
-  await db
+  const result = await db
     .update(aiConversations)
     .set({
       title: trimmed,
       updatedAt: new Date(),
     })
-    .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.title, 'New chat')))
+    .where(
+      and(
+        eq(aiConversations.id, conversationId),
+        eq(aiConversations.userId, userId),
+        eq(aiConversations.title, 'New chat'),
+      ),
+    )
+    .returning({ id: aiConversations.id })
+
+  return result.length > 0
 }
 
 /**
@@ -203,9 +225,13 @@ export async function deleteUserAiConversation({
 }
 
 /**
- * Trims old messages when a conversation grows too large.
+ * Trims old messages when a conversation grows too large (user-owned only).
  */
-export async function trimAiConversationMessages(conversationId: number) {
+export async function trimAiConversationMessages(userId: string, conversationId: number) {
+  if (!(await userOwnsAiConversation(userId, conversationId))) {
+    return
+  }
+
   const messages = await db
     .select({ id: aiMessages.id })
     .from(aiMessages)

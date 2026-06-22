@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { getUserAiSettings, getUserAiSettingsForRuntime, upsertUserAiSettings } from '#/features/settings/server/settings-repository'
@@ -35,6 +36,9 @@ export const Route = createFileRoute('/api/settings/ai')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         try {
           const settings = await getUserAiSettings({ userId: userContext.id })
@@ -73,7 +77,16 @@ export const Route = createFileRoute('/api/settings/ai')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const body = await request.json().catch(() => null)
+        const bodyUserIdRejected = rejectClientSuppliedUserId(
+          request,
+          body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+        )
+        if (bodyUserIdRejected) return bodyUserIdRejected
+
         const parsed = saveAiSettingsSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { fetchExchangeRate } from '#/features/exchange-rates/server/fetch-exchange-rate'
-import { buildOptionsResponse, guardApiRequest, requireUserContext } from '#/lib/server/api-guards'
+import { buildOptionsResponse, guardApiRequest, rejectClientSuppliedUserId, requireUserContext } from '#/lib/server/api-guards'
 import { SUPPORTED_CURRENCIES } from '#/lib/currency'
 
 const supportedCurrencyCodes = SUPPORTED_CURRENCIES.map((currency) => currency.code) as readonly string[]
@@ -28,6 +28,9 @@ export const Route = createFileRoute('/api/exchange-rate')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const query = Object.fromEntries(new URL(request.url).searchParams.entries())
         const parsed = exchangeRateQuerySchema.safeParse(query)

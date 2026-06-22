@@ -5,6 +5,7 @@ import { probeGeminiApiKey } from '#/features/ai/server/gemini-client'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 
@@ -31,7 +32,16 @@ export const Route = createFileRoute('/api/settings/ai/test')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const body = await request.json().catch(() => null)
+        const bodyUserIdRejected = rejectClientSuppliedUserId(
+          request,
+          body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+        )
+        if (bodyUserIdRejected) return bodyUserIdRejected
+
         const parsed = testAiSettingsSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(

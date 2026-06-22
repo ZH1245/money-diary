@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { getUserAiSettingsForRuntime } from '#/features/settings/server/settings-repository'
@@ -15,6 +16,9 @@ export const Route = createFileRoute('/api/settings/ai/reveal')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const settings = await getUserAiSettingsForRuntime({ userId: userContext.id })
         if (!settings || !settings.apiKey) {

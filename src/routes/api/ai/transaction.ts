@@ -13,6 +13,7 @@ import {
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
@@ -34,8 +35,14 @@ export const Route = createFileRoute('/api/ai/transaction')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+
+        const bodyUserIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (bodyUserIdRejected) return bodyUserIdRejected
 
         const parsed = aiTransactionSchema.safeParse(body)
         if (!parsed.success) {

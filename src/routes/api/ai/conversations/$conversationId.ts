@@ -7,6 +7,7 @@ import {
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
@@ -20,6 +21,9 @@ export const Route = createFileRoute('/api/ai/conversations/$conversationId')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const conversationId = parseRouteId(params.conversationId)
         if (!conversationId) {
@@ -59,6 +63,9 @@ export const Route = createFileRoute('/api/ai/conversations/$conversationId')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const conversationId = parseRouteId(params.conversationId)
         if (!conversationId) {

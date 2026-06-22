@@ -14,6 +14,7 @@ import type { AiMessageMetadata } from '#/features/ai/types/ai-conversation'
 import {
   buildOptionsResponse,
   guardApiRequest,
+  rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
@@ -30,8 +31,14 @@ export const Route = createFileRoute('/api/ai/chat')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+
+        const bodyUserIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (bodyUserIdRejected) return bodyUserIdRejected
 
         const parsed = aiChatRequestSchema.safeParse(body)
         if (!parsed.success) {
@@ -69,17 +76,19 @@ export const Route = createFileRoute('/api/ai/chat')({
         }
 
         await appendAiConversationMessage({
+          userId: userContext.id,
           conversationId,
           role: 'user',
           content: message,
         })
 
         await maybeSetAiConversationTitle({
+          userId: userContext.id,
           conversationId,
           title: message,
         })
 
-        const messages = await getAiConversationModelMessages(conversationId)
+        const messages = await getAiConversationModelMessages(userContext.id, conversationId)
 
         const result = await runAiChat({
           userId: userContext.id,
@@ -112,13 +121,14 @@ export const Route = createFileRoute('/api/ai/chat')({
         )
 
         await appendAiConversationMessage({
+          userId: userContext.id,
           conversationId,
           role: 'assistant',
           content: assistantContent,
           metadata: assistantMetadata,
         })
 
-        await trimAiConversationMessages(conversationId)
+        await trimAiConversationMessages(userContext.id, conversationId)
 
         if (result.closeChat) {
           await closeUserAiConversation({

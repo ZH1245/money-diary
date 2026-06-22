@@ -6,7 +6,7 @@ import {
 } from '#/features/payment-accounts/server/payment-accounts-repository'
 import { isProtectedPaymentAccount } from '#/features/payment-accounts/utils/protected-account'
 import { updatePaymentAccountSchema } from '#/features/payment-accounts/schemas/payment-account'
-import { buildOptionsResponse, guardApiRequest, requireUserContext } from '#/lib/server/api-guards'
+import { buildOptionsResponse, guardApiRequest, rejectClientSuppliedUserId, requireUserContext } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
 
@@ -19,6 +19,9 @@ export const Route = createFileRoute('/api/payment-accounts/$id')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
         const paymentAccountId = parseRouteId(params.id)
         if (!paymentAccountId) {
           return Response.json({ success: false, error: 'Invalid payment account id' }, { status: 400 })
@@ -26,6 +29,8 @@ export const Route = createFileRoute('/api/payment-accounts/$id')({
 
         const body = await parseJsonBody(request)
         if (body instanceof Response) return body
+        const bodyUserIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
+        if (bodyUserIdRejected) return bodyUserIdRejected
         const parsed = updatePaymentAccountSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
@@ -56,6 +61,9 @@ export const Route = createFileRoute('/api/payment-accounts/$id')({
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
 
         const paymentAccountId = parseRouteId(params.id)
         if (!paymentAccountId) {
