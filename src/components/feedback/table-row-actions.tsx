@@ -7,12 +7,19 @@ interface TableRowActionsProps {
   onEdit: () => void
   onDelete: () => void
   isDeletePending?: boolean
+  canDelete?: boolean
 }
 
 /**
  * Standard edit and delete controls for data table rows.
  */
-export function TableRowActions({ label, onEdit, onDelete, isDeletePending }: TableRowActionsProps) {
+export function TableRowActions({
+  label,
+  onEdit,
+  onDelete,
+  isDeletePending,
+  canDelete = true,
+}: TableRowActionsProps) {
   return (
     <div className="flex items-center justify-end gap-1">
       <Button
@@ -25,7 +32,9 @@ export function TableRowActions({ label, onEdit, onDelete, isDeletePending }: Ta
       >
         <Pencil className="size-4" />
       </Button>
-      <DeleteRowButton label={label} isPending={Boolean(isDeletePending)} onConfirm={onDelete} />
+      {canDelete ? (
+        <DeleteRowButton label={label} isPending={Boolean(isDeletePending)} onConfirm={onDelete} />
+      ) : null}
     </div>
   )
 }

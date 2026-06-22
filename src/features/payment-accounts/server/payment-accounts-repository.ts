@@ -2,6 +2,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { paymentAccounts } from '#/db/schema'
 import type { PaymentAccountType } from '#/features/payment-accounts/types/payment-account'
+import { isProtectedPaymentAccount } from '#/features/payment-accounts/utils/protected-account'
 
 interface CreateUserPaymentAccountParams {
   userId: string
@@ -129,9 +130,13 @@ export async function updateUserPaymentAccount(params: {
 }
 
 /**
- * Deletes a payment account row for a user.
+ * Deletes a payment account row for a user when it is not a protected default account.
  */
 export async function deleteUserPaymentAccount(userId: string, paymentAccountId: number) {
+  const existing = await getUserPaymentAccountById(userId, paymentAccountId)
+  if (!existing) return null
+  if (isProtectedPaymentAccount(existing)) return null
+
   const [row] = await db
     .delete(paymentAccounts)
     .where(and(eq(paymentAccounts.userId, userId), eq(paymentAccounts.id, paymentAccountId)))

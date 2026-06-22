@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   deleteUserPaymentAccount,
+  getUserPaymentAccountById,
   updateUserPaymentAccount,
 } from '#/features/payment-accounts/server/payment-accounts-repository'
+import { isProtectedPaymentAccount } from '#/features/payment-accounts/utils/protected-account'
 import { updatePaymentAccountSchema } from '#/features/payment-accounts/schemas/payment-account'
 import { buildOptionsResponse, guardApiRequest, requireUserContext } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
@@ -58,6 +60,18 @@ export const Route = createFileRoute('/api/payment-accounts/$id')({
         const paymentAccountId = parseRouteId(params.id)
         if (!paymentAccountId) {
           return Response.json({ success: false, error: 'Invalid payment account id' }, { status: 400 })
+        }
+
+        const existing = await getUserPaymentAccountById(userContext.id, paymentAccountId)
+        if (!existing) {
+          return Response.json({ success: false, error: 'Payment account not found' }, { status: 404 })
+        }
+
+        if (isProtectedPaymentAccount(existing)) {
+          return Response.json(
+            { success: false, error: 'Built-in accounts like Cash on hand cannot be deleted.' },
+            { status: 403 },
+          )
         }
 
         const deleted = await deleteUserPaymentAccount(userContext.id, paymentAccountId)

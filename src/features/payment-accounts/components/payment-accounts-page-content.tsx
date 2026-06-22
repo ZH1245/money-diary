@@ -30,6 +30,7 @@ import {
   formatPaymentAccountLabel,
   formatPaymentAccountType,
 } from '#/features/payment-accounts/utils/account-label'
+import { canDeletePaymentAccount } from '#/features/payment-accounts/utils/protected-account'
 import { getInstitutionName } from '#/features/payment-accounts/constants/institutions'
 import {
   ACCOUNT_TYPE_OPTIONS,
@@ -185,6 +186,7 @@ export function PaymentAccountsPageContent() {
             onEdit={() => openEditAccount(row.original)}
             onDelete={() => void handleDeleteAccount(row.original.id, row.original.name)}
             isDeletePending={deleteAccountMutation.isPending}
+            canDelete={canDeletePaymentAccount(row.original)}
           />
         ),
       },
