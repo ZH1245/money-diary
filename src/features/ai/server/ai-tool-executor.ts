@@ -1,7 +1,9 @@
 import { z } from 'zod'
 import {
   createUserTransaction,
+  getUserTransactionById,
   isCategoryAccessibleByUser,
+  updateUserTransaction,
 } from '#/features/transactions/server/transactions-repository'
 import {
   getVisibleCategoriesForUser,
@@ -24,6 +26,7 @@ import { slugifyCategoryName } from '#/features/categories/utils/category-slug'
 import {
   requiresTransactionCategory,
   resolveTransactionCategoryId,
+  type TransactionType,
 } from '#/features/transactions/utils/transaction-category'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
 import { fetchExchangeRate } from '#/features/exchange-rates/server/fetch-exchange-rate'
@@ -37,6 +40,19 @@ const createTransactionArgsSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().trim().length(3).optional(),
   type: z.enum(['expense', 'income', 'transfer']),
+  date: z.string().min(6).optional(),
+  categoryId: z.number().int().optional(),
+  categoryName: z.string().optional(),
+  paymentAccountId: z.number().int().positive().optional(),
+  note: z.string().optional(),
+})
+
+const updateTransactionArgsSchema = z.object({
+  transactionId: z.number().int().positive(),
+  title: z.string().min(1).optional(),
+  amount: z.number().positive().optional(),
+  currency: z.string().trim().length(3).optional(),
+  type: z.enum(['expense', 'income', 'transfer']).optional(),
   date: z.string().min(6).optional(),
   categoryId: z.number().int().optional(),
   categoryName: z.string().optional(),
@@ -218,6 +234,120 @@ export async function executeAiTool({
         normalizedAmount: amountResult.data.normalizedAmount,
         ledgerCurrency: context.currency,
       }),
+      entityId: row.id,
+    })
+  }
+
+  if (toolName === 'update_transaction') {
+    const args = updateTransactionArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'update_transaction', success: false, message: 'Invalid transaction update arguments.' }
+    }
+
+    const existing = await getUserTransactionById(context.userId, args.data.transactionId)
+    if (!existing) {
+      return { action: 'update_transaction', success: false, message: 'Transaction not found.' }
+    }
+
+    const nextType = (args.data.type ?? existing.type) as TransactionType
+    let categoryId: number | null = existing.categoryId
+
+    if (nextType === 'income') {
+      categoryId = null
+    } else if (args.data.categoryId !== undefined) {
+      if (args.data.categoryId === -1) {
+        if (!args.data.categoryName?.trim()) {
+          return { action: 'update_transaction', success: false, message: 'Category name is required for new category.' }
+        }
+        const newCat = await createUserCategory({
+          userId: context.userId,
+          name: args.data.categoryName.trim(),
+          slug: slugifyCategoryName(args.data.categoryName),
+          kind: 'other',
+        })
+        categoryId = newCat.id
+      } else {
+        const ok = await isCategoryAccessibleByUser({ userId: context.userId, categoryId: args.data.categoryId })
+        if (!ok) return { action: 'update_transaction', success: false, message: 'Category not accessible.' }
+        categoryId = args.data.categoryId
+      }
+    } else if (args.data.type !== undefined && requiresTransactionCategory(nextType) && categoryId === null) {
+      return {
+        action: 'update_transaction',
+        success: false,
+        message: 'Category is required when changing to expense or transfer.',
+      }
+    }
+
+    categoryId = resolveTransactionCategoryId(nextType, categoryId)
+    if (requiresTransactionCategory(nextType) && categoryId === null) {
+      return { action: 'update_transaction', success: false, message: 'Category is required for expense and transfer.' }
+    }
+
+    let paymentAccountId: number | null | undefined
+    if (args.data.paymentAccountId !== undefined) {
+      const ok = await isPaymentAccountAccessibleByUser({
+        userId: context.userId,
+        paymentAccountId: args.data.paymentAccountId,
+      })
+      if (!ok) return { action: 'update_transaction', success: false, message: 'Account not accessible.' }
+      paymentAccountId = args.data.paymentAccountId
+    }
+
+    let happenedAtUpdate: Date | undefined
+    if (args.data.date !== undefined) {
+      const parsedDate = resolveToolDate(args.data.date, context.today)
+      if (!parsedDate) {
+        return { action: 'update_transaction', success: false, message: `Invalid date: ${args.data.date}` }
+      }
+      happenedAtUpdate = parsedDate
+    }
+
+    let amount: string | undefined
+    let sourceAmount: string | null | undefined
+    let sourceCurrency: string | undefined
+    let exchangeRate: string | undefined
+
+    if (args.data.amount !== undefined || args.data.currency !== undefined) {
+      const amountResult = await resolveAiTransactionAmount({
+        amount: args.data.amount ?? Number(existing.sourceAmount ?? existing.amount),
+        currency: args.data.currency ?? existing.sourceCurrency,
+        userCurrency: context.currency,
+      })
+      if (!amountResult.ok) {
+        return { action: 'update_transaction', success: false, message: amountResult.error }
+      }
+      amount = amountResult.data.normalizedAmount
+      sourceAmount = amountResult.data.sourceAmount
+      sourceCurrency = amountResult.data.sourceCurrency
+      exchangeRate = amountResult.data.exchangeRate
+    }
+
+    const shouldUpdateCategory = args.data.type !== undefined || args.data.categoryId !== undefined
+
+    const row = await updateUserTransaction({
+      userId: context.userId,
+      transactionId: args.data.transactionId,
+      ...(args.data.title !== undefined ? { title: args.data.title.trim() } : {}),
+      ...(amount !== undefined ? { amount } : {}),
+      ...(sourceAmount !== undefined ? { sourceAmount } : {}),
+      ...(sourceCurrency !== undefined ? { sourceCurrency } : {}),
+      ...(exchangeRate !== undefined ? { exchangeRate } : {}),
+      ...(args.data.type !== undefined ? { type: args.data.type } : {}),
+      ...(shouldUpdateCategory ? { categoryId } : {}),
+      ...(paymentAccountId !== undefined ? { paymentAccountId } : {}),
+      ...(args.data.note !== undefined ? { note: args.data.note.trim() || null } : {}),
+      ...(happenedAtUpdate !== undefined ? { happenedAt: happenedAtUpdate } : {}),
+    })
+
+    if (!row) {
+      return { action: 'update_transaction', success: false, message: 'Transaction not found.' }
+    }
+
+    return buildWriteStepResult({
+      action: 'update_transaction',
+      success: true,
+      message: `Transaction updated: "${row.title}" (${row.type})`,
       entityId: row.id,
     })
   }

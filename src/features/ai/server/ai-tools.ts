@@ -4,7 +4,7 @@ export const AI_TOOLS = [
     function: {
       name: 'query_user_data',
       description:
-        'Read the user\'s transactions, savings, goals, or wishlist. Use for any question about their data: totals, lists, date-wise breakdowns, category breakdowns, etc.',
+        'Read the user\'s transactions, savings, goals, or wishlist. Use for any question about their data: totals, lists, date-wise breakdowns, category breakdowns, or to find transaction refs before update_transaction.',
       parameters: {
         type: 'object',
         properties: {
@@ -34,7 +34,8 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'create_transaction',
-      description: 'Log an income, expense, or transfer transaction.',
+      description:
+        'Log a new income, expense, or self-transfer transaction. Do NOT use for bulk fixes — use update_transaction to correct existing rows. For any payment to another person, use type expense (not transfer). Ask the user before logging anything as transfer.',
       parameters: {
         type: 'object',
         required: ['title', 'amount', 'type'],
@@ -42,11 +43,44 @@ export const AI_TOOLS = [
           title: { type: 'string' },
           amount: { type: 'number', description: 'Positive amount in the stated currency' },
           currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD). Omit to use ledger currency.' },
-          type: { type: 'string', enum: ['expense', 'income', 'transfer'] },
+          type: {
+            type: 'string',
+            enum: ['expense', 'income', 'transfer'],
+            description:
+              'expense = money spent or paid to someone else. income = money received. transfer = ONLY self-transfer between the user\'s own accounts (e.g. cash to bank). Never use transfer for payments to other people.',
+          },
           date: { type: 'string', description: 'YYYY-MM-DD when the transaction happened. Omit to use today.' },
           categoryId: { type: 'integer', description: 'Internal ref from context. Required for expense/transfer. Use -1 with categoryName if no match. Omit for income.' },
           categoryName: { type: 'string', description: 'Required when categoryId is -1' },
           paymentAccountId: { type: 'integer', description: 'Internal account ref from context, or omit' },
+          note: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_transaction',
+      description:
+        'Update an existing transaction (type, title, amount, date, category, account). Use query_user_data first to get transaction refs. Use this to fix misclassified transfers or edit entries — do not create duplicates.',
+      parameters: {
+        type: 'object',
+        required: ['transactionId'],
+        properties: {
+          transactionId: { type: 'integer', description: 'Internal transaction ref from query_user_data' },
+          title: { type: 'string' },
+          amount: { type: 'number', description: 'Positive amount in the stated currency' },
+          currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD)' },
+          type: {
+            type: 'string',
+            enum: ['expense', 'income', 'transfer'],
+            description: 'Change type when correcting mislogged entries',
+          },
+          date: { type: 'string', description: 'YYYY-MM-DD' },
+          categoryId: { type: 'integer', description: 'Required when changing to expense/transfer if none set' },
+          categoryName: { type: 'string', description: 'Required when categoryId is -1' },
+          paymentAccountId: { type: 'integer' },
           note: { type: 'string' },
         },
       },
@@ -203,6 +237,7 @@ export const GET_EXCHANGE_RATE_TOOL = {
 
 export type AiWriteToolAction =
   | 'create_transaction'
+  | 'update_transaction'
   | 'create_saving'
   | 'create_goal'
   | 'create_wishlist_item'

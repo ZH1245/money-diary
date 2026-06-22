@@ -55,6 +55,7 @@ async function postAiChat(input: AiChatRequest): Promise<AiChatResponse> {
 /** Maps tool action to the query key(s) that need invalidation after a write. */
 const INVALIDATION_MAP: Record<string, Array<readonly string[]>> = {
   create_transaction: [queryKeys.transactions.all],
+  update_transaction: [queryKeys.transactions.all],
   create_saving: [queryKeys.savings.all, queryKeys.goals.all],
   create_goal: [queryKeys.goals.all],
   create_wishlist_item: [queryKeys.wishlist.all],

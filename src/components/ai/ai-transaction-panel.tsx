@@ -48,6 +48,7 @@ interface AiTransactionPanelProps {
 
 const ACTION_LABELS: Record<string, string> = {
   create_transaction: 'Transaction',
+  update_transaction: 'Transaction updated',
   create_saving: 'Saving',
   create_goal: 'Goal',
   create_wishlist_item: 'Wishlist item',

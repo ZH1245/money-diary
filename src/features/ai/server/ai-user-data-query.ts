@@ -118,7 +118,7 @@ async function queryTransactions(input: QueryUserDataInput): Promise<string> {
       for (const row of dayRows) {
         const category = row.categoryId ? categoryNames.get(row.categoryId) : null
         const categorySuffix = category ? ` (${category})` : ''
-        lines.push(`  · ${row.title}: ${formatLedgerAmount(parseAmount(row.amount), input.currency)}${categorySuffix}`)
+        lines.push(`  · ${row.title} [ref ${row.id}]: ${formatLedgerAmount(parseAmount(row.amount), input.currency)}${categorySuffix}`)
       }
     }
 
@@ -135,7 +135,7 @@ async function queryTransactions(input: QueryUserDataInput): Promise<string> {
     const category = row.categoryId ? categoryNames.get(row.categoryId) : null
     const categorySuffix = category ? ` · ${category}` : ''
     lines.push(
-      `- ${day}: ${row.title} — ${formatLedgerAmount(parseAmount(row.amount), input.currency)} (${row.type})${categorySuffix}`,
+      `- ${day}: ${row.title} [ref ${row.id}] — ${formatLedgerAmount(parseAmount(row.amount), input.currency)} (${row.type})${categorySuffix}`,
     )
   }
 
