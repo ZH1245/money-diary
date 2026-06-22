@@ -3,7 +3,9 @@ import { db } from '#/db/index'
 import { aiProviderSettings } from '#/db/schema'
 import { decryptSecret, encryptSecret, maskSecret } from '#/lib/server/encryption'
 
-export type GlobalAiProviderId = 'ollama' | 'gemini'
+import { parseLiveAiProviderId, type LiveAiProviderId } from '#/features/settings/constants/ai-provider-ids'
+
+export type GlobalAiProviderId = LiveAiProviderId
 
 export interface GlobalAiSettingsRecord {
   isEnabled: boolean
@@ -67,7 +69,7 @@ export async function getGlobalAiSettingsForRuntime(): Promise<GlobalAiRuntimeSe
 
   return {
     isEnabled: row.isEnabled,
-    provider: row.provider === 'gemini' ? 'gemini' : 'ollama',
+    provider: parseLiveAiProviderId(row.provider),
     baseUrl: decryptSecret(row.baseUrlEncrypted),
     model: decryptSecret(row.modelEncrypted),
     apiKey: row.apiKeyEncrypted ? decryptSecret(row.apiKeyEncrypted) : null,

@@ -36,7 +36,7 @@ const INITIAL_URL_PROBE: UrlProbeState = {
   statusCode: null,
 }
 
-const ENABLED_PROVIDERS = new Set(['ollama', 'gemini'])
+const ENABLED_PROVIDERS = new Set(['ollama', 'gemini', 'openrouter'])
 
 /** Admin form for configuring the global AI provider offered to all users. */
 export function AdminGlobalAiSection() {
@@ -91,6 +91,15 @@ export function AdminGlobalAiSection() {
         return
       }
 
+      if (nextProviderId === 'openrouter' && !nextApiKey.trim() && !savedApiKeyMask) {
+        setUrlProbe({
+          status: 'failed',
+          message: 'Enter an OpenRouter API key to test.',
+          statusCode: null,
+        })
+        return
+      }
+
       const requestId = probeRequestIdRef.current + 1
       probeRequestIdRef.current = requestId
       setUrlProbe({ status: 'checking', message: 'Checking connection...', statusCode: null })
@@ -102,7 +111,13 @@ export function AdminGlobalAiSection() {
           body: JSON.stringify(
             nextProviderId === 'gemini'
               ? { provider: 'gemini', apiKey: nextApiKey.trim() }
-              : { provider: 'ollama', baseUrl: nextBaseUrl.trim(), apiKey: nextApiKey.trim() || undefined },
+              : nextProviderId === 'openrouter'
+                ? {
+                    provider: 'openrouter',
+                    baseUrl: nextBaseUrl.trim() || 'https://openrouter.ai/api/v1',
+                    apiKey: nextApiKey.trim(),
+                  }
+                : { provider: 'ollama', baseUrl: nextBaseUrl.trim(), apiKey: nextApiKey.trim() || undefined },
           ),
         })
 
@@ -188,6 +203,12 @@ export function AdminGlobalAiSection() {
       return
     }
 
+    if (nextProviderId === 'openrouter') {
+      setBaseUrl('https://openrouter.ai/api/v1')
+      setModel('anthropic/claude-3.5-sonnet')
+      return
+    }
+
     if (nextProviderId === 'ollama') {
       setBaseUrl('http://127.0.0.1:11434')
       setModel('qwen3.5:4b')
@@ -204,13 +225,21 @@ export function AdminGlobalAiSection() {
     const requestBody =
       providerId === 'gemini'
         ? { isEnabled, provider: 'gemini' as const, model: model.trim(), apiKey: apiKey.trim() || undefined }
-        : {
-            isEnabled,
-            provider: 'ollama' as const,
-            baseUrl: baseUrl.trim(),
-            model: model.trim(),
-            apiKey: apiKey.trim() || undefined,
-          }
+        : providerId === 'openrouter'
+          ? {
+              isEnabled,
+              provider: 'openrouter' as const,
+              baseUrl: baseUrl.trim(),
+              model: model.trim(),
+              apiKey: apiKey.trim() || undefined,
+            }
+          : {
+              isEnabled,
+              provider: 'ollama' as const,
+              baseUrl: baseUrl.trim(),
+              model: model.trim(),
+              apiKey: apiKey.trim() || undefined,
+            }
 
     try {
       const response = await fetch('/api/admin/global-ai', {
@@ -398,6 +427,49 @@ export function AdminGlobalAiSection() {
             {urlProbe.message ? (
               <p className={`-mt-2 text-xs ${urlProbe.status === 'ok' ? 'text-emerald-700' : 'text-amber-700'}`}>
                 {urlProbeIcon ? <span className="mr-1.5 inline-flex align-middle">{urlProbeIcon}</span> : null}
+                {urlProbe.message}
+              </p>
+            ) : null}
+          </>
+        ) : providerId === 'openrouter' ? (
+          <>
+            <FormField
+              id="admin-openrouter-api-key"
+              label="OpenRouter API key"
+              type="password"
+              value={apiKey}
+              onChange={setApiKey}
+              placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'sk-or-...'}
+              isRequired={!savedApiKeyMask}
+              isDisabled={isLoading || isSubmitting}
+            />
+            <FormField
+              id="admin-openrouter-base-url"
+              label="Base URL"
+              type="url"
+              value={baseUrl}
+              onChange={setBaseUrl}
+              placeholder="https://openrouter.ai/api/v1"
+              isDisabled={isLoading || isSubmitting}
+              rightElement={
+                urlProbeIcon ? (
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                    {urlProbeIcon}
+                  </span>
+                ) : undefined
+              }
+            />
+            <FormField
+              id="admin-openrouter-model"
+              label="Model"
+              type="text"
+              value={model}
+              onChange={setModel}
+              placeholder="anthropic/claude-3.5-sonnet"
+              isDisabled={isLoading || isSubmitting}
+            />
+            {urlProbe.message ? (
+              <p className={`-mt-2 text-xs ${urlProbe.status === 'ok' ? 'text-emerald-700' : 'text-amber-700'}`}>
                 {urlProbe.message}
               </p>
             ) : null}

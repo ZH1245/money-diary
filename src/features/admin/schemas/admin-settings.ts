@@ -15,6 +15,13 @@ export const saveGlobalAiSettingsSchema = z.discriminatedUnion('provider', [
     model: z.string().trim().min(1, 'Model is required'),
     apiKey: z.string().trim().optional(),
   }),
+  z.object({
+    isEnabled: z.boolean(),
+    provider: z.literal('openrouter'),
+    baseUrl: z.string().trim().url('Enter a valid URL'),
+    model: z.string().trim().min(1, 'Model is required'),
+    apiKey: z.string().trim().optional(),
+  }),
 ])
 
 export const updateGlobalCategorySchema = z.object({

@@ -26,6 +26,21 @@ export const user = pgTable("user", {
   currency: text("currency").default("PKR").notNull(),
 });
 
+export const userSecurityProfile = pgTable("user_security_profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  recoveryEmail: text("recovery_email").notNull(),
+  recoveryEmailVerified: boolean("recovery_email_verified").default(false).notNull(),
+  questionOneKey: text("question_one_key").notNull(),
+  answerOneHash: text("answer_one_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+});
+
 export const session = pgTable(
   "session",
   {
@@ -85,9 +100,13 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   sessions: many(session),
   accounts: many(account),
+  securityProfile: one(userSecurityProfile, {
+    fields: [user.id],
+    references: [userSecurityProfile.userId],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -100,6 +119,13 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const userSecurityProfileRelations = relations(userSecurityProfile, ({ one }) => ({
+  user: one(user, {
+    fields: [userSecurityProfile.userId],
     references: [user.id],
   }),
 }));

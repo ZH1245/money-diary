@@ -1,7 +1,6 @@
 import { useAuthSession } from '#/lib/use-auth-session'
 import { InlineError } from '#/components/feedback/inline-error'
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
-import { FormField } from '#/components/forms/form-field'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import {
   Select,
@@ -12,6 +11,8 @@ import {
 } from '#/components/ui/select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { AiSettingsSection } from '#/features/settings/components/ai-settings-section'
+import { ChangePasswordSection } from '#/features/auth/components/change-password-section'
+import { SecurityProfileSection } from '#/features/auth/components/security-profile-section'
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -22,17 +23,6 @@ export const Route = createFileRoute('/settings')({
   component: SettingsPage,
 })
 
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(8, 'Current password must be at least 8 characters'),
-    newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-    confirmPassword: z.string().min(8, 'Confirm password must be at least 8 characters'),
-  })
-  .refine((values) => values.newPassword === values.confirmPassword, {
-    message: 'Confirm password must match the new password',
-    path: ['confirmPassword'],
-  })
-
 const updateCurrencySchema = z.object({
   currency: z.string().trim().length(3, 'Select a valid currency'),
 })
@@ -42,11 +32,6 @@ function SettingsPage() {
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY)
   const [isCurrencySubmitting, setIsCurrencySubmitting] = useState(false)
   const [currencyError, setCurrencyError] = useState<string | null>(null)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
   const selectedCurrency = ((session?.user as { currency?: string } | undefined)?.currency ?? DEFAULT_CURRENCY).toUpperCase()
 
   useEffect(() => {
@@ -108,59 +93,6 @@ function SettingsPage() {
       setCurrencyError(error instanceof Error ? error.message : 'Unable to update currency')
     } finally {
       setIsCurrencySubmitting(false)
-    }
-  }
-
-  async function handlePasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPasswordError(null)
-
-    const parsed = changePasswordSchema.safeParse({
-      currentPassword,
-      newPassword,
-      confirmPassword,
-    })
-
-    if (!parsed.success) {
-      const issue = parsed.error.issues[0]
-      setPasswordError(issue?.message ?? 'Invalid password input')
-      return
-    }
-
-    setIsPasswordSubmitting(true)
-
-    const requestPromise = fetch('/api/auth/change-password', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        currentPassword: parsed.data.currentPassword,
-        newPassword: parsed.data.newPassword,
-      }),
-    }).then(async (response) => {
-      const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null
-      if (!response.ok) {
-        throw new Error(payload?.error?.message ?? 'Unable to update password')
-      }
-      return payload
-    })
-
-    toast.promise(requestPromise, {
-      loading: 'Updating password...',
-      success: 'Password updated',
-      error: 'Unable to update password',
-    })
-
-    try {
-      await requestPromise
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-    } catch (error) {
-      setPasswordError(error instanceof Error ? error.message : 'Unable to update password')
-    } finally {
-      setIsPasswordSubmitting(false)
     }
   }
 
@@ -232,57 +164,7 @@ function SettingsPage() {
               </form>
             </article>
 
-            <article className="feature-card rounded-xl border border-border p-5">
-              <h2 className="text-lg font-semibold">Change Password</h2>
-              <p className="mt-1 text-xs opacity-70">Use your current password to set a new one.</p>
-
-              <form className="mt-4 space-y-4" onSubmit={handlePasswordSubmit}>
-                <FormField
-                  id="current-password"
-                  label="Current password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={setCurrentPassword}
-                  placeholder="Current password"
-                  isDisabled={isPasswordSubmitting}
-                />
-                <FormField
-                  id="new-password"
-                  label="New password"
-                  type="password"
-                  value={newPassword}
-                  onChange={setNewPassword}
-                  placeholder="At least 8 characters"
-                  isDisabled={isPasswordSubmitting}
-                />
-                <FormField
-                  id="confirm-password"
-                  label="Confirm password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={setConfirmPassword}
-                  placeholder="Repeat new password"
-                  isDisabled={isPasswordSubmitting}
-                />
-
-                {passwordError ? <InlineError message={passwordError} /> : null}
-
-                <button
-                  type="submit"
-                  disabled={isPasswordSubmitting}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
-                >
-                  {isPasswordSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    'Update password'
-                  )}
-                </button>
-              </form>
-            </article>
+            <ChangePasswordSection />
           </div>
 
           <article className="feature-card rounded-2xl border border-border/70 p-6">
@@ -297,6 +179,8 @@ function SettingsPage() {
               </Link>
             </div>
           </article>
+
+          <SecurityProfileSection />
 
           <AiSettingsSection />
         </section>

@@ -1,0 +1,47 @@
+---
+description: Require dated changelog entries whenever the Privacy Policy is updated
+globs: src/features/legal/content/privacy-policy.ts,src/features/legal/components/privacy-policy-content.tsx,src/routes/privacy.tsx
+alwaysApply: false
+---
+
+# Privacy Policy update workflow
+
+Whenever you change the Money Diary Privacy Policy, update **all** of the following in the same change:
+
+## 1. Last updated date
+
+Set `PRIVACY_POLICY_LAST_UPDATED` in `src/features/legal/content/privacy-policy.ts` to the change date (human-readable, e.g. `June 22, 2026`). This drives the date shown at the top of `/privacy`.
+
+## 2. Policy update history (required)
+
+Prepend a new entry to `privacyPolicyUpdateLog` in the same file:
+
+```typescript
+{
+  date: 'June 22, 2026', // must match PRIVACY_POLICY_LAST_UPDATED when this is the latest change
+  summary: 'Short title of why the policy changed',
+  changes: [
+    'What was added or changed — be specific',
+    'Another bullet if needed',
+  ],
+}
+```
+
+- Newest entry **first** (reverse chronological).
+- Bullets describe what was **added, removed, or clarified** — not internal refactors.
+- Do not skip the log when only “small” wording changes; users should see what changed and when.
+
+## 3. Policy body sections
+
+Edit `privacyPolicySections` so the legal text matches the product. Do not leave contradictions between sections and the update log.
+
+## 4. Rendering
+
+`PrivacyPolicyContent` already renders `privacyPolicyUpdateLog`. Do not remove that section. If you extend the data shape, update the component in the same PR.
+
+## Checklist before finishing
+
+- [ ] `PRIVACY_POLICY_LAST_UPDATED` updated
+- [ ] New `privacyPolicyUpdateLog` entry with matching date
+- [ ] Relevant `privacyPolicySections` updated
+- [ ] `/privacy` still shows last updated + update history

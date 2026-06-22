@@ -60,7 +60,9 @@ export async function getUserAiSettings({ userId }: { userId: string }): Promise
   }
 }
 
-export type AiProviderId = 'ollama' | 'gemini'
+import { parseLiveAiProviderId, type LiveAiProviderId } from '#/features/settings/constants/ai-provider-ids'
+
+export type AiProviderId = LiveAiProviderId
 
 export async function upsertUserAiSettings({
   userId,
@@ -198,7 +200,7 @@ export async function getUserAiSettingsForRuntime({ userId }: { userId: string }
 
   if (!row) return null
 
-  const provider: AiProviderId = row.provider === 'gemini' ? 'gemini' : 'ollama'
+  const provider = parseLiveAiProviderId(row.provider)
 
   return {
     provider,

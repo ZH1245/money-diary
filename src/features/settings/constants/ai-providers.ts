@@ -63,7 +63,7 @@ export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
   {
     id: 'openrouter',
     label: 'OpenRouter',
-    isEnabled: false,
+    isEnabled: true,
     fields: [
       {
         id: 'apiKey',

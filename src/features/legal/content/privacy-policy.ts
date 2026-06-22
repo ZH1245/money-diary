@@ -1,4 +1,24 @@
-export const PRIVACY_POLICY_LAST_UPDATED = 'June 17, 2026'
+export const PRIVACY_POLICY_LAST_UPDATED = 'June 22, 2026'
+
+export interface PrivacyPolicyUpdateEntry {
+  date: string
+  summary: string
+  changes: string[]
+}
+
+/** Dated log of privacy policy revisions shown on /privacy (newest first). */
+export const privacyPolicyUpdateLog: PrivacyPolicyUpdateEntry[] = [
+  {
+    date: 'June 22, 2026',
+    summary: 'Account recovery and security disclosures',
+    changes: [
+      'Documented required recovery email and one security question with hashed answers',
+      'Added Account recovery section (password reset, rate limiting, no OTP yet)',
+      'Clarified that per-user field encryption is planned but not active',
+      'Described AI assistant data handling under third-party services',
+    ],
+  },
+]
 
 export interface PrivacyPolicySection {
   id: string
@@ -22,6 +42,7 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     paragraphs: ['We collect information you provide and data generated when you use the app:'],
     bullets: [
       'Account details: name, email address, password (stored securely via our authentication provider), and preferred currency.',
+      'Account recovery details: a required recovery email address, one chosen security question, and a hashed version of your answer. We never store security answers in plain text.',
       'Financial records you enter: transactions, categories, payment accounts, savings entries, wishlist items, and goals.',
       'Optional notes and metadata attached to your records, such as dates, amounts, foreign currency details, and exchange rates.',
       'Technical data needed to run the service: session identifiers, request logs, and basic device/browser information from our hosting provider.',
@@ -33,6 +54,7 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     paragraphs: ['We use your information only to operate and improve Money Diary:'],
     bullets: [
       'Authenticate you and keep your account secure.',
+      'Support password recovery when you forget your sign-in password, using your recovery email and security question.',
       'Store and display your financial data across dashboard, transactions, savings, goals, wishlist, and analytics views.',
       'Convert foreign-currency amounts using exchange-rate services when you request a rate.',
       'Maintain app settings such as your preferred currency.',
@@ -68,6 +90,17 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     ],
   },
   {
+    id: 'account-recovery',
+    title: 'Account recovery',
+    paragraphs: [
+      'If you forget your password, Money Diary can help you regain access using account recovery details you provide at sign-up or later in Settings.',
+      'Recovery uses one predefined security question plus your required recovery email. Your answer is normalized and stored only as a one-way hash, similar to how passwords are protected. We cannot read your answer back to you.',
+      'Recovery email verification by one-time passcode (OTP) is not active yet. Future updates may add verification and reset links; we will update this policy when that changes.',
+      'Password reset requests are rate-limited to reduce abuse. Failed attempts receive generic responses so attackers cannot easily learn whether an email or answer is correct.',
+      'If you lose both your password and your recovery details, we may not be able to restore access to your account or financial data.',
+    ],
+  },
+  {
     id: 'retention-and-deletion',
     title: 'Data retention and deletion',
     paragraphs: [
@@ -79,8 +112,9 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     id: 'security',
     title: 'Security',
     paragraphs: [
-      'We use industry-standard practices such as HTTPS, hashed passwords, and access controls to protect your data.',
-      'No online service can guarantee absolute security. Please use a strong, unique password and keep your sign-in credentials private.',
+      'We use industry-standard practices such as HTTPS, hashed passwords, hashed security-answer storage, and access controls to protect your data.',
+      'Optional per-user encryption of ledger fields is planned for a future release but is not active today. Until then, financial data you enter is stored in our database and protected by account access controls like other personal finance apps.',
+      'No online service can guarantee absolute security. Please use a strong, unique password, choose recovery answers only you would know, and keep your sign-in credentials private.',
     ],
   },
   {
@@ -112,7 +146,7 @@ export const privacyPolicySections: PrivacyPolicySection[] = [
     id: 'changes',
     title: 'Changes to this policy',
     paragraphs: [
-      'We may update this Privacy Policy from time to time. When we do, we will revise the "Last updated" date at the top of this page. Continued use of Money Diary after changes means you accept the updated policy.',
+      'We may update this Privacy Policy from time to time. When we do, we will revise the "Last updated" date at the top of this page and add an entry to the Policy update history below. Continued use of Money Diary after changes means you accept the updated policy.',
     ],
   },
   {

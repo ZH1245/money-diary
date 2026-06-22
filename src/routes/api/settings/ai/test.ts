@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { probeOllamaBaseUrl } from '#/features/ai/server/ollama-client'
 import { probeGeminiApiKey } from '#/features/ai/server/gemini-client'
+import { probeOpenRouterApiKey } from '#/features/ai/server/openrouter-client'
 import {
   buildOptionsResponse,
   guardApiRequest,
@@ -20,7 +21,17 @@ const testGeminiSchema = z.object({
   apiKey: z.string().trim().min(1, 'Gemini API key is required'),
 })
 
-const testAiSettingsSchema = z.discriminatedUnion('provider', [testOllamaSchema, testGeminiSchema])
+const testOpenRouterSchema = z.object({
+  provider: z.literal('openrouter'),
+  baseUrl: z.string().trim().url('Enter a valid URL'),
+  apiKey: z.string().trim().min(1, 'OpenRouter API key is required'),
+})
+
+const testAiSettingsSchema = z.discriminatedUnion('provider', [
+  testOllamaSchema,
+  testGeminiSchema,
+  testOpenRouterSchema,
+])
 
 export const Route = createFileRoute('/api/settings/ai/test')({
   server: {
@@ -53,10 +64,15 @@ export const Route = createFileRoute('/api/settings/ai/test')({
         const result =
           parsed.data.provider === 'gemini'
             ? await probeGeminiApiKey({ apiKey: parsed.data.apiKey })
-            : await probeOllamaBaseUrl({
-                baseUrl: parsed.data.baseUrl,
-                apiKey: parsed.data.apiKey,
-              })
+            : parsed.data.provider === 'openrouter'
+              ? await probeOpenRouterApiKey({
+                  apiKey: parsed.data.apiKey,
+                  baseUrl: parsed.data.baseUrl,
+                })
+              : await probeOllamaBaseUrl({
+                  baseUrl: parsed.data.baseUrl,
+                  apiKey: parsed.data.apiKey,
+                })
 
         return Response.json({
           success: true,

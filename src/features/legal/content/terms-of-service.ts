@@ -1,4 +1,4 @@
-export const TERMS_LAST_UPDATED = 'June 17, 2026'
+export const TERMS_LAST_UPDATED = 'June 22, 2026'
 
 export interface TermsSection {
   id: string
@@ -29,8 +29,9 @@ export const termsSections: TermsSection[] = [
     title: 'Account Responsibilities',
     paragraphs: ['You are responsible for activity under your account.'],
     bullets: [
-      'Provide accurate information during sign up.',
-      'Keep your credentials private and secure.',
+      'Provide accurate information during sign up, including account recovery details when prompted.',
+      'Keep your credentials and recovery answers private and secure.',
+      'Choose security answers you can remember consistently; answers are compared after normalization (for example trimming spaces and letter case).',
       'Notify us if you suspect unauthorized access.',
     ],
   },
@@ -45,11 +46,22 @@ export const termsSections: TermsSection[] = [
     ],
   },
   {
+    id: 'account-recovery',
+    title: 'Account Recovery',
+    paragraphs: [
+      'Money Diary supports password recovery through a recovery email and one security question you set during onboarding or in Settings.',
+      'You are responsible for maintaining accurate recovery details. Updating recovery information in Settings requires your current password.',
+      'If you cannot answer your security question correctly, we may be unable to reset your password. We do not offer email OTP or SMS recovery in the current release.',
+      'Do not use easily guessable recovery answers or information that others could obtain from public sources.',
+    ],
+  },
+  {
     id: 'user-data',
     title: 'Your Data',
     paragraphs: [
       'You retain ownership of financial data you enter into Money Diary.',
       'You grant us the rights necessary to store, process, and display your data for operating the app.',
+      'Optional end-to-end or per-user field encryption is not offered yet. Data you enter is stored to provide the service until such features are released, if ever.',
     ],
   },
   {

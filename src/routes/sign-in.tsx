@@ -4,8 +4,9 @@ import { FormField } from '#/components/forms/form-field'
 import { AuthFeaturePanel } from '#/components/layout/auth-feature-panel'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
 import { ThemeToggle } from '#/components/layout/theme-toggle'
-import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, Clock3, FileText, Loader2 } from 'lucide-react'
+import { AuthenticatedEntryRedirect } from '#/features/auth/components/authenticated-entry-redirect'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { BarChart3, Loader2, MessageSquare, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -29,7 +30,7 @@ function SignInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (session?.user) {
-    return <Navigate to="/" />
+    return <AuthenticatedEntryRedirect />
   }
 
   function getFieldError(field: 'email' | 'password', value: string): string {
@@ -111,25 +112,25 @@ function SignInPage() {
     <AuthSplitLayout
       featurePanel={
         <AuthFeaturePanel
-          kicker="Money Diary"
-          title="Financial focus, simplified."
-          description="Sign in to view spending, savings, wishlist, and goals in one place."
-          tags={['Secure auth', 'Private by default', 'AI assisted entries']}
+          kicker="Money Diary AI"
+          title="Your AI finance copilot awaits."
+          description="Sign in to chat with your diary — log entries, review spending, and manage goals without the busywork."
+          tags={['Natural language', 'Smart summaries', 'Secure workspace']}
           features={[
             {
-              icon: CheckCircle2,
-              title: 'Log with ease',
-              description: 'Record transactions quickly and keep every entry organized.',
+              icon: MessageSquare,
+              title: 'Chat to log money in or out',
+              description: 'Tell AI what happened; it picks the account, category, and amount for you.',
             },
             {
-              icon: Clock3,
-              title: 'Track daily progress',
-              description: 'Monitor savings flow and goal progress in one workspace.',
+              icon: BarChart3,
+              title: 'Instant answers from your ledger',
+              description: 'Ask for monthly totals, category breakdowns, or date-wise spending — no spreadsheet required.',
             },
             {
-              icon: FileText,
-              title: 'Understand spending',
-              description: 'Use account-linked analytics to spot patterns over time.',
+              icon: Sparkles,
+              title: 'Update goals and wishlist by voice of text',
+              description: 'Adjust targets, add wishlist items, or record savings through conversation.',
             },
           ]}
         />
@@ -163,6 +164,12 @@ function SignInPage() {
               error={fieldErrors.password}
               isDisabled={isSubmitting}
             />
+
+            <p className="text-right text-sm">
+              <Link to="/forgot-password" className="font-medium underline underline-offset-4">
+                Forgot password?
+              </Link>
+            </p>
 
             {errorMessage ? <InlineError message={errorMessage} /> : null}
 

@@ -1,7 +1,9 @@
 import type { AppShellUser } from '#/components/types/app-shell'
+import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
+import { useSecurityProfile } from '#/features/auth/hooks/use-security-profile'
 import { authClient } from '#/lib/auth-client'
 import { AUTH_ROLES } from '#/lib/auth-roles'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, Navigate, useRouterState } from '@tanstack/react-router'
 import {
   BarChart3,
   ChevronUp,
@@ -66,6 +68,7 @@ interface SidebarSection {
 }
 
 export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellProps) {
+  const { data: profile, isLoading: isProfileLoading } = useSecurityProfile()
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const fallbackText = user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'
   const pathname = useRouterState({
@@ -151,6 +154,14 @@ export function AuthenticatedAppShell({ children, user }: AuthenticatedAppShellP
       ],
     },
   ]
+
+  if (isProfileLoading) {
+    return <SessionLoadingSkeleton />
+  }
+
+  if (!profile) {
+    return <Navigate to="/setup-security" />
+  }
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">

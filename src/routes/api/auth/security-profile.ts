@@ -1,0 +1,128 @@
+import { createFileRoute } from '@tanstack/react-router'
+import {
+  createSecurityProfile,
+  getSecurityProfileForUser,
+  updateSecurityProfile,
+  verifyUserCurrentPassword,
+} from '#/features/auth/server/user-security-repository'
+import {
+  createSecurityProfileSchema,
+  updateSecurityProfileSchema,
+} from '#/features/auth/schemas/security-profile'
+import {
+  buildOptionsResponse,
+  guardApiRequest,
+  rejectClientSuppliedUserId,
+  requireUserContext,
+} from '#/lib/server/api-guards'
+
+export const Route = createFileRoute('/api/auth/security-profile')({
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        const blockedResponse = guardApiRequest(request)
+        if (blockedResponse) return blockedResponse
+
+        const userContext = await requireUserContext(request)
+        if (userContext instanceof Response) return userContext
+
+        const profile = await getSecurityProfileForUser(userContext.id)
+        return Response.json({
+          success: true,
+          data: profile,
+        })
+      },
+      POST: async ({ request }) => {
+        const blockedResponse = guardApiRequest(request)
+        if (blockedResponse) return blockedResponse
+
+        const userContext = await requireUserContext(request)
+        if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
+        const body = await request.json().catch(() => null)
+        const bodyUserIdRejected = rejectClientSuppliedUserId(
+          request,
+          body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+        )
+        if (bodyUserIdRejected) return bodyUserIdRejected
+
+        const parsed = createSecurityProfileSchema.safeParse(body)
+        if (!parsed.success) {
+          return Response.json(
+            { success: false, error: 'Invalid security profile payload', details: parsed.error.flatten() },
+            { status: 400 },
+          )
+        }
+
+        try {
+          await createSecurityProfile({
+            userId: userContext.id,
+            recoveryEmail: parsed.data.recoveryEmail,
+            questionOneKey: parsed.data.questionOneKey,
+            answerOne: parsed.data.answerOne,
+          })
+
+          const profile = await getSecurityProfileForUser(userContext.id)
+          return Response.json({ success: true, data: profile }, { status: 201 })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to save security profile'
+          const status = message.includes('already exists') ? 409 : 500
+          return Response.json({ success: false, error: message }, { status })
+        }
+      },
+      PATCH: async ({ request }) => {
+        const blockedResponse = guardApiRequest(request)
+        if (blockedResponse) return blockedResponse
+
+        const userContext = await requireUserContext(request)
+        if (userContext instanceof Response) return userContext
+
+        const userIdRejected = rejectClientSuppliedUserId(request)
+        if (userIdRejected) return userIdRejected
+
+        const body = await request.json().catch(() => null)
+        const bodyUserIdRejected = rejectClientSuppliedUserId(
+          request,
+          body && typeof body === 'object' ? (body as Record<string, unknown>) : null,
+        )
+        if (bodyUserIdRejected) return bodyUserIdRejected
+
+        const parsed = updateSecurityProfileSchema.safeParse(body)
+        if (!parsed.success) {
+          return Response.json(
+            { success: false, error: 'Invalid security profile payload', details: parsed.error.flatten() },
+            { status: 400 },
+          )
+        }
+
+        const passwordValid = await verifyUserCurrentPassword(
+          userContext.id,
+          parsed.data.currentPassword,
+        )
+
+        if (!passwordValid) {
+          return Response.json({ success: false, error: 'Current password is incorrect' }, { status: 403 })
+        }
+
+        try {
+          await updateSecurityProfile({
+            userId: userContext.id,
+            recoveryEmail: parsed.data.recoveryEmail,
+            questionOneKey: parsed.data.questionOneKey,
+            answerOne: parsed.data.answerOne,
+          })
+
+          const profile = await getSecurityProfileForUser(userContext.id)
+          return Response.json({ success: true, data: profile })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to update security profile'
+          return Response.json({ success: false, error: message }, { status: 500 })
+        }
+      },
+      OPTIONS: ({ request }) => buildOptionsResponse(request),
+    },
+  },
+})

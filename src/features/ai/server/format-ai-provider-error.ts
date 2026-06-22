@@ -8,9 +8,11 @@ export function formatAiProviderError(raw: string, provider?: string): string {
   const providerName =
     provider === 'gemini' || /gemini/i.test(normalized)
       ? 'Gemini'
-      : provider === 'ollama' || /ollama/i.test(normalized)
-        ? 'Ollama'
-        : 'AI provider'
+      : provider === 'openrouter' || /openrouter/i.test(normalized)
+        ? 'OpenRouter'
+        : provider === 'ollama' || /ollama/i.test(normalized)
+          ? 'Ollama'
+          : 'AI provider'
 
   if (/high demand|overloaded|temporarily unavailable|service unavailable/i.test(normalized)) {
     return `${providerName} is busy right now — too many requests for this model. Wait a minute and try again, or switch to another model in Settings → AI Provider (e.g. gemini-2.0-flash-lite).`

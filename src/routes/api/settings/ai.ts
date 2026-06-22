@@ -24,6 +24,13 @@ const saveGeminiSettingsSchema = z.object({
   apiKey: z.string().trim().optional(),
 })
 
+const saveOpenRouterSettingsSchema = z.object({
+  provider: z.literal('openrouter'),
+  baseUrl: z.string().trim().url('Enter a valid URL'),
+  model: z.string().trim().min(1, 'Model is required'),
+  apiKey: z.string().trim().optional(),
+})
+
 const setAiSourceSchema = z.object({
   useGlobalProvider: z.boolean(),
 })
@@ -31,6 +38,7 @@ const setAiSourceSchema = z.object({
 const saveAiSettingsSchema = z.discriminatedUnion('provider', [
   saveOllamaSettingsSchema,
   saveGeminiSettingsSchema,
+  saveOpenRouterSettingsSchema,
 ])
 
 const patchAiSettingsSchema = z.union([setAiSourceSchema, saveAiSettingsSchema])
@@ -138,6 +146,25 @@ export const Route = createFileRoute('/api/settings/ai')({
               baseUrl: parsed.data.baseUrl,
               model: parsed.data.model,
               apiKey: parsed.data.apiKey,
+              useGlobalProvider: false,
+            })
+          } else if (parsed.data.provider === 'openrouter') {
+            const existing = await getUserAiSettingsForRuntime({ userId: userContext.id })
+            const nextApiKey = parsed.data.apiKey?.trim() || existing?.apiKey
+
+            if (!nextApiKey) {
+              return Response.json(
+                { success: false, error: 'OpenRouter API key is required' },
+                { status: 400 },
+              )
+            }
+
+            await upsertUserAiSettings({
+              userId: userContext.id,
+              provider: 'openrouter',
+              baseUrl: parsed.data.baseUrl,
+              model: parsed.data.model,
+              apiKey: nextApiKey,
               useGlobalProvider: false,
             })
           } else {

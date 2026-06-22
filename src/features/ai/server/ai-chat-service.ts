@@ -23,6 +23,12 @@ import {
   type GeminiChatMessage,
 } from '#/features/ai/server/gemini-client'
 import {
+  callOpenRouterChat,
+  DEFAULT_OPENROUTER_BASE_URL,
+  type OpenRouterChatMessage,
+} from '#/features/ai/server/openrouter-client'
+import type { LiveAiProviderId } from '#/features/settings/constants/ai-provider-ids'
+import {
   isWeakAssistantReply,
   resolveFallbackToolInvocation,
 } from '#/features/ai/server/ai-tool-fallback'
@@ -71,16 +77,16 @@ interface OllamaResponse {
 }
 
 interface ProviderToolCall {
+  id?: string
   name: string
   arguments: unknown
 }
 
-type AiProviderId = 'ollama' | 'gemini'
-
 interface ProviderChatState {
-  provider: AiProviderId
+  provider: LiveAiProviderId
   ollamaMessages: OllamaChatMessage[]
   geminiMessages: GeminiChatMessage[]
+  openrouterMessages: OpenRouterChatMessage[]
 }
 
 /**
@@ -173,7 +179,7 @@ async function callProviderChat({
   settings,
   tools,
 }: {
-  provider: AiProviderId
+  provider: LiveAiProviderId
   systemPrompt: string
   state: ProviderChatState
   settings: {
@@ -195,6 +201,29 @@ async function callProviderChat({
       messages: state.geminiMessages,
       tools,
     })
+  }
+
+  if (provider === 'openrouter') {
+    const result = await callOpenRouterChat({
+      baseUrl: settings.baseUrl || DEFAULT_OPENROUTER_BASE_URL,
+      model: settings.model,
+      apiKey: settings.apiKey ?? '',
+      messages: state.openrouterMessages,
+      tools,
+    })
+
+    if (!result.ok) return result
+
+    return {
+      ok: true,
+      assistantText: result.assistantText,
+      toolCalls: result.toolCalls.map((toolCall) => ({
+        id: toolCall.id,
+        name: toolCall.name,
+        arguments: toolCall.arguments,
+      })),
+      truncated: result.truncated,
+    }
   }
 
   return callOllamaChat({
@@ -260,6 +289,34 @@ function appendProviderTurn({
     return
   }
 
+  if (state.provider === 'openrouter') {
+    state.openrouterMessages.push({
+      role: 'assistant',
+      content: assistantText || undefined,
+      tool_calls: toolCalls.map((toolCall, index) => ({
+        id: toolCall.id ?? `tool_call_${index}`,
+        type: 'function' as const,
+        function: {
+          name: toolCall.name,
+          arguments:
+            typeof toolCall.arguments === 'string'
+              ? toolCall.arguments
+              : JSON.stringify(toolCall.arguments ?? {}),
+        },
+      })),
+    })
+
+    for (const result of toolResults) {
+      const matchingCall = toolCalls.find((toolCall) => toolCall.name === result.toolName)
+      state.openrouterMessages.push({
+        role: 'tool',
+        tool_call_id: matchingCall?.id ?? `tool_call_${toolResults.indexOf(result)}`,
+        content: result.content,
+      })
+    }
+    return
+  }
+
   state.ollamaMessages.push({
     role: 'assistant',
     content: assistantText,
@@ -288,7 +345,7 @@ function buildProviderChatState({
   systemPrompt,
   sanitized,
 }: {
-  provider: AiProviderId
+  provider: LiveAiProviderId
   systemPrompt: string
   sanitized: Array<{ role: 'user' | 'assistant'; content: string }>
 }): ProviderChatState {
@@ -300,6 +357,22 @@ function buildProviderChatState({
         role: message.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: message.content }],
       })),
+      openrouterMessages: [],
+    }
+  }
+
+  if (provider === 'openrouter') {
+    return {
+      provider,
+      ollamaMessages: [],
+      geminiMessages: [],
+      openrouterMessages: [
+        { role: 'system', content: systemPrompt },
+        ...sanitized.map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
+      ],
     }
   }
 
@@ -307,6 +380,7 @@ function buildProviderChatState({
     provider,
     ollamaMessages: [{ role: 'system', content: systemPrompt }, ...sanitized],
     geminiMessages: [],
+    openrouterMessages: [],
   }
 }
 
@@ -404,7 +478,12 @@ export async function runAiChat({
     })
 
     if (!providerResult.ok) {
-      const providerLabel = runtime.provider === 'gemini' ? 'Gemini' : 'Ollama'
+      const providerLabel =
+        runtime.provider === 'gemini'
+          ? 'Gemini'
+          : runtime.provider === 'openrouter'
+            ? 'OpenRouter'
+            : 'Ollama'
       const rawError = providerResult.error.includes(providerLabel)
         ? providerResult.error
         : `${providerLabel}: ${providerResult.error}`

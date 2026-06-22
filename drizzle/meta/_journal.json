@@ -115,6 +115,13 @@
       "breakpoints": true
     },
     {
+      "idx": 16,
+      "version": "7",
+      "when": 1781984000000,
+      "tag": "0017_dedupe_global_categories",
+      "breakpoints": true
+    },
+    {
       "idx": 17,
       "version": "7",
       "when": 1782084000000,
@@ -126,6 +133,20 @@
       "version": "7",
       "when": 1782184000000,
       "tag": "0019_promote_builtin_categories_global",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782284000000,
+      "tag": "0020_user_security_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1782384000000,
+      "tag": "0021_security_profile_single_question",
       "breakpoints": true
     }
   ]

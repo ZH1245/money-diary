@@ -1,4 +1,7 @@
 export const queryKeys = {
+  auth: {
+    securityProfile: ['auth', 'security-profile'] as const,
+  },
   categories: {
     all: ['categories'] as const,
   },

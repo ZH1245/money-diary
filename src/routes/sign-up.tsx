@@ -12,8 +12,9 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
-import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, Clock3, FileText, Loader2 } from 'lucide-react'
+import { AuthenticatedEntryRedirect } from '#/features/auth/components/authenticated-entry-redirect'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { BarChart3, Loader2, MessageSquare, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -45,7 +46,7 @@ function SignUpPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (session?.user) {
-    return <Navigate to="/" />
+    return <AuthenticatedEntryRedirect />
   }
 
   function getFieldError(field: 'name' | 'email' | 'password' | 'currency', value: string): string {
@@ -157,7 +158,7 @@ function SignUpPage() {
       return
     }
 
-    await navigate({ to: '/' })
+    await navigate({ to: '/setup-security' })
   }
 
   return (
@@ -165,7 +166,10 @@ function SignUpPage() {
       formPanel={
         <article className="island-shell rise-in w-full max-w-md rounded-2xl p-6 sm:p-7">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="display-title text-3xl">Create account</h2>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide opacity-70">Step 1 of 2</p>
+              <h2 className="display-title text-3xl">Create account</h2>
+            </div>
             <ThemeToggle />
           </div>
           <p className="mt-2 text-sm opacity-80">Start your money tracking workspace.</p>
@@ -284,26 +288,26 @@ function SignUpPage() {
       }
       featurePanel={
         <AuthFeaturePanel
-          kicker="Money Diary"
-          title="Build stronger money habits."
-          description="Organize expenses, savings, wishlist items, and goals in one secure workspace."
-          tags={['Fast setup', 'Personal dashboard', 'No clutter']}
+          kicker="Money Diary AI"
+          title="Talk to your money diary."
+          description="Log transactions in natural language, ask spending questions, and let AI create entries from a simple chat."
+          tags={['Say it, log it', 'Ask your ledger', 'Private workspace']}
           gradientDirection="tr"
           features={[
             {
-              icon: CheckCircle2,
-              title: 'Fast setup',
-              description: 'Create your workspace and start tracking in minutes.',
+              icon: MessageSquare,
+              title: 'Log in plain English',
+              description: 'Type “Netflix 1,200” or “salary 80k” — AI adds the right transaction for you.',
             },
             {
-              icon: Clock3,
-              title: 'Track progress',
-              description: 'Stay updated on savings, goals, and spending trends.',
+              icon: BarChart3,
+              title: 'Ask anything about your money',
+              description: '“What did I spend on food this month?” or “Show my top categories” — answered from your data.',
             },
             {
-              icon: FileText,
-              title: 'Stay organized',
-              description: 'Keep records tidy with account-linked entries.',
+              icon: Sparkles,
+              title: 'Savings, goals, and wishlist too',
+              description: 'Create savings entries, goals, and wishlist items without filling long forms.',
             },
           ]}
         />

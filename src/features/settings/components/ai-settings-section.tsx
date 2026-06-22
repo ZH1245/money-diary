@@ -45,7 +45,7 @@ const INITIAL_URL_PROBE: UrlProbeState = {
   statusCode: null,
 }
 
-const ENABLED_PROVIDERS = new Set(['ollama', 'gemini'])
+const ENABLED_PROVIDERS = new Set(['ollama', 'gemini', 'openrouter'])
 
 /**
  * Stores user AI provider settings with Ollama and Gemini enabled.
@@ -117,6 +117,15 @@ export function AiSettingsSection() {
         return
       }
 
+      if (nextProviderId === 'openrouter' && !nextApiKey.trim() && !savedApiKeyMask) {
+        setUrlProbe({
+          status: 'failed',
+          message: 'Enter an OpenRouter API key to test.',
+          statusCode: null,
+        })
+        return
+      }
+
       const requestId = probeRequestIdRef.current + 1
       probeRequestIdRef.current = requestId
       setUrlProbe({
@@ -137,7 +146,13 @@ export function AiSettingsSection() {
                   provider: 'gemini',
                   apiKey: nextApiKey.trim() || revealedApiKey,
                 }
-              : {
+              : nextProviderId === 'openrouter'
+                ? {
+                    provider: 'openrouter',
+                    baseUrl: nextBaseUrl.trim() || 'https://openrouter.ai/api/v1',
+                    apiKey: nextApiKey.trim() || revealedApiKey,
+                  }
+                : {
                   provider: 'ollama',
                   baseUrl: nextBaseUrl.trim(),
                   apiKey: nextApiKey.trim() || undefined,
@@ -201,7 +216,7 @@ export function AiSettingsSection() {
           if (userSettings) {
             setProviderId(userSettings.provider)
             setBaseUrl(userSettings.baseUrl ?? 'http://127.0.0.1:11434')
-            setModel(userSettings.model ?? (userSettings.provider === 'gemini' ? 'gemini-2.0-flash' : 'qwen3.5:4b'))
+            setModel(userSettings.model ?? (userSettings.provider === 'gemini' ? 'gemini-2.0-flash' : userSettings.provider === 'openrouter' ? 'anthropic/claude-3.5-sonnet' : 'qwen3.5:4b'))
             setSavedApiKeyMask(userSettings.apiKeyMasked)
           } else {
             setSavedApiKeyMask(null)
@@ -269,6 +284,12 @@ export function AiSettingsSection() {
       return
     }
 
+    if (nextProviderId === 'openrouter') {
+      setBaseUrl('https://openrouter.ai/api/v1')
+      setModel('anthropic/claude-3.5-sonnet')
+      return
+    }
+
     if (nextProviderId === 'ollama') {
       setBaseUrl('http://127.0.0.1:11434')
       setModel('qwen3.5:4b')
@@ -291,7 +312,16 @@ export function AiSettingsSection() {
               ? { apiKey: apiKey.trim() || revealedApiKey }
               : {}),
           }
-        : {
+        : providerId === 'openrouter'
+          ? {
+              provider: 'openrouter' as const,
+              baseUrl: baseUrl.trim(),
+              model: model.trim(),
+              ...(apiKey.trim() || revealedApiKey
+                ? { apiKey: apiKey.trim() || revealedApiKey }
+                : {}),
+            }
+          : {
             provider: 'ollama' as const,
             baseUrl: baseUrl.trim(),
             model: model.trim(),
@@ -424,7 +454,7 @@ export function AiSettingsSection() {
             AI Provider
           </h2>
           <p className="mt-1 text-xs opacity-70">
-            Ollama and Google Gemini are live. OpenRouter and others are listed for upcoming support.
+            Ollama, Google Gemini, and OpenRouter are live. Other providers are listed for upcoming support.
           </p>
         </div>
         <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
@@ -594,6 +624,58 @@ export function AiSettingsSection() {
                 {urlProbe.statusCode != null ? ` (HTTP ${urlProbe.statusCode})` : null}
               </p>
             ) : null}
+          </>
+        ) : providerId === 'openrouter' ? (
+          <>
+            <FormField
+              id="ai-openrouter-api-key"
+              label="OpenRouter API key"
+              type="password"
+              value={apiKey}
+              onChange={setApiKey}
+              placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'sk-or-...'}
+              isRequired={!savedApiKeyMask}
+              isDisabled={isLoading || isSubmitting}
+            />
+            <FormField
+              id="ai-openrouter-base-url"
+              label="Base URL"
+              type="url"
+              value={baseUrl}
+              onChange={setBaseUrl}
+              placeholder="https://openrouter.ai/api/v1"
+              isDisabled={isLoading || isSubmitting}
+              rightElement={
+                urlProbeIcon ? (
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                    {urlProbeIcon}
+                  </span>
+                ) : undefined
+              }
+            />
+            {urlProbe.message ? (
+              <p
+                className={`-mt-2 text-xs ${
+                  urlProbe.status === 'ok'
+                    ? 'text-emerald-700'
+                    : urlProbe.status === 'failed'
+                      ? 'text-amber-700'
+                      : 'opacity-70'
+                }`}
+              >
+                {urlProbe.message}
+                {urlProbe.statusCode != null ? ` (HTTP ${urlProbe.statusCode})` : null}
+              </p>
+            ) : null}
+            <FormField
+              id="ai-openrouter-model"
+              label="Model"
+              type="text"
+              value={model}
+              onChange={setModel}
+              placeholder="anthropic/claude-3.5-sonnet"
+              isDisabled={isLoading || isSubmitting}
+            />
           </>
         ) : (
           selectedProvider.fields.map((field) => (
