@@ -7,6 +7,10 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { AI_PROVIDER_OPTIONS } from '#/features/settings/constants/ai-providers'
+import {
+  OPENROUTER_DEFAULT_BASE_URL,
+  OPENROUTER_DEFAULT_MODEL,
+} from '#/features/settings/constants/openrouter-defaults'
 import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { InlineError } from '#/components/feedback/inline-error'
@@ -149,7 +153,7 @@ export function AiSettingsSection() {
               : nextProviderId === 'openrouter'
                 ? {
                     provider: 'openrouter',
-                    baseUrl: nextBaseUrl.trim() || 'https://openrouter.ai/api/v1',
+                    baseUrl: nextBaseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL,
                     apiKey: nextApiKey.trim() || revealedApiKey,
                   }
                 : {
@@ -216,7 +220,7 @@ export function AiSettingsSection() {
           if (userSettings) {
             setProviderId(userSettings.provider)
             setBaseUrl(userSettings.baseUrl ?? 'http://127.0.0.1:11434')
-            setModel(userSettings.model ?? (userSettings.provider === 'gemini' ? 'gemini-2.0-flash' : userSettings.provider === 'openrouter' ? 'anthropic/claude-3.5-sonnet' : 'qwen3.5:4b'))
+            setModel(userSettings.model ?? (userSettings.provider === 'gemini' ? 'gemini-2.0-flash' : userSettings.provider === 'openrouter' ? OPENROUTER_DEFAULT_MODEL : 'qwen3.5:4b'))
             setSavedApiKeyMask(userSettings.apiKeyMasked)
           } else {
             setSavedApiKeyMask(null)
@@ -285,8 +289,8 @@ export function AiSettingsSection() {
     }
 
     if (nextProviderId === 'openrouter') {
-      setBaseUrl('https://openrouter.ai/api/v1')
-      setModel('anthropic/claude-3.5-sonnet')
+      setBaseUrl(OPENROUTER_DEFAULT_BASE_URL)
+      setModel(OPENROUTER_DEFAULT_MODEL)
       return
     }
 
@@ -643,7 +647,7 @@ export function AiSettingsSection() {
               type="url"
               value={baseUrl}
               onChange={setBaseUrl}
-              placeholder="https://openrouter.ai/api/v1"
+              placeholder={OPENROUTER_DEFAULT_BASE_URL}
               isDisabled={isLoading || isSubmitting}
               rightElement={
                 urlProbeIcon ? (
@@ -673,7 +677,7 @@ export function AiSettingsSection() {
               type="text"
               value={model}
               onChange={setModel}
-              placeholder="anthropic/claude-3.5-sonnet"
+              placeholder={OPENROUTER_DEFAULT_MODEL}
               isDisabled={isLoading || isSubmitting}
             />
           </>

@@ -1,3 +1,8 @@
+import {
+  OPENROUTER_DEFAULT_BASE_URL,
+  OPENROUTER_DEFAULT_MODEL,
+} from '#/features/settings/constants/openrouter-defaults'
+
 export interface AiProviderField {
   id: 'apiKey' | 'apiSecret' | 'baseUrl' | 'model'
   label: string
@@ -74,13 +79,13 @@ export const AI_PROVIDER_OPTIONS: AiProviderOption[] = [
       {
         id: 'baseUrl',
         label: 'Base URL',
-        placeholder: 'https://openrouter.ai/api/v1',
+        placeholder: OPENROUTER_DEFAULT_BASE_URL,
         type: 'url',
       },
       {
         id: 'model',
         label: 'Model',
-        placeholder: 'anthropic/claude-3.5-sonnet',
+        placeholder: OPENROUTER_DEFAULT_MODEL,
         type: 'text',
       },
     ],

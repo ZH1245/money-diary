@@ -1,6 +1,10 @@
 import { FormField } from '#/components/forms/form-field'
 import { InlineError } from '#/components/feedback/inline-error'
 import { AI_PROVIDER_OPTIONS } from '#/features/settings/constants/ai-providers'
+import {
+  OPENROUTER_DEFAULT_BASE_URL,
+  OPENROUTER_DEFAULT_MODEL,
+} from '#/features/settings/constants/openrouter-defaults'
 import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -114,7 +118,7 @@ export function AdminGlobalAiSection() {
               : nextProviderId === 'openrouter'
                 ? {
                     provider: 'openrouter',
-                    baseUrl: nextBaseUrl.trim() || 'https://openrouter.ai/api/v1',
+                    baseUrl: nextBaseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL,
                     apiKey: nextApiKey.trim(),
                   }
                 : { provider: 'ollama', baseUrl: nextBaseUrl.trim(), apiKey: nextApiKey.trim() || undefined },
@@ -204,8 +208,8 @@ export function AdminGlobalAiSection() {
     }
 
     if (nextProviderId === 'openrouter') {
-      setBaseUrl('https://openrouter.ai/api/v1')
-      setModel('anthropic/claude-3.5-sonnet')
+      setBaseUrl(OPENROUTER_DEFAULT_BASE_URL)
+      setModel(OPENROUTER_DEFAULT_MODEL)
       return
     }
 
@@ -449,7 +453,7 @@ export function AdminGlobalAiSection() {
               type="url"
               value={baseUrl}
               onChange={setBaseUrl}
-              placeholder="https://openrouter.ai/api/v1"
+              placeholder={OPENROUTER_DEFAULT_BASE_URL}
               isDisabled={isLoading || isSubmitting}
               rightElement={
                 urlProbeIcon ? (
@@ -465,7 +469,7 @@ export function AdminGlobalAiSection() {
               type="text"
               value={model}
               onChange={setModel}
-              placeholder="anthropic/claude-3.5-sonnet"
+              placeholder={OPENROUTER_DEFAULT_MODEL}
               isDisabled={isLoading || isSubmitting}
             />
             {urlProbe.message ? (

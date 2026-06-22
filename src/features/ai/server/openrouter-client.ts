@@ -1,8 +1,12 @@
 import type { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
 import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
+import {
+  OPENROUTER_DEFAULT_BASE_URL,
+  OPENROUTER_DEFAULT_MODEL,
+} from '#/features/settings/constants/openrouter-defaults'
 
-export const DEFAULT_OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
-export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-3.5-sonnet'
+export const DEFAULT_OPENROUTER_BASE_URL = OPENROUTER_DEFAULT_BASE_URL
+export const DEFAULT_OPENROUTER_MODEL = OPENROUTER_DEFAULT_MODEL
 
 export type OpenRouterChatMessage =
   | { role: 'system'; content: string }
@@ -34,10 +38,17 @@ interface OpenRouterChatCompletionResponse {
         function?: { name?: string; arguments?: string }
       }>
     }
-    finish_reason?: string
+    finish_reason?: string | null
+    error?: {
+      code?: number
+      message?: string
+      metadata?: Record<string, unknown>
+    }
   }>
   error?: {
     message?: string
+    code?: number
+    metadata?: Record<string, unknown>
   }
 }
 
@@ -52,8 +63,57 @@ function buildOpenRouterHeaders(apiKey: string): Record<string, string> {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${apiKey}`,
     'HTTP-Referer': 'https://money-diary.app',
-    'X-Title': 'Money Diary',
+    'X-OpenRouter-Title': 'Money Diary',
   }
+}
+
+/**
+ * Builds a user-facing message from OpenRouter top-level or per-choice errors.
+ */
+function resolveOpenRouterErrorMessage(data: OpenRouterChatCompletionResponse | null): string | null {
+  const topLevel = data?.error?.message?.trim()
+  if (topLevel) return topLevel
+
+  const choice = data?.choices?.[0]
+  const choiceError = choice?.error?.message?.trim()
+  if (choiceError) return choiceError
+
+  if (choice?.finish_reason === 'error') {
+    return 'The upstream model provider returned an error.'
+  }
+
+  return null
+}
+
+/**
+ * Normalizes JSON Schema for OpenRouter tool definitions.
+ * Some providers reject `integer`; OpenAI-compatible APIs expect `number`.
+ */
+function normalizeOpenRouterJsonSchema(schema: unknown): unknown {
+  if (!schema || typeof schema !== 'object') return schema
+
+  const record = schema as Record<string, unknown>
+  const next: Record<string, unknown> = { ...record }
+
+  if (next.type === 'integer') {
+    next.type = 'number'
+  }
+
+  if (next.properties && typeof next.properties === 'object') {
+    const properties: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(next.properties as Record<string, unknown>)) {
+      properties[key] = normalizeOpenRouterJsonSchema(value)
+    }
+    next.properties = properties
+  }
+
+  if (Array.isArray(next.items)) {
+    next.items = next.items.map((item) => normalizeOpenRouterJsonSchema(item))
+  } else if (next.items && typeof next.items === 'object') {
+    next.items = normalizeOpenRouterJsonSchema(next.items)
+  }
+
+  return next
 }
 
 /**
@@ -65,7 +125,7 @@ export function toOpenRouterTools(tools: ReturnType<typeof getAiToolsForProvider
     function: {
       name: tool.function.name,
       description: tool.function.description,
-      parameters: tool.function.parameters,
+      parameters: normalizeOpenRouterJsonSchema(tool.function.parameters),
     },
   }))
 }
@@ -157,35 +217,49 @@ export async function callOpenRouterChat({
     return { ok: false, error: 'OpenRouter API key is required.' }
   }
 
+  const requestBody = {
+    model,
+    messages,
+    tools: toOpenRouterTools(tools),
+    tool_choice: 'auto' as const,
+    temperature: 0.3,
+    max_tokens: 4096,
+  }
+
   let response: Response
   try {
     response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
       method: 'POST',
       headers: buildOpenRouterHeaders(trimmedKey),
-      body: JSON.stringify({
-        model,
-        messages,
-        tools: toOpenRouterTools(tools),
-        tool_choice: 'auto',
-        temperature: 0.3,
-        max_tokens: 4096,
-      }),
+      body: JSON.stringify(requestBody),
     })
   } catch {
     return { ok: false, error: 'Could not reach OpenRouter.' }
   }
 
   const data = (await response.json().catch(() => null)) as OpenRouterChatCompletionResponse | null
+  const providerError = resolveOpenRouterErrorMessage(data)
 
-  if (!response.ok) {
+  if (!response.ok || providerError) {
+    const rawMessage = providerError ?? `OpenRouter error: ${response.status}`
+    const metadata = data?.error?.metadata ?? data?.choices?.[0]?.error?.metadata
+    const providerName =
+      typeof metadata?.provider_name === 'string' ? metadata.provider_name : undefined
+    const modelName = typeof metadata?.model === 'string' ? metadata.model : undefined
+    const detailSuffix = [providerName, modelName].filter(Boolean).join(' · ')
+
     return {
       ok: false,
-      error: formatAiProviderError(data?.error?.message ?? `OpenRouter error: ${response.status}`, 'openrouter'),
+      error: formatAiProviderError(
+        detailSuffix ? `${rawMessage} (${detailSuffix})` : rawMessage,
+        'openrouter',
+      ),
       status: response.status,
     }
   }
 
-  const message = data?.choices?.[0]?.message
+  const choice = data?.choices?.[0]
+  const message = choice?.message
   const assistantText = message?.content?.trim() ?? ''
   const toolCalls =
     message?.tool_calls?.map((toolCall, index) => ({
@@ -198,6 +272,6 @@ export async function callOpenRouterChat({
     ok: true,
     assistantText,
     toolCalls: toolCalls.filter((toolCall) => toolCall.name),
-    truncated: data?.choices?.[0]?.finish_reason === 'length',
+    truncated: choice?.finish_reason === 'length',
   }
 }
