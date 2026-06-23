@@ -36,7 +36,6 @@ Closes #
 - [ ] `pnpm exec tsc --noEmit`
 - [ ] Manual / automated checks:
 
-## AI review
+## Review notes
 
-- [ ] Bugbot / agent review completed on branch diff
-- [ ] Findings addressed or noted below
+<!-- Optional: reviewer feedback or follow-ups. Leave blank if none. -->
