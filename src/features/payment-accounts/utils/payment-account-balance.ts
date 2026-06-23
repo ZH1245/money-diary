@@ -1,5 +1,6 @@
 import { parseLedgerAmount } from '#/features/shared/utils/amount'
 import {
+  isTransferDirectionEncoded,
   isTransferSourceToken,
   parseTransferDirection,
 } from '#/features/transactions/utils/transfer-direction'
@@ -38,6 +39,10 @@ export function getTransactionPaymentAccountDelta(
   }
 
   if (transaction.type === 'transfer') {
+    if (!isTransferDirectionEncoded(transaction.source)) {
+      return 0
+    }
+
     const direction = parseTransferDirection(transaction.source)
     return direction === 'in' ? amount : -amount
   }

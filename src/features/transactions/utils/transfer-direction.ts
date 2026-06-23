@@ -17,7 +17,12 @@ export function parseTransferDirection(source: string | null | undefined): Trans
   return 'out'
 }
 
+/** Returns true when a transfer row stores an explicit in/out direction. */
+export function isTransferDirectionEncoded(source: string | null | undefined): boolean {
+  return source === TRANSFER_SOURCE_IN || source === TRANSFER_SOURCE_OUT || source === 'in' || source === 'out'
+}
+
 /** Returns true when the source field stores transfer direction metadata. */
 export function isTransferSourceToken(source: string | null | undefined): boolean {
-  return source === TRANSFER_SOURCE_IN || source === TRANSFER_SOURCE_OUT || source === 'in' || source === 'out'
+  return isTransferDirectionEncoded(source)
 }

@@ -43,7 +43,7 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
     error: categoriesError,
   } = useCategoriesQuery()
   const { data: savings = [], isError: isSavingsError, error: savingsError } = useSavingsQuery()
-  const { data: paymentAccounts = [] } = usePaymentAccountsQuery()
+  const { data: paymentAccounts = [], isPending: isPaymentAccountsPending } = usePaymentAccountsQuery()
   const { data: wishlist = [], isError: isWishlistError, error: wishlistError } = useWishlistQuery()
   const { data: goals = [], isError: isGoalsError, error: goalsError } = useGoalsQuery()
   const isPrivacyMode = usePrivacyModeEnabled()
@@ -94,7 +94,7 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
     ],
   )
 
-  const isStatsPending = isTransactionsPending || isCategoriesPending
+  const isStatsPending = isTransactionsPending || isCategoriesPending || isPaymentAccountsPending
   const statsError = isTransactionsError ? transactionsError : isCategoriesError ? categoriesError : null
   const secondaryDataError = isSavingsError
     ? savingsError
@@ -157,8 +157,12 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
                 <InsightMiniCard
                   icon={<Banknote className="size-4 text-lime-600" />}
                   label="Cash on hand"
-                  value={formatSensitiveCurrency(stats.cashOnHandBalance ?? 0, userCurrency, isPrivacyMode)}
-                  isSensitive
+                  value={
+                    stats.cashOnHandBalance == null
+                      ? '—'
+                      : formatSensitiveCurrency(stats.cashOnHandBalance, userCurrency, isPrivacyMode)
+                  }
+                  isSensitive={stats.cashOnHandBalance != null}
                 />
                 <InsightMiniCard
                   icon={<TrendingUp className="size-4 text-emerald-600" />}

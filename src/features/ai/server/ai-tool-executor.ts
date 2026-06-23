@@ -34,7 +34,7 @@ import { format, parseISO, startOfMonth } from 'date-fns'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
 import { queryUserData } from '#/features/ai/server/ai-user-data-query'
-import { formatTransferSource } from '#/features/transactions/utils/transfer-direction'
+import { formatTransferSource, isTransferDirectionEncoded } from '#/features/transactions/utils/transfer-direction'
 
 const createTransactionArgsSchema = z.object({
   title: z.string().min(1),
@@ -303,6 +303,19 @@ export async function executeAiTool({
       })
       if (!ok) return { action: 'update_transaction', success: false, message: 'Account not accessible.' }
       paymentAccountId = args.data.paymentAccountId
+    }
+
+    const nextPaymentAccountId = paymentAccountId ?? existing.paymentAccountId
+    if (nextType === 'transfer' && nextPaymentAccountId != null) {
+      const hasEncodedDirection =
+        args.data.transferDirection !== undefined || isTransferDirectionEncoded(existing.source)
+      if (!hasEncodedDirection) {
+        return {
+          action: 'update_transaction',
+          success: false,
+          message: 'transferDirection is required for transfers linked to an account (in or out).',
+        }
+      }
     }
 
     let happenedAtUpdate: Date | undefined
