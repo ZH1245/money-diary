@@ -7,27 +7,43 @@ import type { SecurityQuestionKey } from '#/features/auth/constants/security-que
 import { createSecurityProfileSchema } from '#/features/auth/schemas/security-profile'
 import { createSecurityProfileRequest, SecurityProfileRequestError } from '#/features/auth/api/security-profile-api'
 import { queryKeys } from '#/features/query-keys'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 /** Collects required recovery details after account creation or for legacy users. */
 export function SecuritySetupForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { data: session } = useAuthSession()
   const [form, setForm] = useState(getDefaultSecurityProfileFormValues())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const accountEmail = session?.user?.email
+    if (!accountEmail) {
+      return
+    }
+
+    setForm((previous) =>
+      previous.recoveryEmail === accountEmail ? previous : { ...previous, recoveryEmail: accountEmail },
+    )
+  }, [session?.user?.email])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage(null)
     setFieldErrors({})
 
-    const parsed = createSecurityProfileSchema.safeParse(form)
+    const parsed = createSecurityProfileSchema.safeParse({
+      questionOneKey: form.questionOneKey,
+      answerOne: form.answerOne,
+    })
     if (!parsed.success) {
       const nextErrors: Record<string, string> = {}
       for (const issue of parsed.error.issues) {
@@ -62,8 +78,9 @@ export function SecuritySetupForm() {
         values={form}
         fieldErrors={fieldErrors}
         isDisabled={isSubmitting}
+        recoveryEmailReadOnly
         introTitle="Protect your account"
-        introDescription="Add a backup email and one private answer only you would know. Both are required to reset your password later."
+        introDescription="Your sign-in email is used for recovery. Add one private answer only you would know to reset your password later."
         onRecoveryEmailChange={(value) => setForm((previous) => ({ ...previous, recoveryEmail: value }))}
         onQuestionOneKeyChange={(value) =>
           setForm((previous) => ({ ...previous, questionOneKey: value as SecurityQuestionKey }))

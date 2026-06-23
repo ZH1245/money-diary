@@ -15,6 +15,7 @@ interface RecoveryChallenge {
 /** Settings card for changing password with security-question verification. */
 export function ChangePasswordSection() {
   const navigate = useNavigate()
+  const { data: session } = authClient.useSession()
   const [recoveryChallenge, setRecoveryChallenge] = useState<RecoveryChallenge | null>(null)
   const [isProfileLoading, setIsProfileLoading] = useState(true)
   const [answerOne, setAnswerOne] = useState('')
@@ -115,8 +116,20 @@ export function ChangePasswordSection() {
       <p className="mt-1 text-xs opacity-70">
         {recoveryChallenge
           ? 'Verify your security answer and current password. All active sessions will be signed out.'
-          : 'Use your current password to set a new one. Add account recovery to require a security answer next time.'}
+          : 'Use your current password to set a new one.'}
       </p>
+
+      <FormField
+        id="recovery-email"
+        label="Recovery email"
+        type="email"
+        value={session?.user?.email ?? ''}
+        onChange={() => undefined}
+        isDisabled
+        isRequired={false}
+        autoComplete="email"
+      />
+      <p className="-mt-2 text-xs opacity-70">Password reset messages are sent to this email.</p>
 
       {isProfileLoading ? (
         <p className="mt-4 flex items-center gap-2 text-sm opacity-70">

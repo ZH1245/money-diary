@@ -10,17 +10,13 @@ const securityQuestionKeySchema = z.enum(
 
 const securityAnswerSchema = z.string().trim().min(2, 'Answer must be at least 2 characters').max(120)
 
-const recoveryEmailSchema = z.string().trim().email('Enter a valid recovery email')
-
 export const createSecurityProfileSchema = z.object({
-  recoveryEmail: recoveryEmailSchema,
   questionOneKey: securityQuestionKeySchema,
   answerOne: securityAnswerSchema,
 })
 
 export const updateSecurityProfileSchema = z.object({
   currentPassword: z.string().min(8, 'Current password is required'),
-  recoveryEmail: recoveryEmailSchema.optional(),
   questionOneKey: securityQuestionKeySchema.optional(),
   answerOne: securityAnswerSchema.optional(),
 })

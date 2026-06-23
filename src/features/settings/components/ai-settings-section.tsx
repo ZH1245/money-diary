@@ -130,6 +130,16 @@ export function AiSettingsSection() {
         return
       }
 
+      const effectiveApiKey = nextApiKey.trim() || revealedApiKey
+      if (
+        (nextProviderId === 'gemini' || nextProviderId === 'openrouter') &&
+        savedApiKeyMask &&
+        !effectiveApiKey
+      ) {
+        setUrlProbe(INITIAL_URL_PROBE)
+        return
+      }
+
       const requestId = probeRequestIdRef.current + 1
       probeRequestIdRef.current = requestId
       setUrlProbe({
@@ -148,18 +158,18 @@ export function AiSettingsSection() {
             nextProviderId === 'gemini'
               ? {
                   provider: 'gemini',
-                  apiKey: nextApiKey.trim() || revealedApiKey,
+                  apiKey: effectiveApiKey,
                 }
               : nextProviderId === 'openrouter'
                 ? {
                     provider: 'openrouter',
                     baseUrl: nextBaseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL,
-                    apiKey: nextApiKey.trim() || revealedApiKey,
+                    apiKey: effectiveApiKey,
                   }
                 : {
                   provider: 'ollama',
                   baseUrl: nextBaseUrl.trim(),
-                  apiKey: nextApiKey.trim() || undefined,
+                  apiKey: effectiveApiKey || undefined,
                 },
           ),
         })

@@ -61,7 +61,6 @@ export const Route = createFileRoute('/api/auth/security-profile')({
         try {
           await createSecurityProfile({
             userId: userContext.id,
-            recoveryEmail: parsed.data.recoveryEmail,
             questionOneKey: parsed.data.questionOneKey,
             answerOne: parsed.data.answerOne,
           })
@@ -122,7 +121,6 @@ export const Route = createFileRoute('/api/auth/security-profile')({
         try {
           await updateSecurityProfile({
             userId: userContext.id,
-            recoveryEmail: parsed.data.recoveryEmail,
             questionOneKey: parsed.data.questionOneKey,
             answerOne: parsed.data.answerOne,
           })

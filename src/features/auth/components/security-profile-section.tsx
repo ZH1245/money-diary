@@ -13,6 +13,7 @@ import {
 } from '#/features/auth/api/security-profile-api'
 import { createSecurityProfileSchema, updateSecurityProfileSchema } from '#/features/auth/schemas/security-profile'
 import { queryKeys } from '#/features/query-keys'
+import { useAuthSession } from '#/lib/use-auth-session'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -21,6 +22,7 @@ import { toast } from 'sonner'
 /** Settings card for viewing and updating account recovery details. */
 export function SecurityProfileSection() {
   const queryClient = useQueryClient()
+  const { data: session } = useAuthSession()
   const [hasProfile, setHasProfile] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -50,6 +52,17 @@ export function SecurityProfileSection() {
     void loadProfile()
   }, [])
 
+  useEffect(() => {
+    const accountEmail = session?.user?.email
+    if (!accountEmail || hasProfile) {
+      return
+    }
+
+    setForm((previous) =>
+      previous.recoveryEmail === accountEmail ? previous : { ...previous, recoveryEmail: accountEmail },
+    )
+  }, [hasProfile, session?.user?.email])
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage(null)
@@ -60,11 +73,13 @@ export function SecurityProfileSection() {
       hasProfile
         ? {
             currentPassword,
-            recoveryEmail: form.recoveryEmail,
             questionOneKey: form.questionOneKey,
             answerOne: form.answerOne || undefined,
           }
-        : form,
+        : {
+            questionOneKey: form.questionOneKey,
+            answerOne: form.answerOne,
+          },
     )
 
     if (!parsed.success) {
@@ -84,12 +99,14 @@ export function SecurityProfileSection() {
       if (hasProfile) {
         await updateSecurityProfileRequest({
           currentPassword,
-          recoveryEmail: form.recoveryEmail,
           questionOneKey: form.questionOneKey,
           answerOne: form.answerOne || undefined,
         })
       } else {
-        await createSecurityProfileRequest(form)
+        await createSecurityProfileRequest({
+          questionOneKey: form.questionOneKey,
+          answerOne: form.answerOne,
+        })
       }
 
       setHasProfile(true)
@@ -111,7 +128,7 @@ export function SecurityProfileSection() {
     <article className="feature-card rounded-xl border border-border p-5 xl:col-span-2">
       <h2 className="text-lg font-semibold">Account recovery</h2>
       <p className="mt-1 text-xs opacity-70">
-        Your recovery email and security answer are used for password reset. Email OTP verification is planned later.
+        Your sign-in email is used for password reset. Email OTP verification is planned later.
       </p>
 
       {isLoading ? (
@@ -138,6 +155,7 @@ export function SecurityProfileSection() {
             values={form}
             fieldErrors={fieldErrors}
             isDisabled={isSubmitting}
+            recoveryEmailReadOnly
             onRecoveryEmailChange={(value) => setForm((previous) => ({ ...previous, recoveryEmail: value }))}
             onQuestionOneKeyChange={(value) => setForm((previous) => ({ ...previous, questionOneKey: value }))}
             onAnswerOneChange={(value) => setForm((previous) => ({ ...previous, answerOne: value }))}

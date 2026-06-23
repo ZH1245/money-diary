@@ -6,7 +6,7 @@ import { SearchableSelect } from '#/components/forms/searchable-select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { AiSettingsSection } from '#/features/settings/components/ai-settings-section'
 import { ChangePasswordSection } from '#/features/auth/components/change-password-section'
-import { SecurityProfileSection } from '#/features/auth/components/security-profile-section'
+// import { SecurityProfileSection } from '#/features/auth/components/security-profile-section'
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -177,7 +177,8 @@ function SettingsPage() {
             </div>
           </article>
 
-          <SecurityProfileSection />
+          {/* Recovery question/email updates are set during account setup. */}
+          {/* <SecurityProfileSection /> */}
 
           <AiSettingsSection />
         </section>
