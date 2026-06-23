@@ -2,6 +2,7 @@ import { DashboardDateRangeFilter } from '#/components/layout/dashboard-date-ran
 import { QueryRefreshButton } from '#/components/feedback/query-refresh-button'
 import { PrivacyModeToggle } from '#/components/privacy/privacy-mode-toggle'
 import { ThemeToggle } from '#/components/layout/theme-toggle'
+import { ToolbarTooltip } from '#/components/layout/toolbar-tooltip'
 import { toolbarExpandableButtonClass } from '#/components/layout/toolbar-control-styles'
 import { Button } from '#/components/ui/button'
 import {
@@ -25,44 +26,47 @@ interface WorkspaceHeaderToolbarProps {
 export function WorkspaceHeaderToolbar({ onOpenAiPanel }: WorkspaceHeaderToolbarProps) {
   return (
     <div className="flex max-w-full min-w-0 items-center justify-end gap-1 overflow-x-auto sm:gap-1.5">
-      <DashboardDateRangeFilter />
+        <DashboardDateRangeFilter />
 
-      <div
-        aria-hidden
-        className="mx-0.5 hidden w-px shrink-0 self-stretch bg-border sm:block"
-      />
+        <div
+          aria-hidden
+          className="mx-0.5 hidden w-px shrink-0 self-stretch bg-border sm:block"
+        />
 
-      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-        <ThemeToggle />
-        <PrivacyModeToggle />
-        <QueryRefreshButton />
-      </div>
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <ThemeToggle />
+          <PrivacyModeToggle />
+          <QueryRefreshButton />
+        </div>
 
-      <div
-        aria-hidden
-        className="mx-0.5 hidden w-px shrink-0 self-stretch bg-border sm:block"
-      />
+        <div
+          aria-hidden
+          className="mx-0.5 hidden w-px shrink-0 self-stretch bg-border sm:block"
+        />
 
-      <div className="flex shrink-0 items-center gap-1.5">
-        <Button
-          type="button"
-          variant="outline"
-          className={toolbarExpandableButtonClass}
-          onClick={onOpenAiPanel}
-          aria-label="Open AI assistant"
-          title="AI assistant"
-        >
-          <Sparkles className="size-4 shrink-0 text-primary" />
-          <span className="hidden xl:inline">AI</span>
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" className={toolbarExpandableButtonClass}>
-              <Plus className="size-4 shrink-0" />
-              <span className="hidden xl:inline">Create</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ToolbarTooltip label="AI assistant">
+            <Button
+              type="button"
+              variant="outline"
+              className={toolbarExpandableButtonClass}
+              onClick={onOpenAiPanel}
+              aria-label="Open AI assistant"
+            >
+              <Sparkles className="size-4 shrink-0 text-primary" />
+              <span className="hidden xl:inline">AI</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          </ToolbarTooltip>
+          <DropdownMenu>
+            <ToolbarTooltip label="Create transaction, saving, wishlist, and more">
+              <DropdownMenuTrigger asChild>
+                <Button type="button" className={toolbarExpandableButtonClass} aria-label="Create">
+                  <Plus className="size-4 shrink-0" />
+                  <span className="hidden xl:inline">Create</span>
+                </Button>
+              </DropdownMenuTrigger>
+            </ToolbarTooltip>
+            <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Create</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

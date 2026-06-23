@@ -272,7 +272,7 @@ export function AdminUsersSection() {
   )
 
   return (
-    <article className="feature-card rounded-xl border border-border p-5 xl:col-span-2">
+    <article className="feature-card rounded-xl border border-border p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-semibold">

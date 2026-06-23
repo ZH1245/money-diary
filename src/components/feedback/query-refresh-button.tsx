@@ -1,4 +1,5 @@
 import { Button } from '#/components/ui/button'
+import { ToolbarTooltip } from '#/components/layout/toolbar-tooltip'
 import { cn } from '#/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
@@ -28,17 +29,18 @@ export function QueryRefreshButton({ className }: QueryRefreshButtonProps) {
   }
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={className}
-      onClick={() => void handleRefresh()}
-      disabled={isRefreshing}
-      aria-label="Refresh data"
-      title="Refresh data"
-    >
-      <RefreshCw className={cn('size-4', isRefreshing && 'animate-spin')} />
-    </Button>
+    <ToolbarTooltip label="Refresh data">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={className}
+        onClick={() => void handleRefresh()}
+        disabled={isRefreshing}
+        aria-label="Refresh data"
+      >
+        <RefreshCw className={cn('size-4', isRefreshing && 'animate-spin')} />
+      </Button>
+    </ToolbarTooltip>
   )
 }

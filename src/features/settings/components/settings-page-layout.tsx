@@ -16,12 +16,23 @@ export interface SettingsNavItem {
 interface SettingsPageLayoutProps {
   groups: SettingsNavGroup[]
   children: (item: SettingsNavItem) => ReactNode
+  /** Small caps label above the active section title. */
+  pageLabel?: string
+  /** Optional context shown under the active section description. */
+  pageNote?: string
+  navAriaLabel?: string
 }
 
 /**
  * Settings shell with section nav and a sticky title that tracks scroll position.
  */
-export function SettingsPageLayout({ groups, children }: SettingsPageLayoutProps) {
+export function SettingsPageLayout({
+  groups,
+  children,
+  pageLabel = 'Settings',
+  pageNote,
+  navAriaLabel = 'Settings sections',
+}: SettingsPageLayoutProps) {
   const items = groups.flatMap((group) => group.items)
   const [activeId, setActiveId] = useState(items[0]?.id ?? '')
   const sectionRefs = useRef(new Map<string, HTMLElement>())
@@ -92,12 +103,12 @@ export function SettingsPageLayout({ groups, children }: SettingsPageLayoutProps
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-      <aside className="lg:w-56 lg:shrink-0">
+      <aside className="sticky top-4 z-10 -mx-1 w-full shrink-0 self-start bg-background/95 px-1 backdrop-blur supports-backdrop-filter:bg-background/85 lg:top-6 lg:z-auto lg:w-56 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
         <nav
-          aria-label="Settings sections"
-          className="lg:sticky lg:top-0 lg:max-h-[calc(100svh-5rem)] lg:overflow-y-auto lg:pr-2"
+          aria-label={navAriaLabel}
+          className="border-b border-border/80 pb-2 lg:max-h-[calc(100svh-8rem)] lg:overflow-y-auto lg:border-0 lg:pb-0 lg:pr-2"
         >
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none [-ms-overflow-style:none] lg:flex-col lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {groups.map((group) => (
               <div key={group.label} className="min-w-0 shrink-0 lg:shrink">
                 <p className="hidden px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:block">
@@ -132,13 +143,16 @@ export function SettingsPageLayout({ groups, children }: SettingsPageLayoutProps
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-10 -mx-1 border-b border-border/80 bg-background/95 px-1 py-4 backdrop-blur supports-backdrop-filter:bg-background/85">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Settings</p>
+        <header className="-mx-1 border-b border-border/80 px-1 py-4 lg:sticky lg:top-0 lg:z-10 lg:bg-background/95 lg:backdrop-blur lg:supports-backdrop-filter:bg-background/85">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{pageLabel}</p>
           <h1 className="display-title mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
             {activeItem?.title}
           </h1>
           {activeItem?.description ? (
             <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{activeItem.description}</p>
+          ) : null}
+          {pageNote ? (
+            <p className="mt-2 max-w-2xl text-xs text-muted-foreground/90">{pageNote}</p>
           ) : null}
         </header>
 

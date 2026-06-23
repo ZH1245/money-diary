@@ -10,7 +10,7 @@ import {
   type SettingsNavGroup,
 } from '#/features/settings/components/settings-page-layout'
 import { ChangePasswordSection } from '#/features/auth/components/change-password-section'
-import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
+import { Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -50,17 +50,6 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
         label: 'AI provider',
         title: 'AI provider',
         description: 'Choose the app AI service or bring your own provider credentials.',
-      },
-    ],
-  },
-  {
-    label: 'Legal',
-    items: [
-      {
-        id: 'legal',
-        label: 'Privacy & terms',
-        title: 'Privacy & terms',
-        description: 'Review how Money Diary handles your data and usage rules.',
       },
     ],
   },
@@ -207,24 +196,7 @@ function SettingsPage() {
               return <ChangePasswordSection />
             }
 
-            if (item.id === 'ai') {
-              return <AiSettingsSection />
-            }
-
-            return (
-              <article className="feature-card rounded-xl border border-border p-5">
-                <h2 className="text-lg font-semibold">Policies</h2>
-                <p className="mt-1 text-sm opacity-80">Open the documents below in a new tab anytime.</p>
-                <div className="mt-4 flex flex-col gap-2 text-sm font-medium">
-                  <Link to="/privacy" className="underline underline-offset-4">
-                    Privacy Policy
-                  </Link>
-                  <Link to="/terms" className="underline underline-offset-4">
-                    Terms of Service
-                  </Link>
-                </div>
-              </article>
-            )
+            return <AiSettingsSection />
           }}
         </SettingsPageLayout>
       </main>

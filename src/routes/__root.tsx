@@ -9,6 +9,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/react'
 
+import { TooltipProvider } from '#/components/ui/tooltip'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import { ServiceWorkerRegistration } from '#/components/pwa/service-worker-registration'
 
@@ -95,9 +96,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body>
-        <div className="route-transition">
-          {children}
-        </div>
+        <TooltipProvider delayDuration={300}>
+          <div className="route-transition">
+            {children}
+          </div>
+        </TooltipProvider>
         <Toaster richColors position="top-right" closeButton />
         <ServiceWorkerRegistration />
         <Analytics />

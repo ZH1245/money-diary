@@ -1,4 +1,5 @@
 import { InfoTooltip } from '#/components/forms/info-tooltip'
+import { ToolbarTooltip } from '#/components/layout/toolbar-tooltip'
 import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
 import {
@@ -77,19 +78,20 @@ export function DashboardDateRangeFilter() {
   return (
     <div className="flex items-center gap-0.5">
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            title={dateLabel}
-            aria-label={`Date range: ${fullLabel}`}
-            className="shrink-0 gap-1.5 overflow-hidden px-2 py-2 text-xs font-normal max-w-9 sm:max-w-44 sm:px-3 md:max-w-52 lg:max-w-60 lg:gap-2 lg:px-4 xl:max-w-none"
-          >
+        <ToolbarTooltip label={`Date range: ${fullLabel}`}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              aria-label={`Date range: ${fullLabel}`}
+              className="shrink-0 gap-1.5 overflow-hidden px-2 py-2 text-xs font-normal max-w-9 sm:max-w-44 sm:px-3 md:max-w-52 lg:max-w-60 lg:gap-2 lg:px-4 xl:max-w-none"
+            >
             <CalendarRange className="size-3.5 shrink-0 opacity-70" />
             <span className="hidden min-w-0 truncate sm:inline lg:max-w-36 xl:max-w-none">
               {dateLabel}
             </span>
           </Button>
-        </DropdownMenuTrigger>
+          </DropdownMenuTrigger>
+        </ToolbarTooltip>
         <DropdownMenuContent align="end" className="w-auto max-w-[calc(100vw-1rem)] overflow-hidden p-0">
           <div className="space-y-2 p-2">
             <Calendar
