@@ -1,14 +1,10 @@
-export interface SecurityProfileSummary {
-  recoveryEmail: string
-  recoveryEmailVerified: boolean
-  questionOneKey: string
-  questionOneLabel: string
-  hasProfile: boolean
+export interface SecurityProfileStatus {
+  hasProfile: true
 }
 
 interface SecurityProfileApiPayload {
   success?: boolean
-  data?: SecurityProfileSummary | null
+  data?: SecurityProfileStatus | null
   error?: string
   details?: {
     fieldErrors?: Record<string, string[]>
@@ -54,8 +50,8 @@ function throwSecurityProfileRequestError(
   throw new SecurityProfileRequestError(payload?.error ?? fallbackMessage, fieldErrors)
 }
 
-/** Loads the authenticated user's security profile, or null when not configured. */
-export async function fetchSecurityProfile(): Promise<SecurityProfileSummary | null> {
+/** Loads whether the signed-in user has configured account recovery. */
+export async function fetchSecurityProfile(): Promise<SecurityProfileStatus | null> {
   const response = await fetch('/api/auth/security-profile', { method: 'GET' })
   const payload = (await response.json().catch(() => null)) as SecurityProfileApiPayload | null
 
@@ -70,7 +66,7 @@ export async function fetchSecurityProfile(): Promise<SecurityProfileSummary | n
 export async function createSecurityProfileRequest(body: {
   questionOneKey: string
   answerOne: string
-}): Promise<SecurityProfileSummary> {
+}): Promise<SecurityProfileStatus> {
   const response = await fetch('/api/auth/security-profile', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -91,7 +87,7 @@ export async function updateSecurityProfileRequest(body: {
   currentPassword: string
   questionOneKey?: string
   answerOne?: string
-}): Promise<SecurityProfileSummary> {
+}): Promise<SecurityProfileStatus> {
   const response = await fetch('/api/auth/security-profile', {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },

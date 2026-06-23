@@ -4,7 +4,6 @@ import {
   SecurityProfileFields,
   getDefaultSecurityProfileFormValues,
 } from '#/features/auth/components/security-profile-fields'
-import type { SecurityQuestionKey } from '#/features/auth/constants/security-questions'
 import {
   createSecurityProfileRequest,
   fetchSecurityProfile,
@@ -38,11 +37,11 @@ export function SecurityProfileSection() {
         const profile = await fetchSecurityProfile()
         if (profile) {
           setHasProfile(true)
-          setForm({
-            recoveryEmail: profile.recoveryEmail,
-            questionOneKey: profile.questionOneKey as SecurityQuestionKey,
+          setForm((previous) => ({
+            ...previous,
+            questionOneKey: 'childhood_nickname',
             answerOne: '',
-          })
+          }))
         }
       } finally {
         setIsLoading(false)

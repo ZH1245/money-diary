@@ -7,7 +7,7 @@ import {
   normalizeRecoveryEmail,
   RecoveryEmailInUseError,
 } from '#/features/auth/errors/recovery-email-errors'
-import { hashSecurityAnswer, maskRecoveryEmail, verifySecurityAnswer } from '#/lib/server/security-answer'
+import { hashSecurityAnswer, verifySecurityAnswer } from '#/lib/server/security-answer'
 
 export interface SecurityProfileRecord {
   recoveryEmail: string
@@ -17,10 +17,29 @@ export interface SecurityProfileRecord {
   hasProfile: boolean
 }
 
+export interface SecurityProfileStatus {
+  hasProfile: true
+}
+
 /**
- * Loads the public security profile view for one user.
+ * Returns whether the user has configured account recovery, without exposing recovery details.
  */
-export async function getSecurityProfileForUser(userId: string): Promise<SecurityProfileRecord | null> {
+export async function getSecurityProfileStatusForUser(userId: string): Promise<SecurityProfileStatus | null> {
+  const [row] = await db
+    .select({ userId: userSecurityProfile.userId })
+    .from(userSecurityProfile)
+    .where(eq(userSecurityProfile.userId, userId))
+    .limit(1)
+
+  if (!row) return null
+
+  return { hasProfile: true }
+}
+
+/**
+ * Loads the full security profile for server-side verification only.
+ */
+async function getSecurityProfileRecordForUser(userId: string): Promise<SecurityProfileRecord | null> {
   const [row] = await db
     .select()
     .from(userSecurityProfile)
@@ -36,6 +55,31 @@ export async function getSecurityProfileForUser(userId: string): Promise<Securit
     questionOneLabel: getSecurityQuestionLabel(row.questionOneKey),
     hasProfile: true,
   }
+}
+
+/** @deprecated Use getSecurityProfileStatusForUser for API responses. */
+export async function getSecurityProfileForUser(userId: string): Promise<SecurityProfileRecord | null> {
+  return getSecurityProfileRecordForUser(userId)
+}
+
+/**
+ * Verifies recovery email and security answer against the stored profile.
+ */
+async function verifyRecoveryCredentials({
+  profile,
+  recoveryEmail,
+  answerOne,
+}: {
+  profile: typeof userSecurityProfile.$inferSelect
+  recoveryEmail: string
+  answerOne: string
+}): Promise<boolean> {
+  const normalizedRecoveryEmail = normalizeRecoveryEmail(recoveryEmail)
+  if (normalizeRecoveryEmail(profile.recoveryEmail) !== normalizedRecoveryEmail) {
+    return false
+  }
+
+  return verifySecurityAnswer(answerOne, profile.answerOneHash)
 }
 
 /**
@@ -149,35 +193,31 @@ export async function updateSecurityProfile({
 }
 
 /**
- * Returns recovery challenge questions for a login email when a profile exists.
+ * Checks whether an account email has recovery configured, without exposing recovery details.
  */
-export async function getRecoveryChallengeByEmail(email: string) {
+export async function accountHasRecoveryProfile(email: string): Promise<boolean> {
   const [foundUser] = await db
     .select({ id: user.id })
     .from(user)
     .where(sql`lower(${user.email}) = ${email.toLowerCase()}`)
     .limit(1)
-  if (!foundUser) return null
+  if (!foundUser) return false
 
-  const profile = await getSecurityProfileForUser(foundUser.id)
-  if (!profile) return null
-
-  return {
-    questionOneKey: profile.questionOneKey,
-    questionOneLabel: profile.questionOneLabel,
-    recoveryEmailHint: maskRecoveryEmail(profile.recoveryEmail),
-  }
+  const status = await getSecurityProfileStatusForUser(foundUser.id)
+  return Boolean(status)
 }
 
 /**
- * Verifies a security answer and resets the account password.
+ * Verifies recovery credentials and resets the account password.
  */
 export async function resetPasswordWithSecurityAnswers({
   email,
+  recoveryEmail,
   answerOne,
   newPassword,
 }: {
   email: string
+  recoveryEmail: string
   answerOne: string
   newPassword: string
 }): Promise<'reset' | 'invalid'> {
@@ -196,8 +236,12 @@ export async function resetPasswordWithSecurityAnswers({
 
   if (!profile) return 'invalid'
 
-  const answerOneValid = await verifySecurityAnswer(answerOne, profile.answerOneHash)
-  if (!answerOneValid) return 'invalid'
+  const recoveryValid = await verifyRecoveryCredentials({
+    profile,
+    recoveryEmail,
+    answerOne,
+  })
+  if (!recoveryValid) return 'invalid'
 
   const [credentialAccount] = await db
     .select({ id: account.id, password: account.password })
@@ -225,8 +269,8 @@ export async function resetPasswordWithSecurityAnswers({
 export type ChangePasswordResult =
   | 'success'
   | 'invalid_current_password'
-  | 'invalid_security_answers'
-  | 'security_answers_required'
+  | 'invalid_recovery_verification'
+  | 'recovery_verification_required'
 
 /**
  * Deletes every active session for a user so they must sign in again on all devices.
@@ -242,11 +286,13 @@ export async function changePasswordForAuthenticatedUser({
   userId,
   currentPassword,
   newPassword,
+  recoveryEmail,
   answerOne,
 }: {
   userId: string
   currentPassword: string
   newPassword: string
+  recoveryEmail?: string
   answerOne?: string
 }): Promise<ChangePasswordResult> {
   const currentValid = await verifyUserCurrentPassword(userId, currentPassword)
@@ -261,13 +307,17 @@ export async function changePasswordForAuthenticatedUser({
     .limit(1)
 
   if (profile) {
-    if (!answerOne?.trim()) {
-      return 'security_answers_required'
+    if (!recoveryEmail?.trim() || !answerOne?.trim()) {
+      return 'recovery_verification_required'
     }
 
-    const answerOneValid = await verifySecurityAnswer(answerOne, profile.answerOneHash)
-    if (!answerOneValid) {
-      return 'invalid_security_answers'
+    const recoveryValid = await verifyRecoveryCredentials({
+      profile,
+      recoveryEmail,
+      answerOne,
+    })
+    if (!recoveryValid) {
+      return 'invalid_recovery_verification'
     }
   }
 

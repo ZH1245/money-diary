@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getRecoveryChallengeByEmail } from '#/features/auth/server/user-security-repository'
+import { accountHasRecoveryProfile } from '#/features/auth/server/user-security-repository'
 import { recoveryChallengeSchema } from '#/features/auth/schemas/security-profile'
 import { buildOptionsResponse, guardApiRequest, rejectClientSuppliedUserId } from '#/lib/server/api-guards'
 import { enforceRecoveryRateLimit } from '#/lib/server/recovery-rate-limit'
@@ -32,24 +32,15 @@ export const Route = createFileRoute('/api/auth/recovery/challenge')({
           )
         }
 
-        const challenge = await getRecoveryChallengeByEmail(parsed.data.email.toLowerCase())
-
-        if (!challenge) {
-          return Response.json({
-            success: true,
-            data: {
-              available: false,
-              message:
-                'No recovery profile is set up for this email. Sign in and add recovery details in Settings if this is your account.',
-            },
-          })
-        }
+        const available = await accountHasRecoveryProfile(parsed.data.email.toLowerCase())
 
         return Response.json({
           success: true,
           data: {
-            available: true,
-            ...challenge,
+            available,
+            message: available
+              ? undefined
+              : 'No recovery profile is set up for this email. Sign in and complete account recovery setup if this is your account.',
           },
         })
       },
