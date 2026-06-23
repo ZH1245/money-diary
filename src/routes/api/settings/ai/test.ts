@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
-import { probeOllamaBaseUrl } from '#/features/ai/server/ollama-client'
-import { probeGeminiApiKey } from '#/features/ai/server/gemini-client'
-import { probeOpenRouterApiKey } from '#/features/ai/server/openrouter-client'
+import {
+  probeUserAiConnection,
+  testUserAiSettingsSchema,
+} from '#/features/settings/server/ai-connection-test'
 import {
   buildOptionsResponse,
   guardApiRequest,
@@ -10,34 +10,11 @@ import {
   requireUserContext,
 } from '#/lib/server/api-guards'
 
-const testOllamaSchema = z.object({
-  provider: z.literal('ollama'),
-  baseUrl: z.string().trim().url('Enter a valid URL'),
-  apiKey: z.string().trim().optional(),
-})
-
-const testGeminiSchema = z.object({
-  provider: z.literal('gemini'),
-  apiKey: z.string().trim().min(1, 'Gemini API key is required'),
-})
-
-const testOpenRouterSchema = z.object({
-  provider: z.literal('openrouter'),
-  baseUrl: z.string().trim().url('Enter a valid URL'),
-  apiKey: z.string().trim().min(1, 'OpenRouter API key is required'),
-})
-
-const testAiSettingsSchema = z.discriminatedUnion('provider', [
-  testOllamaSchema,
-  testGeminiSchema,
-  testOpenRouterSchema,
-])
-
 export const Route = createFileRoute('/api/settings/ai/test')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)
@@ -53,7 +30,7 @@ export const Route = createFileRoute('/api/settings/ai/test')({
         )
         if (bodyUserIdRejected) return bodyUserIdRejected
 
-        const parsed = testAiSettingsSchema.safeParse(body)
+        const parsed = testUserAiSettingsSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
             { success: false, error: 'Invalid test payload', details: parsed.error.flatten() },
@@ -61,23 +38,25 @@ export const Route = createFileRoute('/api/settings/ai/test')({
           )
         }
 
-        const result =
-          parsed.data.provider === 'gemini'
-            ? await probeGeminiApiKey({ apiKey: parsed.data.apiKey })
-            : parsed.data.provider === 'openrouter'
-              ? await probeOpenRouterApiKey({
-                  apiKey: parsed.data.apiKey,
-                  baseUrl: parsed.data.baseUrl,
-                })
-              : await probeOllamaBaseUrl({
-                  baseUrl: parsed.data.baseUrl,
-                  apiKey: parsed.data.apiKey,
-                })
+        try {
+          const result = await probeUserAiConnection({
+            userId: userContext.id,
+            payload: parsed.data,
+          })
 
-        return Response.json({
-          success: true,
-          data: result,
-        })
+          return Response.json({
+            success: true,
+            data: result,
+          })
+        } catch (error) {
+          return Response.json(
+            {
+              success: false,
+              error: error instanceof Error ? error.message : 'Unable to test AI provider connection',
+            },
+            { status: 400 },
+          )
+        }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
     },

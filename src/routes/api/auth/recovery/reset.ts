@@ -11,10 +11,10 @@ export const Route = createFileRoute('/api/auth/recovery/reset')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
-        const recoveryLimitResponse = enforceRecoveryRateLimit(request)
+        const recoveryLimitResponse = await enforceRecoveryRateLimit(request)
         if (recoveryLimitResponse) return recoveryLimitResponse
 
         const userIdRejected = rejectClientSuppliedUserId(request)

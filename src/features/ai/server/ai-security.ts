@@ -21,15 +21,18 @@ const OFF_TOPIC_PATTERNS = [
   /help (me )?(with )?(homework|dating|medical|legal advice)/i,
 ]
 
-interface AbuseBucket {
-  strikes: number
-  blockedUntil: number | null
-}
-
-const abuseBuckets = new Map<string, AbuseBucket>()
+import {
+  deleteRateLimitBucket,
+  getRateLimitBucket,
+  upsertRateLimitBucket,
+} from '#/lib/server/rate-limit-store'
 
 const MAX_STRIKES = 3
 const BLOCK_DURATION_MS = 30 * 60 * 1000
+
+function abuseBucketKey(userId: string) {
+  return `abuse:${userId}`
+}
 
 export interface AiSecurityCheckResult {
   allowed: boolean
@@ -60,11 +63,14 @@ export function detectOffTopicRequest(content: string): boolean {
 /**
  * Tracks repeated abuse attempts and blocks chat after threshold.
  */
-export function evaluateAbuseState(userId: string): AiSecurityCheckResult {
-  const bucket = abuseBuckets.get(userId)
+export async function evaluateAbuseState(userId: string): Promise<AiSecurityCheckResult> {
+  const bucket = await getRateLimitBucket(abuseBucketKey(userId))
   if (!bucket) return { allowed: true }
 
-  if (bucket.blockedUntil && Date.now() < bucket.blockedUntil) {
+  const now = Date.now()
+  const blockedUntil = bucket.resetAt.getTime()
+
+  if (bucket.hitCount >= MAX_STRIKES && blockedUntil > now) {
     return {
       allowed: false,
       closeChat: true,
@@ -72,8 +78,8 @@ export function evaluateAbuseState(userId: string): AiSecurityCheckResult {
     }
   }
 
-  if (bucket.blockedUntil && Date.now() >= bucket.blockedUntil) {
-    abuseBuckets.delete(userId)
+  if (blockedUntil <= now) {
+    await deleteRateLimitBucket(abuseBucketKey(userId))
   }
 
   return { allowed: true }
@@ -82,13 +88,19 @@ export function evaluateAbuseState(userId: string): AiSecurityCheckResult {
 /**
  * Records an unsafe user attempt and may block further chat usage.
  */
-export function recordAbuseStrike(userId: string): AiSecurityCheckResult {
-  const bucket = abuseBuckets.get(userId) ?? { strikes: 0, blockedUntil: null }
-  bucket.strikes += 1
+export async function recordAbuseStrike(userId: string): Promise<AiSecurityCheckResult> {
+  const bucketKey = abuseBucketKey(userId)
+  const existing = await getRateLimitBucket(bucketKey)
+  const now = Date.now()
+  const strikes =
+    existing && existing.resetAt.getTime() > now ? existing.hitCount + 1 : 1
 
-  if (bucket.strikes >= MAX_STRIKES) {
-    bucket.blockedUntil = Date.now() + BLOCK_DURATION_MS
-    abuseBuckets.set(userId, bucket)
+  if (strikes >= MAX_STRIKES) {
+    await upsertRateLimitBucket({
+      bucketKey,
+      hitCount: strikes,
+      resetAt: new Date(now + BLOCK_DURATION_MS),
+    })
     return {
       allowed: false,
       closeChat: true,
@@ -96,7 +108,12 @@ export function recordAbuseStrike(userId: string): AiSecurityCheckResult {
     }
   }
 
-  abuseBuckets.set(userId, bucket)
+  await upsertRateLimitBucket({
+    bucketKey,
+    hitCount: strikes,
+    resetAt: new Date(now + BLOCK_DURATION_MS),
+  })
+
   return {
     allowed: true,
     warning: 'Stay within Money Diary finance actions only.',

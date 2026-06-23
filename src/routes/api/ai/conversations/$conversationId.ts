@@ -16,7 +16,7 @@ export const Route = createFileRoute('/api/ai/conversations/$conversationId')({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)
@@ -58,7 +58,7 @@ export const Route = createFileRoute('/api/ai/conversations/$conversationId')({
         })
       },
       DELETE: async ({ request, params }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)

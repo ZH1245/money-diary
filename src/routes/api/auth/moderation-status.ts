@@ -7,7 +7,7 @@ export const Route = createFileRoute('/api/auth/moderation-status')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const session = await auth.api.getSession({

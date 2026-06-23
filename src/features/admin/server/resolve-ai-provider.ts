@@ -3,6 +3,7 @@ import {
   getGlobalAiPublicStatus,
 } from '#/features/admin/server/global-ai-settings-repository'
 import {
+  getUserAiProviderPreference,
   getUserAiSettingsForRuntime,
   type AiProviderId,
 } from '#/features/settings/server/settings-repository'
@@ -83,14 +84,14 @@ export async function resolveAiProviderForUser(userId: string): Promise<Resolved
  * Returns user-facing global AI status without secrets.
  */
 export async function getAiProviderStatusForUser(userId: string) {
-  const [globalStatus, userSettings] = await Promise.all([
+  const [globalStatus, preference] = await Promise.all([
     getGlobalAiPublicStatus(),
-    getUserAiSettingsForRuntime({ userId }),
+    getUserAiProviderPreference({ userId }),
   ])
 
   return {
     global: globalStatus,
-    useGlobalProvider: userSettings?.useGlobalProvider ?? true,
-    hasCustomSettings: Boolean(userSettings?.baseUrl && userSettings.model),
+    useGlobalProvider: preference.useGlobalProvider,
+    hasCustomSettings: preference.hasCustomSettings,
   }
 }

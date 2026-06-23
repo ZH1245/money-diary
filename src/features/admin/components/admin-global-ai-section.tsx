@@ -42,6 +42,51 @@ const INITIAL_URL_PROBE: UrlProbeState = {
 
 const ENABLED_PROVIDERS = new Set(['ollama', 'gemini', 'openrouter'])
 
+function buildAiTestPayload({
+  providerId,
+  baseUrl,
+  apiKey,
+  savedApiKeyMask,
+}: {
+  providerId: string
+  baseUrl: string
+  apiKey: string
+  savedApiKeyMask: string | null
+}) {
+  const typedKey = apiKey.trim()
+
+  if (providerId === 'gemini') {
+    if (typedKey) return { provider: 'gemini' as const, apiKey: typedKey }
+    if (savedApiKeyMask) return { provider: 'gemini' as const, useStoredKey: true as const }
+    return null
+  }
+
+  if (providerId === 'openrouter') {
+    const trimmedBaseUrl = baseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL
+    if (typedKey) {
+      return { provider: 'openrouter' as const, baseUrl: trimmedBaseUrl, apiKey: typedKey }
+    }
+    if (savedApiKeyMask) {
+      return { provider: 'openrouter' as const, baseUrl: trimmedBaseUrl, useStoredKey: true as const }
+    }
+    return null
+  }
+
+  if (providerId === 'ollama') {
+    const trimmedBaseUrl = baseUrl.trim()
+    if (!trimmedBaseUrl) return null
+    if (typedKey) {
+      return { provider: 'ollama' as const, baseUrl: trimmedBaseUrl, apiKey: typedKey }
+    }
+    if (savedApiKeyMask) {
+      return { provider: 'ollama' as const, baseUrl: trimmedBaseUrl, useStoredKey: true as const }
+    }
+    return { provider: 'ollama' as const, baseUrl: trimmedBaseUrl }
+  }
+
+  return null
+}
+
 /** Admin form for configuring the global AI provider offered to all users. */
 export function AdminGlobalAiSection() {
   const [isEnabled, setIsEnabled] = useState(false)
@@ -50,8 +95,6 @@ export function AdminGlobalAiSection() {
   const [model, setModel] = useState('gemini-2.0-flash')
   const [apiKey, setApiKey] = useState('')
   const [savedApiKeyMask, setSavedApiKeyMask] = useState<string | null>(null)
-  const [revealedApiKey, setRevealedApiKey] = useState('')
-  const [isRevealingKey, setIsRevealingKey] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRemovingKey, setIsRemovingKey] = useState(false)
@@ -106,12 +149,14 @@ export function AdminGlobalAiSection() {
         return
       }
 
-      const effectiveApiKey = nextApiKey.trim() || revealedApiKey
-      if (
-        (nextProviderId === 'gemini' || nextProviderId === 'openrouter') &&
-        savedApiKeyMask &&
-        !effectiveApiKey
-      ) {
+      const testPayload = buildAiTestPayload({
+        providerId: nextProviderId,
+        baseUrl: nextBaseUrl,
+        apiKey: nextApiKey,
+        savedApiKeyMask,
+      })
+
+      if (!testPayload) {
         setUrlProbe(INITIAL_URL_PROBE)
         return
       }
@@ -124,17 +169,7 @@ export function AdminGlobalAiSection() {
         const response = await fetch('/api/admin/global-ai/test', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(
-            nextProviderId === 'gemini'
-              ? { provider: 'gemini', apiKey: effectiveApiKey }
-              : nextProviderId === 'openrouter'
-                ? {
-                    provider: 'openrouter',
-                    baseUrl: nextBaseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL,
-                    apiKey: effectiveApiKey,
-                  }
-                : { provider: 'ollama', baseUrl: nextBaseUrl.trim(), apiKey: effectiveApiKey || undefined },
-          ),
+          body: JSON.stringify(testPayload),
         })
 
         const payload = (await response.json().catch(() => null)) as {
@@ -163,7 +198,7 @@ export function AdminGlobalAiSection() {
         })
       }
     },
-    [revealedApiKey, savedApiKeyMask],
+    [savedApiKeyMask],
   )
 
   useEffect(() => {
@@ -188,7 +223,6 @@ export function AdminGlobalAiSection() {
           setBaseUrl(payload.data.baseUrl || 'http://127.0.0.1:11434')
           setModel(payload.data.model)
           setSavedApiKeyMask(payload.data.apiKeyMasked)
-          setRevealedApiKey('')
         }
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : 'Unable to load global AI settings')
@@ -214,7 +248,6 @@ export function AdminGlobalAiSection() {
     setProviderId(nextProviderId)
     setUrlProbe(INITIAL_URL_PROBE)
     setApiKey('')
-    setRevealedApiKey('')
 
     if (nextProviderId === 'gemini') {
       setModel('gemini-2.0-flash')
@@ -280,7 +313,6 @@ export function AdminGlobalAiSection() {
         setIsEnabled(payload.data.isEnabled)
         setSavedApiKeyMask(payload.data.apiKeyMasked)
         setApiKey('')
-        setRevealedApiKey('')
       }
 
       toast.success('Global AI settings saved')
@@ -313,7 +345,6 @@ export function AdminGlobalAiSection() {
 
       setSavedApiKeyMask(payload.data?.apiKeyMasked ?? null)
       setApiKey('')
-      setRevealedApiKey('')
       setUrlProbe(INITIAL_URL_PROBE)
       toast.success('Global API key removed')
     } catch (error) {
@@ -321,54 +352,6 @@ export function AdminGlobalAiSection() {
     } finally {
       setIsRemovingKey(false)
     }
-  }
-
-  async function handleRevealApiKey() {
-    if (apiKey.trim()) {
-      return
-    }
-
-    if (revealedApiKey) {
-      setApiKey(revealedApiKey)
-      return
-    }
-
-    setIsRevealingKey(true)
-    setErrorMessage(null)
-    try {
-      const response = await fetch('/api/admin/global-ai/reveal', {
-        method: 'POST',
-      })
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: {
-          apiKey: string
-        }
-      } | null
-      if (!response.ok || !payload?.success || !payload.data?.apiKey) {
-        throw new Error(payload?.error ?? 'Unable to reveal API key')
-      }
-      setApiKey(payload.data.apiKey)
-      setRevealedApiKey(payload.data.apiKey)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to reveal API key')
-      throw error
-    } finally {
-      setIsRevealingKey(false)
-    }
-  }
-
-  function handleHideStoredApiKey() {
-    setApiKey('')
-    setRevealedApiKey('')
-  }
-
-  const storedApiKeyFieldProps = {
-    hasStoredValue: Boolean(savedApiKeyMask && !apiKey.trim()),
-    onRequestReveal: handleRevealApiKey,
-    isRevealPending: isRevealingKey,
-    onHideStoredValue: handleHideStoredApiKey,
   }
 
   const urlProbeIcon =
@@ -469,7 +452,6 @@ export function AdminGlobalAiSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'Only for secured gateways'}
               isRequired={false}
               isDisabled={isLoading || isSubmitting}
-              {...storedApiKeyFieldProps}
             />
           </>
         ) : providerId === 'gemini' ? (
@@ -483,7 +465,6 @@ export function AdminGlobalAiSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'AIza...'}
               isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
-              {...storedApiKeyFieldProps}
             />
             <FormField
               id="admin-gemini-model"
@@ -512,7 +493,6 @@ export function AdminGlobalAiSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'sk-or-...'}
               isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
-              {...storedApiKeyFieldProps}
             />
             <FormField
               id="admin-openrouter-base-url"

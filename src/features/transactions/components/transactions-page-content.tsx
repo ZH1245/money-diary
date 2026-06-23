@@ -57,7 +57,7 @@ import type { FormEvent } from 'react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { PageContentSkeleton } from '#/components/feedback/page-state'
-import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SignedTransactionAmount } from '#/components/privacy/signed-transaction-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { Skeleton } from '#/components/ui/skeleton'
 import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
@@ -184,7 +184,14 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
         id: 'amount',
         accessorFn: (row) => Number(row.amount),
         header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
-        cell: ({ row }) => <SensitiveAmount amount={row.original.amount} currency={userCurrency} className="font-medium" />,
+        cell: ({ row }) => (
+          <SignedTransactionAmount
+            amount={row.original.amount}
+            currency={userCurrency}
+            type={row.original.type}
+            className="font-medium"
+          />
+        ),
       },
       {
         id: 'account',

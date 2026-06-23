@@ -212,3 +212,11 @@ export const aiMessages = pgTable('ai_messages', {
   conversationIdIdx: index('ai_messages_conversation_id_idx').on(table.conversationId),
   createdAtIdx: index('ai_messages_created_at_idx').on(table.createdAt),
 }))
+
+export const rateLimitBuckets = pgTable('rate_limit_buckets', {
+  bucketKey: text('bucket_key').primaryKey(),
+  hitCount: integer('hit_count').notNull().default(1),
+  resetAt: timestamp('reset_at', { withTimezone: true }).notNull(),
+}, (table) => ({
+  resetAtIdx: index('rate_limit_buckets_reset_at_idx').on(table.resetAt),
+}))

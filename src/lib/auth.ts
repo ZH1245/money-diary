@@ -28,6 +28,17 @@ export const auth = betterAuth({
         defaultValue: DEFAULT_CURRENCY,
         input: true,
       },
+      accountStatus: {
+        type: 'string',
+        required: false,
+        defaultValue: 'active',
+        input: false,
+      },
+      moderationReason: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
     },
   },
   plugins: [tanstackStartCookies()],

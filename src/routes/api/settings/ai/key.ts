@@ -5,14 +5,14 @@ import {
   rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
-import { clearUserAiApiKey, getUserAiSettings } from '#/features/settings/server/settings-repository'
+import { clearUserAiApiKey, getUserAiProviderPreference, tryGetUserAiSettings } from '#/features/settings/server/settings-repository'
 import { getAiProviderStatusForUser } from '#/features/admin/server/resolve-ai-provider'
 
 export const Route = createFileRoute('/api/settings/ai/key')({
   server: {
     handlers: {
       DELETE: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)
@@ -21,8 +21,13 @@ export const Route = createFileRoute('/api/settings/ai/key')({
         const userIdRejected = rejectClientSuppliedUserId(request)
         if (userIdRejected) return userIdRejected
 
-        const existing = await getUserAiSettings({ userId: userContext.id })
-        if (!existing?.hasApiKey) {
+        const [preference, userLoad] = await Promise.all([
+          getUserAiProviderPreference({ userId: userContext.id }),
+          tryGetUserAiSettings({ userId: userContext.id }),
+        ])
+
+        const hasApiKey = userLoad.settings?.hasApiKey ?? preference.hasStoredApiKey
+        if (!hasApiKey) {
           return Response.json({ success: false, error: 'No API key stored' }, { status: 404 })
         }
 
@@ -31,18 +36,19 @@ export const Route = createFileRoute('/api/settings/ai/key')({
           return Response.json({ success: false, error: 'AI settings not found' }, { status: 404 })
         }
 
-        const [settings, providerStatus] = await Promise.all([
-          getUserAiSettings({ userId: userContext.id }),
+        const [settingsAfterClear, providerStatusAfterClear] = await Promise.all([
+          tryGetUserAiSettings({ userId: userContext.id }),
           getAiProviderStatusForUser(userContext.id),
         ])
 
         return Response.json({
           success: true,
           data: {
-            user: settings,
-            global: providerStatus.global,
-            useGlobalProvider: providerStatus.useGlobalProvider,
-            hasCustomSettings: providerStatus.hasCustomSettings,
+            user: settingsAfterClear.settings,
+            global: providerStatusAfterClear.global,
+            useGlobalProvider: providerStatusAfterClear.useGlobalProvider,
+            hasCustomSettings: providerStatusAfterClear.hasCustomSettings,
+            settingsWarning: settingsAfterClear.decryptError,
           },
         })
       },

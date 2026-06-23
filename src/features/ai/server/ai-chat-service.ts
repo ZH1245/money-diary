@@ -408,7 +408,7 @@ export async function runAiChat({
   currency: string
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
 }): Promise<AiChatServiceResult> {
-  const abuseState = evaluateAbuseState(userId)
+  const abuseState = await evaluateAbuseState(userId)
   if (!abuseState.allowed) {
     return {
       success: false,
@@ -422,7 +422,7 @@ export async function runAiChat({
   if (!validation.allowed) {
     const lastUser = messages.filter((message) => message.role === 'user').at(-1)
     if (lastUser && detectPromptInjection(lastUser.content)) {
-      const strike = recordAbuseStrike(userId)
+      const strike = await recordAbuseStrike(userId)
       return {
         success: false,
         blocked: true,

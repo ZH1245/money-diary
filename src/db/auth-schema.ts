@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, uniqueIndex, integer } from "drizzle-orm/pg-core";
 
 export const authRoles = pgTable("auth_roles", {
   slug: text("slug").primaryKey(),
@@ -40,6 +40,8 @@ export const userSecurityProfile = pgTable("user_security_profile", {
   recoveryEmailVerified: boolean("recovery_email_verified").default(false).notNull(),
   questionOneKey: text("question_one_key").notNull(),
   answerOneHash: text("answer_one_hash").notNull(),
+  failedRecoveryAttempts: integer("failed_recovery_attempts").default(0).notNull(),
+  recoveryLockedUntil: timestamp("recovery_locked_until", { withTimezone: true }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

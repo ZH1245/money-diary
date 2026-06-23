@@ -17,7 +17,7 @@ export const Route = createFileRoute('/api/goals')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
@@ -28,7 +28,7 @@ export const Route = createFileRoute('/api/goals')({
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext

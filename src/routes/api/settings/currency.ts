@@ -23,7 +23,7 @@ export const Route = createFileRoute('/api/settings/currency')({
   server: {
     handlers: {
       PATCH: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)

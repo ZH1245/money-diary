@@ -11,7 +11,7 @@ export const Route = createFileRoute('/api/admin/categories')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/api/admin/categories')({
         return Response.json({ success: true, data: rows })
       },
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse

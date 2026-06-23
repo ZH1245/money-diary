@@ -23,7 +23,7 @@ export const Route = createFileRoute('/api/exchange-rate')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)

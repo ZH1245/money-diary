@@ -14,7 +14,7 @@ export const Route = createFileRoute('/api/payment-accounts/$id')({
   server: {
     handlers: {
       PATCH: async ({ request, params }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
@@ -57,7 +57,7 @@ export const Route = createFileRoute('/api/payment-accounts/$id')({
         return Response.json({ success: true, data: row })
       },
       DELETE: async ({ request, params }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext

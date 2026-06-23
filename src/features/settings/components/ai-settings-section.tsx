@@ -33,6 +33,7 @@ interface AiSettingsResponse {
   }
   useGlobalProvider: boolean
   hasCustomSettings: boolean
+  settingsWarning?: string | null
 }
 
 type UrlProbeStatus = 'idle' | 'checking' | 'ok' | 'failed'
@@ -51,6 +52,51 @@ const INITIAL_URL_PROBE: UrlProbeState = {
 
 const ENABLED_PROVIDERS = new Set(['ollama', 'gemini', 'openrouter'])
 
+function buildAiTestPayload({
+  providerId,
+  baseUrl,
+  apiKey,
+  savedApiKeyMask,
+}: {
+  providerId: string
+  baseUrl: string
+  apiKey: string
+  savedApiKeyMask: string | null
+}) {
+  const typedKey = apiKey.trim()
+
+  if (providerId === 'gemini') {
+    if (typedKey) return { provider: 'gemini' as const, apiKey: typedKey }
+    if (savedApiKeyMask) return { provider: 'gemini' as const, useStoredKey: true as const }
+    return null
+  }
+
+  if (providerId === 'openrouter') {
+    const trimmedBaseUrl = baseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL
+    if (typedKey) {
+      return { provider: 'openrouter' as const, baseUrl: trimmedBaseUrl, apiKey: typedKey }
+    }
+    if (savedApiKeyMask) {
+      return { provider: 'openrouter' as const, baseUrl: trimmedBaseUrl, useStoredKey: true as const }
+    }
+    return null
+  }
+
+  if (providerId === 'ollama') {
+    const trimmedBaseUrl = baseUrl.trim()
+    if (!trimmedBaseUrl) return null
+    if (typedKey) {
+      return { provider: 'ollama' as const, baseUrl: trimmedBaseUrl, apiKey: typedKey }
+    }
+    if (savedApiKeyMask) {
+      return { provider: 'ollama' as const, baseUrl: trimmedBaseUrl, useStoredKey: true as const }
+    }
+    return { provider: 'ollama' as const, baseUrl: trimmedBaseUrl }
+  }
+
+  return null
+}
+
 /**
  * Stores user AI provider settings with Ollama and Gemini enabled.
  */
@@ -63,12 +109,11 @@ export function AiSettingsSection() {
   const [useGlobalProvider, setUseGlobalProvider] = useState(true)
   const [globalAiStatus, setGlobalAiStatus] = useState<AiSettingsResponse['global'] | null>(null)
   const [isSavingSource, setIsSavingSource] = useState(false)
-  const [revealedApiKey, setRevealedApiKey] = useState('')
-  const [isRevealingKey, setIsRevealingKey] = useState(false)
   const [isRemovingKey, setIsRemovingKey] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [settingsWarning, setSettingsWarning] = useState<string | null>(null)
   const [urlProbe, setUrlProbe] = useState<UrlProbeState>(INITIAL_URL_PROBE)
   const probeRequestIdRef = useRef(0)
 
@@ -78,8 +123,9 @@ export function AiSettingsSection() {
   )
 
   const isProviderEnabled = ENABLED_PROVIDERS.has(providerId)
-  const globalServiceReady = Boolean(globalAiStatus?.available && globalAiStatus.enabled)
-  const showCustomSettings = !useGlobalProvider || !globalServiceReady
+  const globalServiceConfigured = Boolean(globalAiStatus?.available)
+  const globalServiceEnabled = Boolean(globalAiStatus?.enabled)
+  const showCustomSettings = !useGlobalProvider || !globalServiceConfigured
 
   const probeConnection = useCallback(
     async (nextProviderId: string, nextBaseUrl: string, nextApiKey: string) => {
@@ -130,12 +176,14 @@ export function AiSettingsSection() {
         return
       }
 
-      const effectiveApiKey = nextApiKey.trim() || revealedApiKey
-      if (
-        (nextProviderId === 'gemini' || nextProviderId === 'openrouter') &&
-        savedApiKeyMask &&
-        !effectiveApiKey
-      ) {
+      const testPayload = buildAiTestPayload({
+        providerId: nextProviderId,
+        baseUrl: nextBaseUrl,
+        apiKey: nextApiKey,
+        savedApiKeyMask,
+      })
+
+      if (!testPayload) {
         setUrlProbe(INITIAL_URL_PROBE)
         return
       }
@@ -154,24 +202,7 @@ export function AiSettingsSection() {
           headers: {
             'content-type': 'application/json',
           },
-          body: JSON.stringify(
-            nextProviderId === 'gemini'
-              ? {
-                  provider: 'gemini',
-                  apiKey: effectiveApiKey,
-                }
-              : nextProviderId === 'openrouter'
-                ? {
-                    provider: 'openrouter',
-                    baseUrl: nextBaseUrl.trim() || OPENROUTER_DEFAULT_BASE_URL,
-                    apiKey: effectiveApiKey,
-                  }
-                : {
-                  provider: 'ollama',
-                  baseUrl: nextBaseUrl.trim(),
-                  apiKey: effectiveApiKey || undefined,
-                },
-          ),
+          body: JSON.stringify(testPayload),
         })
 
         const payload = (await response.json().catch(() => null)) as {
@@ -204,7 +235,7 @@ export function AiSettingsSection() {
         })
       }
     },
-    [revealedApiKey, savedApiKeyMask, useGlobalProvider],
+    [savedApiKeyMask, useGlobalProvider],
   )
 
   useEffect(() => {
@@ -225,6 +256,7 @@ export function AiSettingsSection() {
         if (payload.data) {
           setUseGlobalProvider(payload.data.useGlobalProvider)
           setGlobalAiStatus(payload.data.global)
+          setSettingsWarning(payload.data.settingsWarning ?? null)
 
           const userSettings = payload.data.user
           if (userSettings) {
@@ -235,7 +267,6 @@ export function AiSettingsSection() {
           } else {
             setSavedApiKeyMask(null)
           }
-          setRevealedApiKey('')
         }
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : 'Unable to load AI settings')
@@ -291,7 +322,6 @@ export function AiSettingsSection() {
     setProviderId(nextProviderId)
     setUrlProbe(INITIAL_URL_PROBE)
     setApiKey('')
-    setRevealedApiKey('')
 
     if (nextProviderId === 'gemini') {
       setModel('gemini-2.0-flash')
@@ -322,18 +352,14 @@ export function AiSettingsSection() {
         ? {
             provider: 'gemini' as const,
             model: model.trim(),
-            ...(apiKey.trim() || revealedApiKey
-              ? { apiKey: apiKey.trim() || revealedApiKey }
-              : {}),
+            ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
           }
         : providerId === 'openrouter'
           ? {
               provider: 'openrouter' as const,
               baseUrl: baseUrl.trim(),
               model: model.trim(),
-              ...(apiKey.trim() || revealedApiKey
-                ? { apiKey: apiKey.trim() || revealedApiKey }
-                : {}),
+              ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
             }
           : {
             provider: 'ollama' as const,
@@ -382,7 +408,6 @@ export function AiSettingsSection() {
       setUseGlobalProvider(payload.data?.useGlobalProvider ?? false)
       setGlobalAiStatus(payload.data?.global ?? null)
       setApiKey('')
-      setRevealedApiKey('')
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save AI settings')
     } finally {
@@ -412,7 +437,6 @@ export function AiSettingsSection() {
 
       setSavedApiKeyMask(payload.data?.user?.apiKeyMasked ?? null)
       setApiKey('')
-      setRevealedApiKey('')
       setUrlProbe(INITIAL_URL_PROBE)
       toast.success('API key removed')
     } catch (error) {
@@ -420,54 +444,6 @@ export function AiSettingsSection() {
     } finally {
       setIsRemovingKey(false)
     }
-  }
-
-  async function handleRevealApiKey() {
-    if (apiKey.trim()) {
-      return
-    }
-
-    if (revealedApiKey) {
-      setApiKey(revealedApiKey)
-      return
-    }
-
-    setIsRevealingKey(true)
-    setErrorMessage(null)
-    try {
-      const response = await fetch('/api/settings/ai/reveal', {
-        method: 'POST',
-      })
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: {
-          apiKey: string
-        }
-      } | null
-      if (!response.ok || !payload?.success || !payload.data?.apiKey) {
-        throw new Error(payload?.error ?? 'Unable to reveal API key')
-      }
-      setApiKey(payload.data.apiKey)
-      setRevealedApiKey(payload.data.apiKey)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to reveal API key')
-      throw error
-    } finally {
-      setIsRevealingKey(false)
-    }
-  }
-
-  function handleHideStoredApiKey() {
-    setApiKey('')
-    setRevealedApiKey('')
-  }
-
-  const storedApiKeyFieldProps = {
-    hasStoredValue: Boolean(savedApiKeyMask && !apiKey.trim()),
-    onRequestReveal: handleRevealApiKey,
-    isRevealPending: isRevealingKey,
-    onHideStoredValue: handleHideStoredApiKey,
   }
 
   const saveButtonLabel =
@@ -483,7 +459,7 @@ export function AiSettingsSection() {
     ) : null
 
   return (
-    <article className="feature-card rounded-xl border border-border p-5 xl:col-span-2">
+    <article className="feature-card rounded-xl border border-border p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -500,7 +476,7 @@ export function AiSettingsSection() {
       </div>
 
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-        {globalServiceReady ? (
+        {globalServiceConfigured ? (
           <fieldset className="space-y-3 rounded-lg border border-border/70 p-4">
             <legend className="px-1 text-sm font-medium">AI source</legend>
             <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -509,7 +485,7 @@ export function AiSettingsSection() {
                 name="ai-source"
                 checked={useGlobalProvider}
                 onChange={() => void handleAiSourceChange(true)}
-                disabled={isLoading || isSavingSource || isSubmitting}
+                disabled={isLoading || isSavingSource || isSubmitting || !globalServiceEnabled}
                 className="mt-0.5"
               />
               <span>
@@ -517,6 +493,11 @@ export function AiSettingsSection() {
                 <span className="mt-0.5 block text-xs opacity-70">
                   Provider: {globalAiStatus?.provider ?? '—'} · Model: {globalAiStatus?.model ?? '—'}
                 </span>
+                {!globalServiceEnabled ? (
+                  <span className="mt-1 block text-xs text-amber-700">
+                    Configured by admin but not enabled yet.
+                  </span>
+                ) : null}
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -547,6 +528,12 @@ export function AiSettingsSection() {
             No app AI service is configured yet. Set up your own provider below.
           </p>
         )}
+
+        {settingsWarning ? (
+          <p className="rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            {settingsWarning}
+          </p>
+        ) : null}
 
         {showCustomSettings ? (
           <>
@@ -623,7 +610,6 @@ export function AiSettingsSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'Only needed for secured Ollama gateways'}
               isRequired={false}
               isDisabled={isLoading || isSubmitting}
-              {...storedApiKeyFieldProps}
             />
           </>
         ) : providerId === 'gemini' ? (
@@ -637,7 +623,6 @@ export function AiSettingsSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'AIza...'}
               isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
-              {...storedApiKeyFieldProps}
             />
             <FormField
               id="ai-gemini-model"
@@ -675,7 +660,6 @@ export function AiSettingsSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'sk-or-...'}
               isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
-              {...storedApiKeyFieldProps}
             />
             <FormField
               id="ai-openrouter-base-url"
@@ -735,29 +719,15 @@ export function AiSettingsSection() {
         {savedApiKeyMask && isProviderEnabled ? (
           <div className="space-y-2 rounded-md border border-border/70 p-3">
             <p className="text-xs opacity-80">Stored API key: {savedApiKeyMask}</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void handleRevealApiKey()}
-                disabled={isRevealingKey || isRemovingKey || isSubmitting || isLoading}
-                className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium disabled:opacity-60"
-              >
-                {isRevealingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                Reveal full key
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleRemoveApiKey()}
-                disabled={isRevealingKey || isRemovingKey || isSubmitting || isLoading}
-                className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-60"
-              >
-                {isRemovingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                Remove stored key
-              </button>
-            </div>
-            {revealedApiKey ? (
-              <p className="break-all rounded-md bg-muted px-2 py-1 text-xs font-medium">{revealedApiKey}</p>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleRemoveApiKey()}
+              disabled={isRemovingKey || isSubmitting || isLoading}
+              className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-60"
+            >
+              {isRemovingKey ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              Remove stored key
+            </button>
           </div>
         ) : null}
 
