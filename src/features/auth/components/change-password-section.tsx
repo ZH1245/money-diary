@@ -1,5 +1,6 @@
 import { InlineError } from '#/components/feedback/inline-error'
 import { FormField } from '#/components/forms/form-field'
+import { SecurityAnswerField } from '#/components/forms/security-answer-field'
 import { changePasswordFormSchema } from '#/features/auth/schemas/security-profile'
 import { authClient } from '#/lib/auth-client'
 import { useNavigate } from '@tanstack/react-router'
@@ -123,15 +124,13 @@ export function ChangePasswordSection() {
           Loading security requirements...
         </p>
       ) : (
-        <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-4 space-y-4" onSubmit={handleSubmit} autoComplete="off">
           {recoveryChallenge ? (
-            <FormField
+            <SecurityAnswerField
               id="change-password-answer-one"
               label={recoveryChallenge.questionOneLabel}
-              type="text"
               value={answerOne}
               onChange={setAnswerOne}
-              placeholder="Your answer"
               error={fieldErrors.answerOne}
               isDisabled={isSubmitting}
             />
@@ -146,6 +145,7 @@ export function ChangePasswordSection() {
             placeholder="Current password"
             error={fieldErrors.currentPassword}
             isDisabled={isSubmitting}
+            autoComplete="current-password"
           />
           <FormField
             id="new-password"
@@ -156,6 +156,7 @@ export function ChangePasswordSection() {
             placeholder="At least 8 characters"
             error={fieldErrors.newPassword}
             isDisabled={isSubmitting}
+            autoComplete="new-password"
           />
           <FormField
             id="confirm-password"
@@ -166,6 +167,7 @@ export function ChangePasswordSection() {
             placeholder="Repeat new password"
             error={fieldErrors.confirmPassword}
             isDisabled={isSubmitting}
+            autoComplete="new-password"
           />
 
           {errorMessage ? <InlineError message={errorMessage} /> : null}

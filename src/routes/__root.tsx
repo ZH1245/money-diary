@@ -7,6 +7,7 @@ import { NotFoundPage } from '#/components/layout/not-found-page'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from 'sonner'
+import { Analytics } from '@vercel/analytics/react'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -56,6 +57,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           {children}
         </div>
         <Toaster richColors position="top-right" closeButton />
+        <Analytics />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

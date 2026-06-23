@@ -1,4 +1,5 @@
 import { FormField } from '#/components/forms/form-field'
+import { SecurityAnswerField } from '#/components/forms/security-answer-field'
 import {
   Select,
   SelectContent,
@@ -39,6 +40,17 @@ export function SecurityProfileFields({
 }: SecurityProfileFieldsProps) {
   return (
     <div className="space-y-4 rounded-lg border border-border/70 p-4">
+      {/* Catch stray password-manager autofill before it reaches the answer field. */}
+      <input
+        type="password"
+        tabIndex={-1}
+        aria-hidden="true"
+        autoComplete="new-password"
+        className="pointer-events-none absolute h-0 w-0 opacity-0"
+        defaultValue=""
+        readOnly
+      />
+
       <div>
         <h3 className="text-sm font-semibold">{introTitle}</h3>
         <p className="mt-1 text-xs opacity-70">{introDescription}</p>
@@ -53,6 +65,7 @@ export function SecurityProfileFields({
         placeholder="backup@example.com"
         isDisabled={isDisabled}
         error={fieldErrors.recoveryEmail}
+        autoComplete="section-recovery email"
       />
 
       <div>
@@ -80,13 +93,11 @@ export function SecurityProfileFields({
         ) : null}
       </div>
 
-      <FormField
+      <SecurityAnswerField
         id="security-answer-one"
         label="Your answer"
-        type="password"
         value={values.answerOne}
         onChange={onAnswerOneChange}
-        placeholder="Your answer"
         isDisabled={isDisabled}
         error={fieldErrors.answerOne}
       />

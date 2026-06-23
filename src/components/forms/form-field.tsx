@@ -1,4 +1,6 @@
+import { PasswordField } from '#/components/forms/password-field'
 import type { FormFieldProps } from '#/components/types/form-field'
+import type { PasswordAutoComplete } from '#/components/forms/password-field'
 
 /**
  * Renders a labeled input with error and disabled states.
@@ -14,7 +16,26 @@ export function FormField({
   onChange,
   rightElement,
   isDisabled = false,
+  autoComplete,
+  name,
+  spellCheck,
 }: FormFieldProps) {
+  if (type === 'password') {
+    return (
+      <PasswordField
+        id={id}
+        label={label}
+        value={value}
+        placeholder={placeholder}
+        isRequired={isRequired}
+        error={error}
+        onChange={onChange}
+        isDisabled={isDisabled}
+        autoComplete={(autoComplete as PasswordAutoComplete | undefined) ?? 'current-password'}
+      />
+    )
+  }
+
   return (
     <div>
       <label htmlFor={id} className="mb-1 block text-sm font-medium">
@@ -24,12 +45,17 @@ export function FormField({
         <input
           id={id}
           type={type}
+          name={name}
           required={isRequired}
           disabled={isDisabled}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           aria-invalid={Boolean(error)}
           aria-busy={isDisabled}
+          autoComplete={autoComplete}
+          spellCheck={spellCheck}
+          data-lpignore={autoComplete === 'off' ? 'true' : undefined}
+          data-1p-ignore={autoComplete === 'off' ? 'true' : undefined}
           className={`h-10 w-full rounded-md border bg-background px-3 text-sm transition-colors ${
             rightElement ? 'pr-10' : ''
           } ${

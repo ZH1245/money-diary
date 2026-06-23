@@ -204,6 +204,7 @@ function SignUpPage() {
               placeholder="At least 8 characters"
               error={fieldErrors.password}
               isDisabled={isSubmitting}
+              autoComplete="new-password"
             />
             <div>
               <label htmlFor="currency" className="mb-1 block text-sm font-medium">

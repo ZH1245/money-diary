@@ -187,6 +187,7 @@ function SignInPage() {
               placeholder="At least 8 characters"
               error={fieldErrors.password}
               isDisabled={isSubmitting}
+              autoComplete="current-password"
             />
 
             <p className="text-right text-sm">
