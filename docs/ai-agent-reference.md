@@ -109,6 +109,12 @@ Prompt source of truth: `buildSecureSystemPrompt()` in `ai-prompt-builder.ts`. D
 - One transfer clarification applies to the **whole** paste when bulk mode is active.
 - User can say **continue** to process remaining rows after a batch limit.
 
+### Duplicate detection (create_transaction)
+
+- Server skips creates when **title, amount, type, and calendar day** match an existing row.
+- Tool returns `duplicate: true` with `existingTransactionId` for the model (not shown to user).
+- AI should query first on bulk paste, log new rows only, then ask once about duplicates (skip, rename via update_transaction, or `forceCreate: true` if user insists).
+
 ## Savings implementation map
 
 | Concern | Location |

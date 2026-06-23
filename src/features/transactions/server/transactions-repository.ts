@@ -1,6 +1,11 @@
-import { and, desc, eq, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, gte, isNull, lte, or } from 'drizzle-orm'
+import { endOfDay, startOfDay } from 'date-fns'
 import { db } from '#/db/index'
 import { categories, transactions } from '#/db/schema'
+import {
+  findTransactionDuplicate,
+  type TransactionDuplicateCandidate,
+} from '#/features/transactions/utils/transaction-duplicate'
 
 interface CreateUserTransactionParams {
   userId: string
@@ -50,6 +55,45 @@ export async function isCategoryAccessibleByUser({
     .limit(1)
 
   return category.length > 0
+}
+
+/**
+ * Loads transactions for one user on a single calendar day (duplicate checks).
+ */
+export async function getUserTransactionsOnDay(userId: string, happenedAt: Date) {
+  return db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        gte(transactions.happenedAt, startOfDay(happenedAt)),
+        lte(transactions.happenedAt, endOfDay(happenedAt)),
+      ),
+    )
+    .orderBy(desc(transactions.happenedAt))
+}
+
+/**
+ * Returns an existing transaction that matches title, amount, type, and day.
+ */
+export async function findUserTransactionDuplicate(params: {
+  userId: string
+  title: string
+  amount: string
+  type: 'income' | 'expense' | 'transfer'
+  happenedAt: Date
+}): Promise<TransactionDuplicateCandidate | null> {
+  const rows = await getUserTransactionsOnDay(params.userId, params.happenedAt)
+  const candidates: TransactionDuplicateCandidate[] = rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    amount: row.amount,
+    type: row.type,
+    happenedAt: row.happenedAt,
+  }))
+
+  return findTransactionDuplicate(candidates, params)
 }
 
 /**
