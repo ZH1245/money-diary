@@ -32,6 +32,7 @@ export interface TransactionTableRow {
   exchangeRate: string
   type: 'income' | 'expense' | 'transfer'
   categoryId: number | null
+  categoryLabel: string
   paymentAccountId: number | null
   accountLabel: string
   source: string
@@ -107,11 +108,31 @@ export function buildTransactionChartData(totals: Record<'income' | 'expense' | 
 }
 
 /**
+ * Resolves a display label for a transaction category.
+ */
+export function getTransactionCategoryLabel(
+  type: TransactionDto['type'],
+  categoryId: number | null,
+  categories: Array<{ id: number; name: string }>,
+): string {
+  if (type === 'income') {
+    return '—'
+  }
+
+  if (categoryId == null) {
+    return 'Uncategorized'
+  }
+
+  return categories.find((category) => category.id === categoryId)?.name ?? 'Unknown'
+}
+
+/**
  * Normalizes transaction rows for table rendering.
  */
 export function buildTransactionTableRows(
   transactions: TransactionDto[],
   paymentAccounts: PaymentAccountDto[],
+  categories: Array<{ id: number; name: string }> = [],
 ): TransactionTableRow[] {
   const accountsById = paymentAccounts.reduce<Record<number, PaymentAccountDto>>((accumulator, account) => {
     accumulator[account.id] = account
@@ -127,6 +148,7 @@ export function buildTransactionTableRows(
     exchangeRate: transaction.exchangeRate,
     type: transaction.type,
     categoryId: transaction.categoryId,
+    categoryLabel: getTransactionCategoryLabel(transaction.type, transaction.categoryId, categories),
     paymentAccountId: transaction.paymentAccountId,
     accountLabel: transaction.paymentAccountId
       ? formatPaymentAccountLabel(accountsById[transaction.paymentAccountId])

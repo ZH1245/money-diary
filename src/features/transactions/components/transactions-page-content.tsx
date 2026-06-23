@@ -103,8 +103,8 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
   const transactionTotals = useMemo(() => buildTransactionTotals(filteredTransactions), [filteredTransactions])
   const chartData = useMemo(() => buildTransactionChartData(transactionTotals), [transactionTotals])
   const tableRows = useMemo(
-    () => buildTransactionTableRows(filteredTransactions, paymentAccounts),
-    [filteredTransactions, paymentAccounts],
+    () => buildTransactionTableRows(filteredTransactions, paymentAccounts, categories),
+    [filteredTransactions, paymentAccounts, categories],
   )
 
   const handleDeleteTransaction = useCallback(
@@ -152,6 +152,17 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
         accessorKey: 'type',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
         cell: ({ row }) => <span className="capitalize">{row.original.type}</span>,
+      },
+      {
+        id: 'category',
+        accessorFn: (row) => row.categoryLabel,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+        cell: ({ row }) => {
+          if (row.original.type === 'income') {
+            return <span className="text-sm opacity-50">—</span>
+          }
+          return <SensitiveText text={row.original.categoryLabel} className="text-sm" />
+        },
       },
       {
         accessorKey: 'happenedAt',
@@ -581,7 +592,7 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
                 <DataTable
                   columns={transactionColumns}
                   data={tableRows}
-                  filterPlaceholder="Search by title, type, or date..."
+                  filterPlaceholder="Search by title, type, category, or date..."
                   emptyMessage="No transactions match this filter."
                   showPrivacyToggle
                   initialSorting={[{ id: 'happenedAt', desc: true }]}
