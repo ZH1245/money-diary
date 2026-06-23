@@ -68,6 +68,20 @@ export function AdminGlobalCategoriesSection() {
     void loadCategories()
   }, [loadCategories])
 
+  const openCreateSheet = useCallback(() => {
+    setForm(getDefaultCategoryForm())
+    setIsSheetOpen(true)
+  }, [])
+
+  function handleSheetOpenChange(open: boolean) {
+    setIsSheetOpen(open)
+    if (!open) {
+      setForm(getDefaultCategoryForm())
+    }
+  }
+
+  const slugPreview = useMemo(() => slugifyCategoryName(form.name.trim()), [form.name])
+
   const handleDeleteCategory = useCallback(async (id: number, categoryName: string) => {
     setIsDeletePending(true)
     try {
@@ -176,7 +190,7 @@ export function AdminGlobalCategoriesSection() {
             Built-in categories appear for every user. Users can still create personal categories.
           </p>
         </div>
-        <Button className="gap-2" onClick={() => setIsSheetOpen(true)}>
+        <Button className="gap-2" onClick={openCreateSheet}>
           <Plus className="size-4" />
           Add global category
         </Button>
@@ -208,29 +222,36 @@ export function AdminGlobalCategoriesSection() {
         )}
       </div>
 
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent>
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
+        <SheetContent className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Add global category</SheetTitle>
             <SheetDescription>This category will be visible to all users as a built-in option.</SheetDescription>
           </SheetHeader>
 
-          <form className="mt-6 space-y-4" onSubmit={handleCreateCategory}>
-            <div>
-              <label htmlFor="global-category-name" className="mb-1 block text-sm font-medium">
+          <form className="grid gap-4 px-4" onSubmit={handleCreateCategory}>
+            <div className="grid gap-2">
+              <label htmlFor="global-category-name" className="text-sm font-medium">
                 Name
               </label>
               <Input
                 id="global-category-name"
                 value={form.name}
                 onChange={(event) => setForm((previous) => ({ ...previous, name: event.target.value }))}
-                placeholder="Netflix"
+                placeholder="e.g. Netflix, Groceries"
+                maxLength={120}
                 disabled={isSubmitting}
+                autoFocus
               />
+              {slugPreview ? (
+                <p className="text-xs text-muted-foreground">Slug: {slugPreview}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Slug is generated automatically from the name.</p>
+              )}
             </div>
 
-            <div>
-              <label htmlFor="global-category-kind" className="mb-1 block text-sm font-medium">
+            <div className="grid gap-2">
+              <label htmlFor="global-category-kind" className="text-sm font-medium">
                 Kind
               </label>
               <Select
@@ -240,8 +261,8 @@ export function AdminGlobalCategoriesSection() {
                 }
                 disabled={isSubmitting}
               >
-                <SelectTrigger id="global-category-kind" className="h-10 w-full">
-                  <SelectValue placeholder="Select kind" />
+                <SelectTrigger id="global-category-kind" className="w-full">
+                  <SelectValue placeholder="Kind" />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORY_KIND_OPTIONS.map((option) => (
@@ -253,10 +274,9 @@ export function AdminGlobalCategoriesSection() {
               </Select>
             </div>
 
-            <SheetFooter>
-              <Button type="submit" disabled={isSubmitting} className="gap-2">
-                {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-                Create category
+            <SheetFooter className="px-0">
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? 'Creating...' : 'Create category'}
               </Button>
             </SheetFooter>
           </form>
