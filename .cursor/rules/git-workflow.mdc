@@ -9,12 +9,28 @@ Do not commit directly to `main`. Every feature, fix, or refactor ships through 
 
 ## Start of work
 
-1. **Issue first** — Create or pick a GitHub issue that describes the problem and acceptance criteria.
+1. **Issue first** — Create a GitHub issue using a template (**Feature**, **Bug**, or **Chore**). Every issue must include:
+   - **Summary** — problem, impact, desired outcome
+   - **Scope** — what is in the ticket
+   - **Out of scope** — what is explicitly deferred
+   - **Implementation (abstract)** — high-level approach only (no file paths)
+   - **Acceptance criteria** — testable checkboxes
 2. **Branch** — Create a branch from `main`:
    - `feat/<short-description>` — new capability
    - `fix/<short-description>` — bug fix
    - `chore/<short-description>` — tooling, deps, CI, docs-only infra
 3. **Scope** — One issue per PR when practical. Keep PRs reviewable (avoid unrelated drive-by changes).
+
+### Automation
+
+```bash
+pnpm issue:feature -- "Title here"          # opens template in browser
+pnpm issue:bug -- "Title" ./body.md       # non-interactive with body file
+pnpm pr:open                                # push branch + PR from template
+pnpm pr:merge -- 42                         # squash merge, delete branch, sync main
+```
+
+Or: `gh issue create --template Feature --title "..." --web`
 
 ## During development
 
@@ -24,24 +40,22 @@ Do not commit directly to `main`. Every feature, fix, or refactor ships through 
 
 ## Opening a PR
 
-1. Push the branch: `git push -u origin HEAD`
-2. Open with `gh pr create` and include:
-   - **Summary** — what changed and why
-   - **Test plan** — concrete checks (manual or automated)
-   - **Linked issue** — `Closes #N` in the PR body
+1. Push the branch: `pnpm pr:open` or `git push -u origin HEAD`
+2. Fill `.github/PULL_REQUEST_TEMPLATE.md` sections (Summary, Scope, Out of scope, Implementation abstract, Acceptance criteria, Test plan, `Closes #N`)
 3. Wait for CI (when present) and **AI code review** (see `pr-code-review.mdc`) before merge.
 
 ## Merge rules
 
-- Do not merge your own PR without review when review is requested.
-- Prefer squash merge unless the team agrees otherwise.
-- Delete the branch after merge.
+- Prefer squash merge via `pnpm pr:merge -- <number>` (deletes remote branch, syncs local `main`).
+- Delete the local feature branch after merge.
+- Resolve merge conflicts on the feature branch, push, then merge.
 
 ## Agent behavior
 
 When the user asks for implementation work:
 
-1. Confirm or create the GitHub issue.
+1. Confirm or create the GitHub issue (use template automation).
 2. Create/checkout the branch before editing.
-3. Implement, commit on the branch, push, and open the PR.
-4. Run PR code review per `pr-code-review.mdc` before calling the PR ready.
+3. Implement, commit on the branch, push, and open the PR (`pnpm pr:open`).
+4. Run PR code review per `pr-code-review.mdc` before merge.
+5. When the user approves, merge with `pnpm pr:merge -- <number>` and delete the branch.

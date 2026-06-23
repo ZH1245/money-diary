@@ -1,0 +1,51 @@
+name: Chore
+description: Tooling, workflow, CI, docs, or refactor without user-facing product change
+title: "[Chore] "
+labels:
+  - chore
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template like a Jira/Asana ticket. Keep **Implementation** abstract — save file-level detail for the PR.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Why this maintenance work is needed (one paragraph).
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What will change as part of this ticket.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: What is explicitly not included.
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation (abstract)
+      description: High-level plan — no file-level detail (that belongs in the PR).
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] …
+    validations:
+      required: true
