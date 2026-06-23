@@ -46,6 +46,7 @@ export interface AiChatStep {
   message: string
   entityId?: number
   navigateTo?: string
+  duplicate?: boolean
 }
 
 export interface AiChatServiceResult {
@@ -586,13 +587,21 @@ export async function runAiChat({
         },
       })
 
-      executedSteps.push(stepResult)
+      executedSteps.push({
+        action: stepResult.action,
+        success: stepResult.success,
+        message: stepResult.message,
+        entityId: stepResult.entityId,
+        navigateTo: stepResult.navigateTo,
+        duplicate: stepResult.duplicate,
+      })
 
       toolResults.push({
         toolName: toolCall.name,
         content: JSON.stringify({
           success: stepResult.success,
           message: stepResult.message,
+          ...(stepResult.duplicate ? { duplicate: true } : {}),
           ...(stepResult.data ?? {}),
         }),
       })
@@ -654,10 +663,19 @@ function summarizeSteps(
   options?: { bulkPaste?: boolean; hitStepLimit?: boolean },
 ): string {
   const successes = steps.filter((step) => step.success)
-  const failures = steps.filter((step) => !step.success)
+  const duplicates = steps.filter((step) => step.duplicate)
+  const failures = steps.filter((step) => !step.success && !step.duplicate)
 
   if (options?.bulkPaste || steps.length > 3) {
     const lines = [`Logged ${successes.length} entr${successes.length === 1 ? 'y' : 'ies'}.`]
+
+    if (duplicates.length > 0) {
+      lines.push(`${duplicates.length} already on file (skipped):`)
+      for (const step of duplicates) {
+        lines.push(`↷ ${step.message}`)
+      }
+      lines.push('Reply to skip these, rename one with update_transaction, or say which rows to log anyway.')
+    }
 
     if (failures.length > 0) {
       lines.push(`${failures.length} need attention:`)
@@ -673,5 +691,12 @@ function summarizeSteps(
     return lines.join('\n')
   }
 
-  return steps.map((step) => `${step.success ? '✓' : '✗'} ${step.message}`).join('\n')
+  return steps
+    .map((step) => {
+      if (step.duplicate) {
+        return `↷ ${step.message}`
+      }
+      return `${step.success ? '✓' : '✗'} ${step.message}`
+    })
+    .join('\n')
 }

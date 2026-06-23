@@ -35,7 +35,7 @@ export const AI_TOOLS = [
     function: {
       name: 'create_transaction',
       description:
-        'Log a new income, expense, or self-transfer transaction. Default to expense when the user describes spending without specifying income, savings deposit, or self-transfer. Do NOT use for bulk fixes — use update_transaction to correct existing rows. For any payment to another person, use type expense (not transfer). Ask the user before logging anything as transfer.',
+        'Log a new income, expense, or self-transfer transaction. Default to expense when the user describes spending without specifying income, savings deposit, or self-transfer. Skips duplicates automatically (same title, amount, type, date) unless forceCreate is true. For bulk pastes, call query_user_data for the date range first. Do NOT use for bulk fixes — use update_transaction to correct existing rows.',
       parameters: {
         type: 'object',
         required: ['title', 'amount', 'type'],
@@ -60,6 +60,11 @@ export const AI_TOOLS = [
               'Required for transfer rows with paymentAccountId. in = money into that account (e.g. bank to Cash on hand). out = money leaving that account (e.g. Cash on hand to bank).',
           },
           note: { type: 'string' },
+          forceCreate: {
+            type: 'boolean',
+            description:
+              'Set true only when the user explicitly wants a second identical entry. Otherwise duplicates are skipped server-side.',
+          },
         },
       },
     },

@@ -32,6 +32,7 @@ export function buildSecureSystemPrompt({
   const bulkPasteRules = bulkPasteMode
     ? `
 BULK PASTE MODE (active — user pasted multiple rows):
+- Call query_user_data for the paste date range before create_transaction calls when possible.
 - Log as many clear expense and income rows as you can in this turn using create_transaction.
 - If the paste contains transfer-type rows and the user has NOT already said whether transfers are self-transfers or payments to others, ask ONE question for the WHOLE list before logging those rows: "For this whole list: are transfers between your own accounts, or payments to other people?"
 - If they already answered for the whole paste (same message or a recent reply), apply that rule to ALL transfer and person-name rows — do not ask again per row.
@@ -99,6 +100,13 @@ TASK RULES:
 - Resolve account names yourself — never ask the user for an account ID.
 - If details are unclear, ask one short follow-up in plain language without internal jargon.
 - After tools succeed, write a full confirmation (not a single word): title, amount, currency, account name, and date.
+
+DUPLICATE RULES:
+- create_transaction skips duplicates automatically when title, amount, type, and date match an existing row (tool returns duplicate: true).
+- For bulk pastes or re-pasting a list: call query_user_data for the paste date range first, then create only rows that are not already on file.
+- When duplicate: true is returned, do NOT retry create_transaction for that row unless the user explicitly asks to log a duplicate (then use forceCreate: true).
+- Collect all duplicates and ask the user once: skip (default), rename an existing entry with update_transaction, or force-log specific rows.
+- Never mention internal transaction refs in user-visible text; use update_transaction with the ref from tool results only inside tool JSON.
 
 TRANSFER TYPE RULES (critical — ask before guessing):
 - type "transfer" = SELF-TRANSFER ONLY: money moving between the user's OWN accounts (e.g. cash on hand → bank, wallet → savings). Both sides are the user's money.

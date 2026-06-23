@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   createUserTransaction,
+  findUserTransactionDuplicate,
   getUserTransactionById,
   isCategoryAccessibleByUser,
   updateUserTransaction,
@@ -36,6 +37,7 @@ import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
 import { queryUserData, DEFAULT_QUERY_USER_DATA_LIMIT } from '#/features/ai/server/ai-user-data-query'
 import { formatTransferSource, isTransferDirectionEncoded } from '#/features/transactions/utils/transfer-direction'
+import { formatTransactionDuplicateMessage } from '#/features/transactions/utils/transaction-duplicate'
 
 const createTransactionArgsSchema = z.object({
   title: z.string().min(1),
@@ -48,6 +50,7 @@ const createTransactionArgsSchema = z.object({
   paymentAccountId: z.number().int().positive().optional(),
   transferDirection: z.enum(['in', 'out']).optional(),
   note: z.string().optional(),
+  forceCreate: z.boolean().optional(),
 })
 
 const updateTransactionArgsSchema = z.object({
@@ -141,6 +144,7 @@ export interface AiToolStepResult {
   message: string
   entityId?: number
   navigateTo?: string
+  duplicate?: boolean
   data?: Record<string, unknown>
 }
 
@@ -162,7 +166,7 @@ export async function executeAiTool({
       return { action: 'create_transaction', success: false, message: 'Invalid transaction arguments.' }
     }
 
-    const { title, amount, type, date, currency: rawCurrency, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, transferDirection, note } = args.data
+    const { title, amount, type, date, currency: rawCurrency, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, transferDirection, note, forceCreate } = args.data
 
     let categoryId: number | null = null
     if (type === 'income') {
@@ -217,6 +221,31 @@ export async function executeAiTool({
         action: 'create_transaction',
         success: false,
         message: 'transferDirection is required for transfers linked to an account (in or out).',
+      }
+    }
+
+    if (!forceCreate) {
+      const existingDuplicate = await findUserTransactionDuplicate({
+        userId: context.userId,
+        title: title.trim(),
+        amount: amountResult.data.normalizedAmount,
+        type,
+        happenedAt,
+      })
+
+      if (existingDuplicate) {
+        return {
+          action: 'create_transaction',
+          success: false,
+          duplicate: true,
+          message: formatTransactionDuplicateMessage(existingDuplicate, context.currency),
+          entityId: existingDuplicate.id,
+          data: {
+            duplicate: true,
+            existingTransactionId: existingDuplicate.id,
+            existingTitle: existingDuplicate.title,
+          },
+        }
       }
     }
 
