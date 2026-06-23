@@ -267,6 +267,7 @@ const openApiSpec = {
                 properties: {
                   title: { type: 'string' },
                   amount: { type: 'string' },
+                  entryType: { type: 'string', enum: ['deposit', 'withdrawal'] },
                   note: { type: 'string' },
                   savedAt: { type: 'string', format: 'date-time' },
                   goalId: { type: 'integer', nullable: true },
@@ -298,6 +299,7 @@ const openApiSpec = {
                 properties: {
                   title: { type: 'string' },
                   amount: { type: 'string' },
+                  entryType: { type: 'string', enum: ['deposit', 'withdrawal'] },
                   note: { type: 'string', nullable: true },
                   savedAt: { type: 'string', format: 'date-time' },
                   goalId: { type: 'integer', nullable: true },

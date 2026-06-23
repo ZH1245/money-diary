@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createUserSaving, getUserSavings } from '#/features/savings/server/savings-repository'
-import { createSavingSchema, DEFAULT_SAVING_TITLE } from '#/features/savings/schemas/saving'
+import { createSavingSchema, DEFAULT_SAVING_TITLE, DEFAULT_SAVING_WITHDRAWAL_TITLE } from '#/features/savings/schemas/saving'
 import { getUserGoalById } from '#/features/goals/server/goals-repository'
 import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/server/payment-accounts-repository'
 import {
@@ -69,12 +69,16 @@ export const Route = createFileRoute('/api/savings')({
           }
         }
 
+        const entryType = parsed.data.entryType ?? 'deposit'
+        const defaultTitle = entryType === 'withdrawal' ? DEFAULT_SAVING_WITHDRAWAL_TITLE : DEFAULT_SAVING_TITLE
+
         const row = await createUserSaving({
           userId: userContext.id,
           goalId,
           paymentAccountId,
-          title: parsed.data.title?.trim() || DEFAULT_SAVING_TITLE,
+          title: parsed.data.title?.trim() || defaultTitle,
           amount: amount.toString(),
+          entryType,
           note: parsed.data.note?.trim() || null,
           savedAt: parsed.data.savedAt ? new Date(parsed.data.savedAt) : new Date(),
         })

@@ -1,3 +1,4 @@
+import { getSavingPaymentAccountDelta, type SavingEntryType } from '#/features/savings/utils/saving-ledger'
 import { parseLedgerAmount } from '#/features/shared/utils/amount'
 import {
   isTransferDirectionEncoded,
@@ -15,6 +16,7 @@ export interface PaymentAccountBalanceTransaction {
 export interface PaymentAccountBalanceSaving {
   amount: string
   paymentAccountId: number | null
+  entryType?: SavingEntryType
 }
 
 /**
@@ -73,7 +75,7 @@ export function computePaymentAccountBalance({
       continue
     }
 
-    balance -= parseLedgerAmount(saving.amount)
+    balance += getSavingPaymentAccountDelta(saving.amount, saving.entryType ?? 'deposit')
   }
 
   return balance

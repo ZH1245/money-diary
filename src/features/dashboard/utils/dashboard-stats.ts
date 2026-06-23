@@ -1,4 +1,5 @@
 import { parseLedgerAmount } from '#/features/shared/utils/amount'
+import { getSavingLedgerDelta } from '#/features/savings/utils/saving-ledger'
 import { buildTrendSeriesForDateRange } from '#/features/dashboard/utils/dashboard-date-range'
 import type { DashboardStatsInput, DashboardStatsOutput } from '#/features/dashboard/types/dashboard-stats'
 import { computePaymentAccountBalance } from '#/features/payment-accounts/utils/payment-account-balance'
@@ -56,7 +57,10 @@ export function buildDashboardStats({
 
   const personalCategoryCount = categories.filter((category) => Boolean(category.userId)).length
   const globalCategoryCount = categories.length - personalCategoryCount
-  const totalSaved = savings.reduce((sum, item) => sum + parseLedgerAmount(item.amount), 0)
+  const totalSaved = savings.reduce(
+    (sum, item) => sum + getSavingLedgerDelta(item.amount, item.entryType ?? 'deposit'),
+    0,
+  )
   const totalWishlistTarget = wishlist.reduce((sum, item) => sum + parseLedgerAmount(item.targetAmount), 0)
   const totalGoalTarget = goals.reduce((sum, item) => sum + parseLedgerAmount(item.targetAmount), 0)
   const weeklyTrend = buildTrendSeriesForDateRange(transactions, dateRange.from, dateRange.to, parseLedgerAmount)

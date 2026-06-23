@@ -2,6 +2,7 @@ import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { getVisibleCategoriesForUser } from '#/features/categories/server/categories-repository'
 import { getUserGoals } from '#/features/goals/server/goals-repository'
 import { getUserSavings } from '#/features/savings/server/savings-repository'
+import { getSavingLedgerDelta, type SavingEntryType } from '#/features/savings/utils/saving-ledger'
 import { getUserTransactions } from '#/features/transactions/server/transactions-repository'
 import { getUserWishlistItems } from '#/features/wishlist/server/wishlist-repository'
 import { format, parseISO } from 'date-fns'
@@ -185,14 +186,26 @@ async function querySavings(input: QueryUserDataInput): Promise<string> {
     return `No savings entries for ${rangeLabel}.`
   }
 
-  const total = rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)
+  const total = rows.reduce(
+    (sum, row) => sum + getSavingLedgerDelta(row.amount, (row.entryType ?? 'deposit') as SavingEntryType),
+    0,
+  )
+  const depositTotal = rows
+    .filter((row) => (row.entryType ?? 'deposit') === 'deposit')
+    .reduce((sum, row) => sum + getSavingLedgerDelta(row.amount, 'deposit'), 0)
+  const withdrawalTotal = rows
+    .filter((row) => row.entryType === 'withdrawal')
+    .reduce((sum, row) => sum + Math.abs(getSavingLedgerDelta(row.amount, 'withdrawal')), 0)
+
   const lines = [
-    `Savings for ${rangeLabel}: ${formatLedgerAmount(total, input.currency)} across ${rows.length} entries.`,
+    `Savings for ${rangeLabel}: net ${formatLedgerAmount(total, input.currency)} (${formatLedgerAmount(depositTotal, input.currency)} deposited, ${formatLedgerAmount(withdrawalTotal, input.currency)} withdrawn) across ${rows.length} entries.`,
   ]
 
   for (const row of rows.slice(0, input.limit)) {
+    const entryType = (row.entryType ?? 'deposit') as SavingEntryType
+    const typeLabel = entryType === 'withdrawal' ? 'withdrawal' : 'deposit'
     lines.push(
-      `- ${format(row.savedAt, 'MMM d, yyyy')}: ${row.title} — ${formatLedgerAmount(parseAmount(row.amount), input.currency)}`,
+      `- ${format(row.savedAt, 'MMM d, yyyy')}: [${typeLabel}] ${row.title} — ${formatLedgerAmount(parseAmount(row.amount), input.currency)}`,
     )
   }
 

@@ -1,5 +1,6 @@
 export interface SavingFormState {
   amount: string
+  entryType: 'deposit' | 'withdrawal'
   note: string
   savedAt: string
   goalId: string
@@ -14,6 +15,7 @@ import { format } from 'date-fns'
 export function getDefaultSavingForm(): SavingFormState {
   return {
     amount: '',
+    entryType: 'deposit',
     note: '',
     savedAt: format(new Date(), 'yyyy-MM-dd'),
     goalId: 'none',

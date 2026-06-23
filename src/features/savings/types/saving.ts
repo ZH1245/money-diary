@@ -7,6 +7,7 @@ export interface SavingDto {
   paymentAccountId: number | null
   title: string
   amount: string
+  entryType: 'deposit' | 'withdrawal'
   note: string | null
   savedAt: string
 }
@@ -17,6 +18,7 @@ export interface SavingDto {
 export interface CreateSavingInput {
   title?: string
   amount: string
+  entryType?: 'deposit' | 'withdrawal'
   note?: string
   savedAt?: string
   goalId?: number | null
@@ -29,6 +31,7 @@ export interface CreateSavingInput {
 export interface UpdateSavingInput {
   title?: string
   amount?: string
+  entryType?: 'deposit' | 'withdrawal'
   note?: string | null
   savedAt?: string
   goalId?: number | null

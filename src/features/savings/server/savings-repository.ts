@@ -1,6 +1,8 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { savings } from '#/db/schema'
+import type { SavingEntryType } from '#/features/savings/utils/saving-ledger'
+import { DEFAULT_SAVING_ENTRY_TYPE } from '#/features/savings/utils/saving-ledger'
 
 interface CreateUserSavingParams {
   userId: string
@@ -8,6 +10,7 @@ interface CreateUserSavingParams {
   paymentAccountId: number | null
   title: string
   amount: string
+  entryType?: SavingEntryType
   note: string | null
   savedAt: Date
 }
@@ -35,6 +38,7 @@ export async function createUserSaving(params: CreateUserSavingParams) {
       paymentAccountId: params.paymentAccountId,
       title: params.title,
       amount: params.amount,
+      entryType: params.entryType ?? DEFAULT_SAVING_ENTRY_TYPE,
       note: params.note,
       savedAt: params.savedAt,
     })
@@ -64,6 +68,7 @@ export async function updateUserSaving(params: {
   savingId: number
   title?: string
   amount?: string
+  entryType?: SavingEntryType
   note?: string | null
   savedAt?: Date
   goalId?: number | null
@@ -74,6 +79,7 @@ export async function updateUserSaving(params: {
     .set({
       ...(params.title !== undefined ? { title: params.title } : {}),
       ...(params.amount !== undefined ? { amount: params.amount } : {}),
+      ...(params.entryType !== undefined ? { entryType: params.entryType } : {}),
       ...(params.note !== undefined ? { note: params.note } : {}),
       ...(params.savedAt !== undefined ? { savedAt: params.savedAt } : {}),
       ...(params.goalId !== undefined ? { goalId: params.goalId } : {}),

@@ -76,6 +76,7 @@ ${exchangeRateToolRules}
 
 TASK RULES:
 - For logging spending, income, savings, goals, or wishlist changes, call the matching write tool — never pretend an action happened without a tool call.
+- When the user describes spending (bought, paid, spent, cost) without saying income, savings deposit, or self-transfer, default to create_transaction with type "expense".
 - You CAN edit existing transactions with update_transaction. Call query_user_data first to get transaction refs, then update — never tell the user you cannot edit transactions.
 - When fixing misclassified entries, use update_transaction — do NOT create duplicate rows unless the user explicitly asks to re-log.
 - You may call one or more allowed tools in sequence when the user asks for multiple finance actions.
@@ -97,5 +98,12 @@ TRANSFER TYPE RULES (critical — ask before guessing):
   "Is this moving money between your own accounts, or paying someone else? Paying someone else should be logged as an expense."
 - If the user already stated it is self-transfer or paying someone else, proceed without re-asking.
 - For bulk pasted tables: log clear expense/income rows immediately; pause on every transfer row or person-name payment until clarified.
-- Default ambiguous person-name payments to expense only after the user confirms they are NOT a self-transfer.`
+- Default ambiguous person-name payments to expense only after the user confirms they are NOT a self-transfer.
+
+SAVINGS LEDGER RULES:
+- Savings entries are deposits (money INTO savings) or withdrawals (money OUT of savings). Do not log routine purchases as savings unless the user explicitly moved money into or out of savings.
+- When the user says they spent, took, or used money FROM savings: call create_saving with entryType "withdrawal". Usually also call create_transaction with type "expense" for the same amount and date so analytics reflect the purchase — unless the user only wants the ledger updated.
+- If they spent from savings but did not say which goal or pool, and multiple goals exist in WORKSPACE CONTEXT, ask ONE short question: which goal (name it) or general savings?
+- If they named a goal, only one goal exists, or they said general/unlinked savings, proceed without asking.
+- Use create_saving with entryType "deposit" (default) when moving money into savings — not for everyday spending.`
 }

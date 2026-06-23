@@ -14,6 +14,7 @@ import {
   isPaymentAccountAccessibleByUser,
 } from '#/features/payment-accounts/server/payment-accounts-repository'
 import { createUserSaving } from '#/features/savings/server/savings-repository'
+import { DEFAULT_SAVING_TITLE, DEFAULT_SAVING_WITHDRAWAL_TITLE } from '#/features/savings/schemas/saving'
 import { createUserGoal, deleteUserGoal, getUserGoalById, getUserGoals, updateUserGoal } from '#/features/goals/server/goals-repository'
 import {
   createUserWishlistItem,
@@ -66,6 +67,7 @@ const updateTransactionArgsSchema = z.object({
 const createSavingArgsSchema = z.object({
   title: z.string().min(1),
   amount: z.number().positive(),
+  entryType: z.enum(['deposit', 'withdrawal']).optional(),
   date: z.string().min(6).optional(),
   goalId: z.number().int().positive().optional(),
   paymentAccountId: z.number().int().positive().optional(),
@@ -391,7 +393,8 @@ export async function executeAiTool({
       return { action: 'create_saving', success: false, message: 'Invalid saving arguments.' }
     }
 
-    const { title, amount, date, goalId: rawGoalId, paymentAccountId: rawAccId, note } = args.data
+    const { title, amount, entryType: rawEntryType, date, goalId: rawGoalId, paymentAccountId: rawAccId, note } = args.data
+    const entryType = rawEntryType ?? 'deposit'
 
     let goalId: number | null = null
     if (rawGoalId != null) {
@@ -414,18 +417,20 @@ export async function executeAiTool({
 
     const row = await createUserSaving({
       userId: context.userId,
-      title: title.trim(),
+      title: title.trim() || (entryType === 'withdrawal' ? DEFAULT_SAVING_WITHDRAWAL_TITLE : DEFAULT_SAVING_TITLE),
       amount: amount.toString(),
+      entryType,
       goalId,
       paymentAccountId,
       note: note?.trim() || null,
       savedAt,
     })
 
+    const entryLabel = entryType === 'withdrawal' ? 'Withdrawal from savings' : 'Deposit to savings'
     return buildWriteStepResult({
       action: 'create_saving',
       success: true,
-      message: `Saving recorded: "${row.title}" (${row.amount} ${context.currency} on ${formatToolDate(savedAt)})`,
+      message: `${entryLabel}: "${row.title}" (${row.amount} ${context.currency} on ${formatToolDate(savedAt)})`,
       entityId: row.id,
     })
   }
