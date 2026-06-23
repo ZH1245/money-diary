@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Final pass: remove vendor attribution lines before the commit is recorded.
+msg_file="${1:-}"
+if [[ -z "$msg_file" || ! -f "$msg_file" ]]; then
+  exit 0
+fi
+
+if sed --version 2>/dev/null | grep -qi gnu; then
+  sed -i '/co-authored-by:.*cursoragent@cursor\.com/Id' "$msg_file"
+  sed -i '/made-with:.*cursor/Id' "$msg_file"
+else
+  sed -i '' '/co-authored-by:.*cursoragent@cursor\.com/Id' "$msg_file"
+  sed -i '' '/made-with:.*cursor/Id' "$msg_file"
+fi
+
+exit 0

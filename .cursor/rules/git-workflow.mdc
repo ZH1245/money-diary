@@ -37,6 +37,9 @@ Or: `gh issue create --template Feature --title "..." --web`
 - Commit on the feature branch with Conventional Commits (see repository commit message rules).
 - Reference the issue in commit bodies: `Refs #123` or `Closes #123` when the PR will fully resolve it.
 - Run `pnpm exec tsc --noEmit` before opening a PR when TypeScript changed.
+- **Never** add `Co-authored-by`, `Made-with`, or any vendor/tool attribution trailers to commit messages or PR bodies.
+- Do not pass `--trailer` to `git commit`. Use `git commit -m "$(cat <<'EOF' ... EOF)"` with subject + body only.
+- Run `pnpm prepare` after clone so the `prepare-commit-msg` hook strips injected attribution lines locally.
 
 ## Opening a PR
 
