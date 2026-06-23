@@ -45,7 +45,22 @@ export function formatAiProviderError(raw: string, provider?: string): string {
     return `${providerName} could not be reached. Check your connection settings and try again.`
   }
 
-  const withoutPrefix = normalized.replace(/^(Gemini|Ollama):\s*/i, '')
+  if (/no endpoints found that support tool/i.test(normalized)) {
+    return `${providerName}: this model does not support tool calling, which Money Diary needs to read and update your finances. Use google/gemini-2.0-flash-exp:free or another model with tool support (openrouter.ai/models?supported_parameters=tools).`
+  }
+
+  if (/developer instruction is not enabled|system instruction is not enabled/i.test(normalized)) {
+    return `${providerName}: this model does not support system instructions. Switch to google/gemini-2.0-flash-exp:free instead of Gemma free models.`
+  }
+
+  if (
+    /provider returned error/i.test(normalized) &&
+    (/\/gemma|gemma-/i.test(normalized) || /openinference/i.test(normalized))
+  ) {
+    return `${providerName} could not run this Gemma model for Money Diary — free Gemma endpoints often reject tools and system prompts. In Settings → AI Provider, set the model to google/gemini-2.0-flash-exp:free.`
+  }
+
+  const withoutPrefix = normalized.replace(/^(Gemini|Ollama|OpenRouter):\s*/i, '')
 
   if (
     withoutPrefix.length > 220 ||

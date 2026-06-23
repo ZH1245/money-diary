@@ -2,6 +2,11 @@ import { format } from 'date-fns'
 import type { PaymentAccountDto } from '#/features/payment-accounts/types/payment-account'
 import { formatPaymentAccountLabel } from '#/features/payment-accounts/utils/account-label'
 import type { TransactionDto } from '#/features/transactions/types/transaction'
+import {
+  formatTransferSource,
+  isTransferSourceToken,
+  parseTransferDirection,
+} from '#/features/transactions/utils/transfer-direction'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 
 export interface TransactionFormState {
@@ -12,6 +17,7 @@ export interface TransactionFormState {
   type: 'income' | 'expense' | 'transfer'
   categoryId: string
   paymentAccountId: string
+  transferDirection: 'in' | 'out'
   source: string
   note: string
   happenedAt: string
@@ -46,6 +52,7 @@ export function getDefaultTransactionForm(userCurrency: string): TransactionForm
     type: 'expense',
     categoryId: '',
     paymentAccountId: 'none',
+    transferDirection: 'out',
     source: '',
     note: '',
     happenedAt: format(new Date(), 'yyyy-MM-dd'),
@@ -131,4 +138,42 @@ export function buildTransactionTableRows(
       dateStyle: 'medium',
     }).format(new Date(transaction.happenedAt)),
   }))
+}
+
+/**
+ * Resolves the account picker label for the active transaction type.
+ */
+export function getTransactionPaymentAccountLabel(type: TransactionFormState['type']): string {
+  if (type === 'income') {
+    return 'Received in'
+  }
+
+  if (type === 'transfer') {
+    return 'Account'
+  }
+
+  return 'Paid from'
+}
+
+/**
+ * Builds the API source field from form state, encoding transfer direction when needed.
+ */
+export function resolveTransactionSourceForSave(form: TransactionFormState): string | undefined {
+  if (form.type === 'transfer') {
+    return formatTransferSource(form.transferDirection)
+  }
+
+  const trimmedSource = form.source.trim()
+  if (!trimmedSource || isTransferSourceToken(trimmedSource)) {
+    return undefined
+  }
+
+  return trimmedSource
+}
+
+/**
+ * Hydrates transfer direction from a stored transaction source value.
+ */
+export function getTransferDirectionFromTransactionSource(source: string | null | undefined): 'in' | 'out' {
+  return parseTransferDirection(source)
 }

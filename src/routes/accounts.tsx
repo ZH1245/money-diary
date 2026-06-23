@@ -2,6 +2,7 @@ import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
 import { PaymentAccountsPageContent } from '#/features/payment-accounts/components/payment-accounts-page-content'
 import { useAuthSession } from '#/lib/use-auth-session'
+import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { toSessionUser } from '#/types/auth'
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 
@@ -20,9 +21,11 @@ function AccountsPage() {
     return <Navigate to="/sign-in" />
   }
 
+  const userCurrency = ((session.user as { currency?: string }).currency ?? DEFAULT_CURRENCY).toUpperCase()
+
   return (
     <AuthenticatedAppShell user={toSessionUser(session.user)}>
-      <PaymentAccountsPageContent />
+      <PaymentAccountsPageContent userCurrency={userCurrency} />
     </AuthenticatedAppShell>
   )
 }

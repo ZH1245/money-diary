@@ -14,8 +14,21 @@ export interface DashboardStatsInput {
     amount: string
     type: string
     categoryId: number | null
+    paymentAccountId: number | null
+    source?: string | null
     happenedAt: string
   }>
+  allTransactions?: Array<{
+    amount: string
+    type: 'income' | 'expense' | 'transfer'
+    paymentAccountId: number | null
+    source?: string | null
+  }>
+  allSavings?: Array<{
+    amount: string
+    paymentAccountId: number | null
+  }>
+  cashPaymentAccountId?: number | null
   categories: Array<{
     id: number
     name: string
@@ -59,4 +72,5 @@ export interface DashboardStatsOutput {
   calendar: {
     monthLabel: string
   }
+  cashOnHandBalance: number | null
 }

@@ -53,6 +53,12 @@ export const AI_TOOLS = [
           categoryId: { type: 'integer', description: 'Internal ref from context. Required for expense/transfer. Use -1 with categoryName if no match. Omit for income.' },
           categoryName: { type: 'string', description: 'Required when categoryId is -1' },
           paymentAccountId: { type: 'integer', description: 'Internal account ref from context, or omit' },
+          transferDirection: {
+            type: 'string',
+            enum: ['in', 'out'],
+            description:
+              'Required for transfer rows with paymentAccountId. in = money into that account (e.g. bank to Cash on hand). out = money leaving that account (e.g. Cash on hand to bank).',
+          },
           note: { type: 'string' },
         },
       },
@@ -81,6 +87,11 @@ export const AI_TOOLS = [
           categoryId: { type: 'integer', description: 'Required when changing to expense/transfer if none set' },
           categoryName: { type: 'string', description: 'Required when categoryId is -1' },
           paymentAccountId: { type: 'integer' },
+          transferDirection: {
+            type: 'string',
+            enum: ['in', 'out'],
+            description: 'For transfer rows: in = money into paymentAccountId, out = money out of paymentAccountId',
+          },
           note: { type: 'string' },
         },
       },

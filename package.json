@@ -20,7 +20,12 @@
     "db:migrate:prod": "DRIZZLE_ENV=prod drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "issue:feature": "bash scripts/gh-new-issue.sh feature",
+    "issue:bug": "bash scripts/gh-new-issue.sh bug",
+    "issue:chore": "bash scripts/gh-new-issue.sh chore",
+    "pr:open": "bash scripts/gh-new-pr.sh",
+    "pr:merge": "bash scripts/gh-merge-pr.sh"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",

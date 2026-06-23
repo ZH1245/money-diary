@@ -1,0 +1,66 @@
+name: Feature
+description: New capability, UX improvement, or product change
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template like a Jira/Asana ticket. Keep **Implementation** abstract — save file-level detail for the PR.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One short paragraph — problem, who is affected, and the outcome we want.
+      placeholder: |
+        As a user, I need … so that …
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included in this ticket. Be specific about surfaces (UI, API, DB, AI, admin).
+      placeholder: |
+        - Dashboard cash balance card
+        - Transfer direction on transaction form
+        - …
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Related work that is explicitly not part of this ticket (defer or separate issue).
+      placeholder: |
+        - Per-account balances for bank cards
+        - …
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation (abstract)
+      description: High-level approach only — no file paths or line-level detail (that belongs in the PR).
+      placeholder: |
+        - Compute running cash balance from transactions linked to Cash on hand
+        - Encode transfer direction on create/update
+        - …
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Testable conditions that must be true for this ticket to be done. Use checkboxes.
+      value: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: true
