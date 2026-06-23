@@ -1,0 +1,47 @@
+---
+description: Branch, GitHub issue, and pull request workflow for all feature work
+alwaysApply: true
+---
+
+# Git workflow (branches, issues, PRs)
+
+Do not commit directly to `main`. Every feature, fix, or refactor ships through a branch, linked issue, and pull request.
+
+## Start of work
+
+1. **Issue first** — Create or pick a GitHub issue that describes the problem and acceptance criteria.
+2. **Branch** — Create a branch from `main`:
+   - `feat/<short-description>` — new capability
+   - `fix/<short-description>` — bug fix
+   - `chore/<short-description>` — tooling, deps, CI, docs-only infra
+3. **Scope** — One issue per PR when practical. Keep PRs reviewable (avoid unrelated drive-by changes).
+
+## During development
+
+- Commit on the feature branch with Conventional Commits (see `.cursorrules`).
+- Reference the issue in commit bodies: `Refs #123` or `Closes #123` when the PR will fully resolve it.
+- Run `pnpm exec tsc --noEmit` before opening a PR when TypeScript changed.
+
+## Opening a PR
+
+1. Push the branch: `git push -u origin HEAD`
+2. Open with `gh pr create` and include:
+   - **Summary** — what changed and why
+   - **Test plan** — concrete checks (manual or automated)
+   - **Linked issue** — `Closes #N` in the PR body
+3. Wait for CI (when present) and **AI code review** (see `pr-code-review.mdc`) before merge.
+
+## Merge rules
+
+- Do not merge your own PR without review when review is requested.
+- Prefer squash merge unless the team agrees otherwise.
+- Delete the branch after merge.
+
+## Agent behavior
+
+When the user asks for implementation work:
+
+1. Confirm or create the GitHub issue.
+2. Create/checkout the branch before editing.
+3. Implement, commit on the branch, push, and open the PR.
+4. Run PR code review per `pr-code-review.mdc` before calling the PR ready.
