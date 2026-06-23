@@ -6,6 +6,13 @@ import { Button } from '#/components/ui/button'
 import { DatePickerField } from '#/components/ui/date-picker'
 import { Input } from '#/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -27,6 +34,7 @@ import {
 } from '#/features/savings/hooks/use-savings'
 import type { SavingDto } from '#/features/savings/types/saving'
 import { buildSavingsPageStats } from '#/features/savings/utils/savings-stats'
+import { getSavingLedgerDelta } from '#/features/savings/utils/saving-ledger'
 import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
 import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
@@ -112,6 +120,7 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
     setEditingSavingId(saving.id)
     setForm({
       amount: saving.amount,
+      entryType: saving.entryType ?? 'deposit',
       note: saving.note ?? '',
       savedAt: toInputDate(saving.savedAt),
       goalId: saving.goalId ? String(saving.goalId) : 'none',
@@ -143,6 +152,7 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
 
     const payload = {
       amount: form.amount.trim(),
+      entryType: form.entryType,
       note: form.note.trim() || null,
       savedAt: toIsoDateAtNoon(form.savedAt),
       goalId: form.goalId === 'none' ? null : Number(form.goalId),
@@ -165,14 +175,15 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
       await toast.promise(
         createSavingMutation.mutateAsync({
           amount: payload.amount,
+          entryType: payload.entryType,
           note: payload.note ?? undefined,
           savedAt: payload.savedAt,
           goalId: payload.goalId,
           paymentAccountId: payload.paymentAccountId,
         }),
         {
-          loading: 'Adding to savings...',
-          success: 'Added to savings',
+          loading: form.entryType === 'withdrawal' ? 'Recording withdrawal...' : 'Adding to savings...',
+          success: form.entryType === 'withdrawal' ? 'Withdrawal recorded' : 'Added to savings',
           error: (message) => (message instanceof Error ? message.message : 'Unable to add saving'),
         },
       )
@@ -186,6 +197,18 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
   const savingsColumns = useMemo<ColumnDef<SavingDto>[]>(
     () => [
       {
+        id: 'entryType',
+        accessorFn: (row) => row.entryType ?? 'deposit',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+        cell: ({ row }) => {
+          const entryType = row.original.entryType ?? 'deposit'
+          if (entryType === 'withdrawal') {
+            return <span className="text-sm font-medium text-amber-700">Withdrawal</span>
+          }
+          return <span className="text-sm font-medium text-emerald-700">Deposit</span>
+        },
+      },
+      {
         accessorKey: 'savedAt',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
         cell: ({ row }) => formatSavingDate(row.original.savedAt),
@@ -194,9 +217,18 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
       },
       {
         id: 'amount',
-        accessorFn: (row) => Number(row.amount),
+        accessorFn: (row) => getSavingLedgerDelta(row.amount, row.entryType ?? 'deposit'),
         header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
-        cell: ({ row }) => <SensitiveAmount amount={row.original.amount} currency={userCurrency} className="font-medium" />,
+        cell: ({ row }) => {
+          const entryType = row.original.entryType ?? 'deposit'
+          const displayAmount = row.original.amount
+          return (
+            <span className={entryType === 'withdrawal' ? 'font-medium text-amber-700' : 'font-medium'}>
+              {entryType === 'withdrawal' ? '−' : null}
+              <SensitiveAmount amount={displayAmount} currency={userCurrency} />
+            </span>
+          )
+        },
       },
       {
         id: 'goal',
@@ -263,7 +295,7 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
           <div>
             <h1 className="display-title text-3xl">Savings</h1>
             <p className="mt-2 text-sm opacity-70">
-              Track money moved into savings and link entries to goals or accounts.
+              Track deposits into savings and withdrawals when you spend from savings.
             </p>
           </div>
           <Button className="gap-2" onClick={openCreateSheet}>
@@ -343,10 +375,31 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
             <SheetHeader>
               <SheetTitle>{isEditing ? 'Edit saving' : 'Add saving'}</SheetTitle>
               <SheetDescription>
-                {isEditing ? 'Update this savings entry.' : 'Log money moved into savings.'}
+                {isEditing
+                  ? 'Update this savings ledger entry.'
+                  : form.entryType === 'withdrawal'
+                    ? 'Record money taken out of savings.'
+                    : 'Log money moved into savings.'}
               </SheetDescription>
             </SheetHeader>
             <form className="grid gap-4 px-4" onSubmit={handleSaveSaving}>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Type</label>
+                <Select
+                  value={form.entryType}
+                  onValueChange={(value: 'deposit' | 'withdrawal') =>
+                    setForm((state) => ({ ...state, entryType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="deposit">Deposit (into savings)</SelectItem>
+                    <SelectItem value="withdrawal">Withdrawal (from savings)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Amount ({userCurrency})</label>
                 <Input
@@ -374,7 +427,7 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
                 value={form.paymentAccountId}
                 onValueChange={(value) => setForm((state) => ({ ...state, paymentAccountId: value }))}
                 accounts={paymentAccounts}
-                label="Saved to"
+                label={form.entryType === 'withdrawal' ? 'Withdrawn to (optional)' : 'Saved from (optional)'}
               />
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Note (optional)</label>

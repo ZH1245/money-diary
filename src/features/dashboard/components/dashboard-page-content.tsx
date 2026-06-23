@@ -73,6 +73,7 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
         allSavings: savings.map((saving) => ({
           amount: saving.amount,
           paymentAccountId: saving.paymentAccountId,
+          entryType: saving.entryType,
         })),
         cashPaymentAccountId,
         categories,

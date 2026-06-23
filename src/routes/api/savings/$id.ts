@@ -79,6 +79,7 @@ export const Route = createFileRoute('/api/savings/$id')({
           amount,
           note: parsed.data.note,
           savedAt: parsed.data.savedAt ? new Date(parsed.data.savedAt) : undefined,
+          ...(parsed.data.entryType !== undefined ? { entryType: parsed.data.entryType } : {}),
           ...(parsed.data.goalId !== undefined ? { goalId: parsed.data.goalId } : {}),
           ...(parsed.data.paymentAccountId !== undefined ? { paymentAccountId: parsed.data.paymentAccountId } : {}),
         })

@@ -27,6 +27,7 @@ export interface DashboardStatsInput {
   allSavings?: Array<{
     amount: string
     paymentAccountId: number | null
+    entryType?: 'deposit' | 'withdrawal'
   }>
   cashPaymentAccountId?: number | null
   categories: Array<{
@@ -37,6 +38,7 @@ export interface DashboardStatsInput {
   savings: Array<{
     amount: string
     savedAt: string
+    entryType?: 'deposit' | 'withdrawal'
   }>
   wishlist: Array<{
     targetAmount: string

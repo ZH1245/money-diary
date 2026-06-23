@@ -1,3 +1,4 @@
+import { getSavingLedgerDelta, type SavingEntryType } from '#/features/savings/utils/saving-ledger'
 import { parseLedgerAmount } from '#/features/shared/utils/amount'
 import type { GoalProgressBreakdown, GoalsPageStats } from '#/features/goals/types/goal-stats'
 
@@ -36,12 +37,12 @@ export function buildGoalProgress(goal: GoalProgressInput, linkedSavingsAmount: 
  * Sums savings ledger amounts linked to each goal id.
  */
 export function buildLinkedSavingsByGoalId(
-  savings: Array<{ goalId: number | null; amount: string }>,
+  savings: Array<{ goalId: number | null; amount: string; entryType?: SavingEntryType }>,
 ): Record<number, number> {
   return savings.reduce<Record<number, number>>((accumulator, saving) => {
     if (!saving.goalId) return accumulator
-    const amount = parseLedgerAmount(saving.amount)
-    accumulator[saving.goalId] = (accumulator[saving.goalId] ?? 0) + amount
+    const delta = getSavingLedgerDelta(saving.amount, saving.entryType ?? 'deposit')
+    accumulator[saving.goalId] = (accumulator[saving.goalId] ?? 0) + delta
     return accumulator
   }, {})
 }
