@@ -68,7 +68,6 @@ export async function fetchSecurityProfile(): Promise<SecurityProfileSummary | n
 
 /** Creates the initial security profile for the signed-in user. */
 export async function createSecurityProfileRequest(body: {
-  recoveryEmail: string
   questionOneKey: string
   answerOne: string
 }): Promise<SecurityProfileSummary> {
@@ -90,7 +89,6 @@ export async function createSecurityProfileRequest(body: {
 /** Updates recovery settings for an existing security profile. */
 export async function updateSecurityProfileRequest(body: {
   currentPassword: string
-  recoveryEmail?: string
   questionOneKey?: string
   answerOne?: string
 }): Promise<SecurityProfileSummary> {

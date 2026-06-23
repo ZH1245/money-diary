@@ -67,15 +67,14 @@ async function assertRecoveryEmailAvailable({
 
 /**
  * Creates a security profile for a newly registered user.
+ * Recovery email is always the account sign-in email.
  */
 export async function createSecurityProfile({
   userId,
-  recoveryEmail,
   questionOneKey,
   answerOne,
 }: {
   userId: string
-  recoveryEmail: string
   questionOneKey: string
   answerOne: string
 }) {
@@ -89,7 +88,17 @@ export async function createSecurityProfile({
     throw new Error('Security profile already exists')
   }
 
-  const normalizedRecoveryEmail = normalizeRecoveryEmail(recoveryEmail)
+  const [foundUser] = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+
+  if (!foundUser?.email) {
+    throw new Error('Account email not found')
+  }
+
+  const normalizedRecoveryEmail = normalizeRecoveryEmail(foundUser.email)
   await assertRecoveryEmailAvailable({ recoveryEmail: normalizedRecoveryEmail })
 
   const answerOneHash = await hashSecurityAnswer(answerOne)
@@ -110,12 +119,10 @@ export async function createSecurityProfile({
  */
 export async function updateSecurityProfile({
   userId,
-  recoveryEmail,
   questionOneKey,
   answerOne,
 }: {
   userId: string
-  recoveryEmail?: string
   questionOneKey?: string
   answerOne?: string
 }) {
@@ -131,16 +138,6 @@ export async function updateSecurityProfile({
 
   const nextValues: Partial<typeof userSecurityProfile.$inferInsert> = {
     updatedAt: new Date(),
-  }
-
-  if (recoveryEmail !== undefined) {
-    const normalizedRecoveryEmail = normalizeRecoveryEmail(recoveryEmail)
-    await assertRecoveryEmailAvailable({
-      recoveryEmail: normalizedRecoveryEmail,
-      excludeUserId: userId,
-    })
-    nextValues.recoveryEmail = normalizedRecoveryEmail
-    nextValues.recoveryEmailVerified = false
   }
 
   if (questionOneKey && answerOne) {

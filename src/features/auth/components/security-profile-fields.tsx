@@ -22,6 +22,7 @@ interface SecurityProfileFieldsProps {
   isDisabled?: boolean
   introTitle?: string
   introDescription?: string
+  recoveryEmailReadOnly?: boolean
   onRecoveryEmailChange: (value: string) => void
   onQuestionOneKeyChange: (value: SecurityQuestionKey) => void
   onAnswerOneChange: (value: string) => void
@@ -34,6 +35,7 @@ export function SecurityProfileFields({
   isDisabled = false,
   introTitle = 'Account recovery',
   introDescription = 'A backup email plus one private answer help you reset your password and protect your account.',
+  recoveryEmailReadOnly = false,
   onRecoveryEmailChange,
   onQuestionOneKeyChange,
   onAnswerOneChange,
@@ -63,10 +65,14 @@ export function SecurityProfileFields({
         value={values.recoveryEmail}
         onChange={onRecoveryEmailChange}
         placeholder="backup@example.com"
-        isDisabled={isDisabled}
+        isDisabled={isDisabled || recoveryEmailReadOnly}
+        isRequired={!recoveryEmailReadOnly}
         error={fieldErrors.recoveryEmail}
         autoComplete="section-recovery email"
       />
+      {recoveryEmailReadOnly ? (
+        <p className="-mt-2 text-xs opacity-70">Same as your sign-in email and cannot be changed.</p>
+      ) : null}
 
       <div>
         <label htmlFor="security-question-one" className="mb-1 block text-sm font-medium">

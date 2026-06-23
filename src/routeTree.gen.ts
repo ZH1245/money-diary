@@ -62,6 +62,7 @@ import { Route as ApiAuthRecoveryChallengeRouteImport } from './routes/api/auth/
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 import { Route as ApiAdminUsersIdRouteImport } from './routes/api/admin/users/$id'
 import { Route as ApiAdminGlobalAiTestRouteImport } from './routes/api/admin/global-ai/test'
+import { Route as ApiAdminGlobalAiRevealRouteImport } from './routes/api/admin/global-ai/reveal'
 import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/global-ai/key'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
 
@@ -332,6 +333,11 @@ const ApiAdminGlobalAiTestRoute = ApiAdminGlobalAiTestRouteImport.update({
   path: '/test',
   getParentRoute: () => ApiAdminGlobalAiRoute,
 } as any)
+const ApiAdminGlobalAiRevealRoute = ApiAdminGlobalAiRevealRouteImport.update({
+  id: '/reveal',
+  path: '/reveal',
+  getParentRoute: () => ApiAdminGlobalAiRoute,
+} as any)
 const ApiAdminGlobalAiKeyRoute = ApiAdminGlobalAiKeyRouteImport.update({
   id: '/key',
   path: '/key',
@@ -391,6 +397,7 @@ export interface FileRoutesByFullPath {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/reveal': typeof ApiAdminGlobalAiRevealRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/reveal': typeof ApiAdminGlobalAiRevealRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
@@ -506,6 +514,7 @@ export interface FileRoutesById {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/reveal': typeof ApiAdminGlobalAiRevealRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
@@ -1106,6 +1115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminGlobalAiTestRouteImport
       parentRoute: typeof ApiAdminGlobalAiRoute
     }
+    '/api/admin/global-ai/reveal': {
+      id: '/api/admin/global-ai/reveal'
+      path: '/reveal'
+      fullPath: '/api/admin/global-ai/reveal'
+      preLoaderRoute: typeof ApiAdminGlobalAiRevealRouteImport
+      parentRoute: typeof ApiAdminGlobalAiRoute
+    }
     '/api/admin/global-ai/key': {
       id: '/api/admin/global-ai/key'
       path: '/key'
@@ -1207,11 +1223,13 @@ const ApiAdminCategoriesRouteWithChildren =
 
 interface ApiAdminGlobalAiRouteChildren {
   ApiAdminGlobalAiKeyRoute: typeof ApiAdminGlobalAiKeyRoute
+  ApiAdminGlobalAiRevealRoute: typeof ApiAdminGlobalAiRevealRoute
   ApiAdminGlobalAiTestRoute: typeof ApiAdminGlobalAiTestRoute
 }
 
 const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
   ApiAdminGlobalAiKeyRoute: ApiAdminGlobalAiKeyRoute,
+  ApiAdminGlobalAiRevealRoute: ApiAdminGlobalAiRevealRoute,
   ApiAdminGlobalAiTestRoute: ApiAdminGlobalAiTestRoute,
 }
 
