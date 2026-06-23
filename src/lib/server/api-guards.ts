@@ -3,7 +3,6 @@ import { AUTH_ROLES } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { enforceRateLimit } from '#/lib/server/rate-limit'
 import { enforceSameOrigin } from '#/lib/server/same-origin'
-import { getUserModerationDetails } from '#/features/admin/server/admin-users-repository'
 
 interface AuthenticatedUserContext {
   id: string
@@ -11,10 +10,18 @@ interface AuthenticatedUserContext {
   role: string
 }
 
+interface SessionUserFields {
+  id?: string
+  currency?: string
+  role?: string
+  accountStatus?: string
+  moderationReason?: string | null
+}
+
 /**
  * Runs shared request protections for API handlers.
  */
-export function guardApiRequest(request: Request): Response | null {
+export async function guardApiRequest(request: Request): Promise<Response | null> {
   const sameOriginResponse = enforceSameOrigin(request)
   if (sameOriginResponse) return sameOriginResponse
 
@@ -29,7 +36,7 @@ export async function requireUserContext(request: Request): Promise<Authenticate
     headers: request.headers,
   })
 
-  const user = session?.user as { id?: string; currency?: string; role?: string } | undefined
+  const user = session?.user as SessionUserFields | undefined
   if (!user?.id) {
     return Response.json(
       { success: false, error: 'Unauthorized' },
@@ -39,14 +46,14 @@ export async function requireUserContext(request: Request): Promise<Authenticate
 
   const role = user.role ?? AUTH_ROLES.user
   if (role !== AUTH_ROLES.admin) {
-    const moderation = await getUserModerationDetails(user.id)
-    if (moderation && moderation.accountStatus !== 'active') {
+    const accountStatus = user.accountStatus ?? 'active'
+    if (accountStatus !== 'active') {
       return Response.json(
         {
           success: false,
-          error: moderation.moderationReason?.trim() || 'Access to this account is not available.',
-          accountStatus: moderation.accountStatus,
-          moderationReason: moderation.moderationReason,
+          error: user.moderationReason?.trim() || 'Access to this account is not available.',
+          accountStatus,
+          moderationReason: user.moderationReason ?? null,
         },
         { status: 403 },
       )
@@ -72,8 +79,8 @@ export async function requireUserId(request: Request): Promise<string | Response
 /**
  * Shared preflight response for API routes.
  */
-export function buildOptionsResponse(request: Request): Response {
-  const blockedResponse = guardApiRequest(request)
+export async function buildOptionsResponse(request: Request): Promise<Response> {
+  const blockedResponse = await guardApiRequest(request)
   if (blockedResponse) return blockedResponse
   return new Response(null, { status: 204 })
 }

@@ -37,6 +37,76 @@ export interface AiSettingsRecord {
   useGlobalProvider: boolean
 }
 
+export interface UserAiProviderPreference {
+  useGlobalProvider: boolean
+  hasCustomSettings: boolean
+  hasStoredApiKey: boolean
+  provider: string | null
+}
+
+/**
+ * Reads AI source preference without decrypting stored credentials.
+ * Safe for legacy rows when ENV_SECRETS no longer matches old ciphertext.
+ */
+export async function getUserAiProviderPreference({
+  userId,
+}: {
+  userId: string
+}): Promise<UserAiProviderPreference> {
+  const [row] = await db
+    .select({
+      useGlobalProvider: aiProviderSettings.useGlobalProvider,
+      baseUrlEncrypted: aiProviderSettings.baseUrlEncrypted,
+      modelEncrypted: aiProviderSettings.modelEncrypted,
+      apiKeyEncrypted: aiProviderSettings.apiKeyEncrypted,
+      provider: aiProviderSettings.provider,
+    })
+    .from(aiProviderSettings)
+    .where(eq(aiProviderSettings.userId, userId))
+    .limit(1)
+
+  if (!row) {
+    return {
+      useGlobalProvider: true,
+      hasCustomSettings: false,
+      hasStoredApiKey: false,
+      provider: null,
+    }
+  }
+
+  return {
+    useGlobalProvider: row.useGlobalProvider,
+    hasCustomSettings: Boolean(row.baseUrlEncrypted && row.modelEncrypted),
+    hasStoredApiKey: Boolean(row.apiKeyEncrypted),
+    provider: row.provider,
+  }
+}
+
+/**
+ * Loads decrypted user AI settings, returning a user-facing decrypt warning instead of throwing.
+ */
+export async function tryGetUserAiSettings({ userId }: { userId: string }): Promise<{
+  settings: AiSettingsRecord | null
+  decryptError: string | null
+}> {
+  try {
+    const settings = await getUserAiSettings({ userId })
+    return { settings, decryptError: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to load AI settings'
+
+    if (message.includes('Invalid encrypted payload')) {
+      return {
+        settings: null,
+        decryptError:
+          'Saved AI settings could not be decrypted. ENV_SECRETS may have changed — re-save your provider settings.',
+      }
+    }
+
+    throw error
+  }
+}
+
 export async function getUserAiSettings({ userId }: { userId: string }): Promise<AiSettingsRecord | null> {
   const [row] = await db
     .select()

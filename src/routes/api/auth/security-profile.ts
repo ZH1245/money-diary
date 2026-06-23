@@ -21,7 +21,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)
@@ -34,7 +34,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
         })
       },
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)
@@ -85,7 +85,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
         }
       },
       PATCH: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)

@@ -1,6 +1,7 @@
 import { createEnv } from '@t3-oss/env-core'
 import { z } from 'zod'
 
+/** Server secrets are validated in `#/env.server` (import only from server modules). */
 export const env = createEnv({
   server: {
     SERVER_URL: z.string().url().optional(),

@@ -12,7 +12,7 @@ export const Route = createFileRoute('/api/auth/change-password')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const userContext = await requireUserContext(request)

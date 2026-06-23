@@ -1,40 +1,33 @@
+import { consumeRateLimitBucket } from '#/lib/server/rate-limit-store'
+
 const RECOVERY_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 const RECOVERY_RATE_LIMIT_MAX_REQUESTS = 10
 
-interface RecoveryRateLimitBucket {
-  count: number
-  resetAt: number
-}
-
-const recoveryBuckets = new Map<string, RecoveryRateLimitBucket>()
-
 /**
- * Applies a stricter rate limit for password recovery endpoints.
+ * Applies a stricter Postgres-backed rate limit for password recovery endpoints.
  */
-export function enforceRecoveryRateLimit(request: Request): Response | null {
+export async function enforceRecoveryRateLimit(request: Request): Promise<Response | null> {
   const forwardedFor = request.headers.get('x-forwarded-for')
   const clientIp = forwardedFor?.split(',')[0]?.trim() || 'local'
   const pathname = new URL(request.url).pathname
-  const key = `${clientIp}:${pathname}`
-  const now = Date.now()
-  const currentBucket = recoveryBuckets.get(key)
+  const bucketKey = `recovery:${clientIp}:${pathname}`
 
-  if (!currentBucket || now >= currentBucket.resetAt) {
-    recoveryBuckets.set(key, {
-      count: 1,
-      resetAt: now + RECOVERY_RATE_LIMIT_WINDOW_MS,
+  try {
+    const result = await consumeRateLimitBucket({
+      bucketKey,
+      windowMs: RECOVERY_RATE_LIMIT_WINDOW_MS,
+      maxRequests: RECOVERY_RATE_LIMIT_MAX_REQUESTS,
     })
+
+    if (!result.allowed) {
+      return Response.json(
+        { success: false, error: 'Too many recovery attempts. Try again later.' },
+        { status: 429 },
+      )
+    }
+  } catch {
     return null
   }
 
-  if (currentBucket.count >= RECOVERY_RATE_LIMIT_MAX_REQUESTS) {
-    return Response.json(
-      { success: false, error: 'Too many recovery attempts. Try again later.' },
-      { status: 429 },
-    )
-  }
-
-  currentBucket.count += 1
-  recoveryBuckets.set(key, currentBucket)
   return null
 }

@@ -1,16 +1,13 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
+import { serverEnv } from '#/env.server'
 
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 12
 
 function getEncryptionKey(): Buffer {
-  const source =
-    process.env.ENV_SECRETS ??
-    process.env.AI_SETTINGS_ENCRYPTION_KEY ??
-    process.env.BETTER_AUTH_SECRET ??
-    ''
+  const source = serverEnv.ENV_SECRETS
   if (!source.trim()) {
-    throw new Error('Missing ENV_SECRETS (or AI_SETTINGS_ENCRYPTION_KEY / BETTER_AUTH_SECRET fallback)')
+    throw new Error('Missing ENV_SECRETS for secret encryption')
   }
 
   return createHash('sha256').update(source).digest()

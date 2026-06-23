@@ -1,33 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
-import { probeGeminiApiKey } from '#/features/ai/server/gemini-client'
-import { probeOllamaBaseUrl } from '#/features/ai/server/ollama-client'
-import { probeOpenRouterApiKey } from '#/features/ai/server/openrouter-client'
+import {
+  probeGlobalAiConnection,
+  testGlobalAiSettingsSchema,
+} from '#/features/settings/server/ai-connection-test'
 import { buildOptionsResponse, guardApiRequest, rejectClientSuppliedUserId } from '#/lib/server/api-guards'
 import { requireAdmin } from '#/lib/server/admin-guard'
-
-const testGlobalAiSchema = z.discriminatedUnion('provider', [
-  z.object({
-    provider: z.literal('ollama'),
-    baseUrl: z.string().trim().url('Enter a valid URL'),
-    apiKey: z.string().trim().optional(),
-  }),
-  z.object({
-    provider: z.literal('gemini'),
-    apiKey: z.string().trim().min(1, 'Gemini API key is required'),
-  }),
-  z.object({
-    provider: z.literal('openrouter'),
-    baseUrl: z.string().trim().url('Enter a valid URL'),
-    apiKey: z.string().trim().min(1, 'OpenRouter API key is required'),
-  }),
-])
 
 export const Route = createFileRoute('/api/admin/global-ai/test')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse
@@ -36,7 +19,7 @@ export const Route = createFileRoute('/api/admin/global-ai/test')({
         if (userIdRejected) return userIdRejected
 
         const body = await request.json().catch(() => null)
-        const parsed = testGlobalAiSchema.safeParse(body)
+        const parsed = testGlobalAiSettingsSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
             { success: false, error: 'Invalid test payload', details: parsed.error.flatten() },
@@ -44,17 +27,18 @@ export const Route = createFileRoute('/api/admin/global-ai/test')({
           )
         }
 
-        const result =
-          parsed.data.provider === 'gemini'
-            ? await probeGeminiApiKey({ apiKey: parsed.data.apiKey })
-            : parsed.data.provider === 'openrouter'
-              ? await probeOpenRouterApiKey({
-                  apiKey: parsed.data.apiKey,
-                  baseUrl: parsed.data.baseUrl,
-                })
-              : await probeOllamaBaseUrl({ baseUrl: parsed.data.baseUrl, apiKey: parsed.data.apiKey })
-
-        return Response.json({ success: true, data: result })
+        try {
+          const result = await probeGlobalAiConnection(parsed.data)
+          return Response.json({ success: true, data: result })
+        } catch (error) {
+          return Response.json(
+            {
+              success: false,
+              error: error instanceof Error ? error.message : 'Unable to test AI provider connection',
+            },
+            { status: 400 },
+          )
+        }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
     },

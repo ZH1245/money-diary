@@ -2,20 +2,14 @@ import { eq, sql } from 'drizzle-orm'
 import { hashPassword, verifyPassword } from 'better-auth/crypto'
 import { db } from '#/db/index'
 import { account, session, user, userSecurityProfile } from '#/db/auth-schema'
-import { getSecurityQuestionLabel } from '#/features/auth/constants/security-questions'
 import {
   normalizeRecoveryEmail,
   RecoveryEmailInUseError,
 } from '#/features/auth/errors/recovery-email-errors'
 import { hashSecurityAnswer, verifySecurityAnswer } from '#/lib/server/security-answer'
 
-export interface SecurityProfileRecord {
-  recoveryEmail: string
-  recoveryEmailVerified: boolean
-  questionOneKey: string
-  questionOneLabel: string
-  hasProfile: boolean
-}
+const MAX_FAILED_RECOVERY_ATTEMPTS = 5
+const RECOVERY_LOCKOUT_MS = 30 * 60 * 1000
 
 export interface SecurityProfileStatus {
   hasProfile: true
@@ -37,29 +31,44 @@ export async function getSecurityProfileStatusForUser(userId: string): Promise<S
 }
 
 /**
- * Loads the full security profile for server-side verification only.
+ * Records a failed recovery attempt and may lock the account recovery path.
  */
-async function getSecurityProfileRecordForUser(userId: string): Promise<SecurityProfileRecord | null> {
-  const [row] = await db
-    .select()
+async function recordFailedRecoveryAttempt(userId: string) {
+  const [profile] = await db
+    .select({
+      failedRecoveryAttempts: userSecurityProfile.failedRecoveryAttempts,
+    })
     .from(userSecurityProfile)
     .where(eq(userSecurityProfile.userId, userId))
     .limit(1)
 
-  if (!row) return null
+  if (!profile) return
 
-  return {
-    recoveryEmail: row.recoveryEmail,
-    recoveryEmailVerified: row.recoveryEmailVerified,
-    questionOneKey: row.questionOneKey,
-    questionOneLabel: getSecurityQuestionLabel(row.questionOneKey),
-    hasProfile: true,
-  }
+  const nextAttempts = profile.failedRecoveryAttempts + 1
+  const shouldLock = nextAttempts >= MAX_FAILED_RECOVERY_ATTEMPTS
+
+  await db
+    .update(userSecurityProfile)
+    .set({
+      failedRecoveryAttempts: nextAttempts,
+      recoveryLockedUntil: shouldLock ? new Date(Date.now() + RECOVERY_LOCKOUT_MS) : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(userSecurityProfile.userId, userId))
 }
 
-/** @deprecated Use getSecurityProfileStatusForUser for API responses. */
-export async function getSecurityProfileForUser(userId: string): Promise<SecurityProfileRecord | null> {
-  return getSecurityProfileRecordForUser(userId)
+/**
+ * Clears recovery lockout counters after a successful reset.
+ */
+async function clearRecoveryLockout(userId: string) {
+  await db
+    .update(userSecurityProfile)
+    .set({
+      failedRecoveryAttempts: 0,
+      recoveryLockedUntil: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(userSecurityProfile.userId, userId))
 }
 
 /**
@@ -236,12 +245,19 @@ export async function resetPasswordWithSecurityAnswers({
 
   if (!profile) return 'invalid'
 
+  if (profile.recoveryLockedUntil && profile.recoveryLockedUntil.getTime() > Date.now()) {
+    return 'invalid'
+  }
+
   const recoveryValid = await verifyRecoveryCredentials({
     profile,
     recoveryEmail,
     answerOne,
   })
-  if (!recoveryValid) return 'invalid'
+  if (!recoveryValid) {
+    await recordFailedRecoveryAttempt(foundUser.id)
+    return 'invalid'
+  }
 
   const [credentialAccount] = await db
     .select({ id: account.id, password: account.password })
@@ -262,6 +278,7 @@ export async function resetPasswordWithSecurityAnswers({
     .where(eq(account.id, credentialAccount.id))
 
   await revokeAllUserSessions(foundUser.id)
+  await clearRecoveryLockout(foundUser.id)
 
   return 'reset'
 }

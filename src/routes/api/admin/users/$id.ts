@@ -18,7 +18,7 @@ export const Route = createFileRoute('/api/admin/users/$id')({
   server: {
     handlers: {
       PATCH: async ({ request, params }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse
@@ -74,7 +74,7 @@ export const Route = createFileRoute('/api/admin/users/$id')({
         }
       },
       DELETE: async ({ request, params }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse

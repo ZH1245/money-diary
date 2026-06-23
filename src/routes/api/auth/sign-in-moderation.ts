@@ -11,7 +11,7 @@ export const Route = createFileRoute('/api/auth/sign-in-moderation')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         const body = await request.json().catch(() => null)

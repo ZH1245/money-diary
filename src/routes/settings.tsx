@@ -5,8 +5,11 @@ import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-she
 import { SearchableSelect } from '#/components/forms/searchable-select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { AiSettingsSection } from '#/features/settings/components/ai-settings-section'
+import {
+  SettingsPageLayout,
+  type SettingsNavGroup,
+} from '#/features/settings/components/settings-page-layout'
 import { ChangePasswordSection } from '#/features/auth/components/change-password-section'
-// import { SecurityProfileSection } from '#/features/auth/components/security-profile-section'
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -20,6 +23,48 @@ export const Route = createFileRoute('/settings')({
 const updateCurrencySchema = z.object({
   currency: z.string().trim().length(3, 'Select a valid currency'),
 })
+
+const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
+  {
+    label: 'Account',
+    items: [
+      {
+        id: 'general',
+        label: 'General',
+        title: 'General',
+        description: 'Currency and display preferences for your workspace.',
+      },
+      {
+        id: 'security',
+        label: 'Security',
+        title: 'Security',
+        description: 'Update your password with recovery verification.',
+      },
+    ],
+  },
+  {
+    label: 'Preferences',
+    items: [
+      {
+        id: 'ai',
+        label: 'AI provider',
+        title: 'AI provider',
+        description: 'Choose the app AI service or bring your own provider credentials.',
+      },
+    ],
+  },
+  {
+    label: 'Legal',
+    items: [
+      {
+        id: 'legal',
+        label: 'Privacy & terms',
+        title: 'Privacy & terms',
+        description: 'Review how Money Diary handles your data and usage rules.',
+      },
+    ],
+  },
+]
 
 function SettingsPage() {
   const { data: session, isInitialPending: isSessionPending, refetch: refetchSession } = useAuthSession()
@@ -108,80 +153,80 @@ function SettingsPage() {
         currency: (session.user as { currency?: string }).currency,
       }}
     >
-      <main className="p-6 md:p-8">
-        <section className="space-y-6">
-          <div className="island-shell rounded-2xl p-6">
-            <h1 className="display-title text-3xl">Settings</h1>
-            <p className="mt-2 text-sm opacity-80">
-              Manage your account security, currency preferences, and AI provider settings.
-            </p>
-          </div>
+      <main className="p-4 md:p-6 lg:p-8">
+        <SettingsPageLayout groups={SETTINGS_NAV_GROUPS}>
+          {(item) => {
+            if (item.id === 'general') {
+              return (
+                <article className="feature-card rounded-xl border border-border p-5">
+                  <h2 className="text-lg font-semibold">Preferred currency</h2>
+                  <p className="mt-1 text-xs opacity-70">
+                    Transaction totals are calculated and shown in this currency.
+                  </p>
 
-          <div className="grid gap-6 xl:grid-cols-2">
-            <article className="feature-card rounded-xl border border-border p-5">
-              <h2 className="text-lg font-semibold">Preferred Currency</h2>
-              <p className="mt-1 text-xs opacity-70">
-                Transaction totals are calculated and shown in this currency.
-              </p>
+                  <form className="mt-4 space-y-4" onSubmit={handleCurrencySubmit}>
+                    <div>
+                      <label htmlFor="currency" className="mb-1 block text-sm font-medium">
+                        Currency
+                      </label>
+                      <SearchableSelect
+                        id="currency"
+                        value={currency}
+                        onValueChange={setCurrency}
+                        options={currencyOptions}
+                        placeholder="Select currency"
+                        searchPlaceholder="Search currencies..."
+                        emptyMessage="No currencies found."
+                        disabled={isCurrencySubmitting}
+                        triggerClassName="h-10"
+                      />
+                    </div>
 
-              <form className="mt-4 space-y-4" onSubmit={handleCurrencySubmit}>
-                <div>
-                  <label htmlFor="currency" className="mb-1 block text-sm font-medium">
-                    Currency
-                  </label>
-                  <SearchableSelect
-                    id="currency"
-                    value={currency}
-                    onValueChange={setCurrency}
-                    options={currencyOptions}
-                    placeholder="Select currency"
-                    searchPlaceholder="Search currencies..."
-                    emptyMessage="No currencies found."
-                    disabled={isCurrencySubmitting}
-                    triggerClassName="h-10"
-                  />
+                    {currencyError ? <InlineError message={currencyError} /> : null}
+
+                    <button
+                      type="submit"
+                      disabled={isCurrencySubmitting || currency === selectedCurrency}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+                    >
+                      {isCurrencySubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save currency'
+                      )}
+                    </button>
+                  </form>
+                </article>
+              )
+            }
+
+            if (item.id === 'security') {
+              return <ChangePasswordSection />
+            }
+
+            if (item.id === 'ai') {
+              return <AiSettingsSection />
+            }
+
+            return (
+              <article className="feature-card rounded-xl border border-border p-5">
+                <h2 className="text-lg font-semibold">Policies</h2>
+                <p className="mt-1 text-sm opacity-80">Open the documents below in a new tab anytime.</p>
+                <div className="mt-4 flex flex-col gap-2 text-sm font-medium">
+                  <Link to="/privacy" className="underline underline-offset-4">
+                    Privacy Policy
+                  </Link>
+                  <Link to="/terms" className="underline underline-offset-4">
+                    Terms of Service
+                  </Link>
                 </div>
-
-                {currencyError ? <InlineError message={currencyError} /> : null}
-
-                <button
-                  type="submit"
-                  disabled={isCurrencySubmitting || currency === selectedCurrency}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
-                >
-                  {isCurrencySubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save currency'
-                  )}
-                </button>
-              </form>
-            </article>
-
-            <ChangePasswordSection />
-          </div>
-
-          <article className="feature-card rounded-2xl border border-border/70 p-6">
-            <h2 className="text-lg font-semibold">Legal</h2>
-            <p className="mt-1 text-sm opacity-80">Review how Money Diary handles your data and usage rules.</p>
-            <div className="mt-4 flex flex-col gap-2 text-sm font-medium">
-              <Link to="/privacy" className="underline underline-offset-4">
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="underline underline-offset-4">
-                Terms of Service
-              </Link>
-            </div>
-          </article>
-
-          {/* Recovery question/email updates are set during account setup. */}
-          {/* <SecurityProfileSection /> */}
-
-          <AiSettingsSection />
-        </section>
+              </article>
+            )
+          }}
+        </SettingsPageLayout>
       </main>
     </AuthenticatedAppShell>
   )

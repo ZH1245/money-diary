@@ -13,7 +13,7 @@ export const Route = createFileRoute('/api/admin/global-ai')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/api/admin/global-ai')({
         return Response.json({ success: true, data: settings })
       },
       PATCH: async ({ request }) => {
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
         const adminResponse = await requireAdmin(request)
         if (adminResponse) return adminResponse

@@ -1,4 +1,4 @@
-import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SignedTransactionAmount } from '#/components/privacy/signed-transaction-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { formatSensitiveCurrency } from '#/lib/privacy/sensitive-format'
 import type { CategoryExpenseGroup } from '#/features/analytics/utils/analytics-stats'
@@ -43,7 +43,12 @@ export function CategoryExpenseGroups({ groups, currency, isPrivacyMode }: Categ
                     {format(new Date(transaction.happenedAt), 'MMM d, yyyy')}
                   </p>
                 </div>
-                <SensitiveAmount amount={String(transaction.amount)} currency={currency} className="shrink-0 font-medium" />
+                <SignedTransactionAmount
+                  amount={String(transaction.amount)}
+                  currency={currency}
+                  type="expense"
+                  className="shrink-0 font-medium"
+                />
               </li>
             ))}
           </ul>

@@ -13,7 +13,7 @@ import { usePaymentAccountsQuery } from '#/features/payment-accounts/hooks/use-p
 import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
 import { useWishlistQuery } from '#/features/wishlist/hooks/use-wishlist'
-import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
+import { SignedTransactionAmount, type TransactionFlowType } from '#/components/privacy/signed-transaction-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { formatSensitiveCompactAmount, formatSensitiveCurrency, formatSensitiveText, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { chartColors } from '#/lib/chart-colors'
@@ -131,7 +131,13 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
           <DataTableColumnHeader column={column} title="Amount" className="w-full justify-end" />
         ),
         meta: { cellClassName: 'text-right font-medium' },
-        cell: ({ row }) => <SensitiveAmount amount={row.original.amount} currency={userCurrency} />,
+        cell: ({ row }) => (
+          <SignedTransactionAmount
+            amount={row.original.amount}
+            currency={userCurrency}
+            type={row.original.type as TransactionFlowType}
+          />
+        ),
       },
     ],
     [userCurrency, isPrivacyMode],

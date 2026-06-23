@@ -28,7 +28,7 @@ export const Route = createFileRoute('/api/ai/transaction')({
     handlers: {
       POST: async ({ request }) => {
         // Standard auth + same-origin protection
-        const blockedResponse = guardApiRequest(request)
+        const blockedResponse = await guardApiRequest(request)
         if (blockedResponse) return blockedResponse
 
         // Session-based auth: only the logged-in user can trigger this

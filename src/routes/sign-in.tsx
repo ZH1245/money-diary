@@ -88,6 +88,7 @@ function SignInPage() {
     })
     const moderationPayload = (await moderationResponse.json().catch(() => null)) as {
       success?: boolean
+      error?: string
       data?: { allowed?: boolean; accountStatus?: string; moderationReason?: string }
     } | null
 
@@ -101,7 +102,12 @@ function SignInPage() {
 
     if (!moderationResponse.ok) {
       setIsSubmitting(false)
-      setErrorMessage('Unable to verify account status. Try again in a moment.')
+      const serverError = moderationPayload && 'error' in moderationPayload && typeof moderationPayload.error === 'string'
+        ? moderationPayload.error
+        : null
+      setErrorMessage(
+        serverError ?? 'Unable to verify account status. Try again in a moment.',
+      )
       return
     }
 

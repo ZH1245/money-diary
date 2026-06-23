@@ -55,14 +55,12 @@ import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 import { Route as ApiAdminGlobalAiRouteImport } from './routes/api/admin/global-ai'
 import { Route as ApiAdminCategoriesRouteImport } from './routes/api/admin/categories'
 import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
-import { Route as ApiSettingsAiRevealRouteImport } from './routes/api/settings/ai/reveal'
 import { Route as ApiSettingsAiKeyRouteImport } from './routes/api/settings/ai/key'
 import { Route as ApiAuthRecoveryResetRouteImport } from './routes/api/auth/recovery/reset'
 import { Route as ApiAuthRecoveryChallengeRouteImport } from './routes/api/auth/recovery/challenge'
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 import { Route as ApiAdminUsersIdRouteImport } from './routes/api/admin/users/$id'
 import { Route as ApiAdminGlobalAiTestRouteImport } from './routes/api/admin/global-ai/test'
-import { Route as ApiAdminGlobalAiRevealRouteImport } from './routes/api/admin/global-ai/reveal'
 import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/global-ai/key'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
 
@@ -296,11 +294,6 @@ const ApiSettingsAiTestRoute = ApiSettingsAiTestRouteImport.update({
   path: '/test',
   getParentRoute: () => ApiSettingsAiRoute,
 } as any)
-const ApiSettingsAiRevealRoute = ApiSettingsAiRevealRouteImport.update({
-  id: '/reveal',
-  path: '/reveal',
-  getParentRoute: () => ApiSettingsAiRoute,
-} as any)
 const ApiSettingsAiKeyRoute = ApiSettingsAiKeyRouteImport.update({
   id: '/key',
   path: '/key',
@@ -331,11 +324,6 @@ const ApiAdminUsersIdRoute = ApiAdminUsersIdRouteImport.update({
 const ApiAdminGlobalAiTestRoute = ApiAdminGlobalAiTestRouteImport.update({
   id: '/test',
   path: '/test',
-  getParentRoute: () => ApiAdminGlobalAiRoute,
-} as any)
-const ApiAdminGlobalAiRevealRoute = ApiAdminGlobalAiRevealRouteImport.update({
-  id: '/reveal',
-  path: '/reveal',
   getParentRoute: () => ApiAdminGlobalAiRoute,
 } as any)
 const ApiAdminGlobalAiKeyRoute = ApiAdminGlobalAiKeyRouteImport.update({
@@ -397,14 +385,12 @@ export interface FileRoutesByFullPath {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
-  '/api/admin/global-ai/reveal': typeof ApiAdminGlobalAiRevealRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
-  '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRoutesByTo {
@@ -455,14 +441,12 @@ export interface FileRoutesByTo {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
-  '/api/admin/global-ai/reveal': typeof ApiAdminGlobalAiRevealRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
-  '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRoutesById {
@@ -514,14 +498,12 @@ export interface FileRoutesById {
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
-  '/api/admin/global-ai/reveal': typeof ApiAdminGlobalAiRevealRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRoute
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
-  '/api/settings/ai/reveal': typeof ApiSettingsAiRevealRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
 }
 export interface FileRouteTypes {
@@ -574,14 +556,12 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
-    | '/api/admin/global-ai/reveal'
     | '/api/admin/global-ai/test'
     | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
-    | '/api/settings/ai/reveal'
     | '/api/settings/ai/test'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -632,14 +612,12 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
-    | '/api/admin/global-ai/reveal'
     | '/api/admin/global-ai/test'
     | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
-    | '/api/settings/ai/reveal'
     | '/api/settings/ai/test'
   id:
     | '__root__'
@@ -690,14 +668,12 @@ export interface FileRouteTypes {
     | '/api/wishlist/$id'
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
-    | '/api/admin/global-ai/reveal'
     | '/api/admin/global-ai/test'
     | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
-    | '/api/settings/ai/reveal'
     | '/api/settings/ai/test'
   fileRoutesById: FileRoutesById
 }
@@ -1069,13 +1045,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSettingsAiTestRouteImport
       parentRoute: typeof ApiSettingsAiRoute
     }
-    '/api/settings/ai/reveal': {
-      id: '/api/settings/ai/reveal'
-      path: '/reveal'
-      fullPath: '/api/settings/ai/reveal'
-      preLoaderRoute: typeof ApiSettingsAiRevealRouteImport
-      parentRoute: typeof ApiSettingsAiRoute
-    }
     '/api/settings/ai/key': {
       id: '/api/settings/ai/key'
       path: '/key'
@@ -1116,13 +1085,6 @@ declare module '@tanstack/react-router' {
       path: '/test'
       fullPath: '/api/admin/global-ai/test'
       preLoaderRoute: typeof ApiAdminGlobalAiTestRouteImport
-      parentRoute: typeof ApiAdminGlobalAiRoute
-    }
-    '/api/admin/global-ai/reveal': {
-      id: '/api/admin/global-ai/reveal'
-      path: '/reveal'
-      fullPath: '/api/admin/global-ai/reveal'
-      preLoaderRoute: typeof ApiAdminGlobalAiRevealRouteImport
       parentRoute: typeof ApiAdminGlobalAiRoute
     }
     '/api/admin/global-ai/key': {
@@ -1226,13 +1188,11 @@ const ApiAdminCategoriesRouteWithChildren =
 
 interface ApiAdminGlobalAiRouteChildren {
   ApiAdminGlobalAiKeyRoute: typeof ApiAdminGlobalAiKeyRoute
-  ApiAdminGlobalAiRevealRoute: typeof ApiAdminGlobalAiRevealRoute
   ApiAdminGlobalAiTestRoute: typeof ApiAdminGlobalAiTestRoute
 }
 
 const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
   ApiAdminGlobalAiKeyRoute: ApiAdminGlobalAiKeyRoute,
-  ApiAdminGlobalAiRevealRoute: ApiAdminGlobalAiRevealRoute,
   ApiAdminGlobalAiTestRoute: ApiAdminGlobalAiTestRoute,
 }
 
@@ -1264,13 +1224,11 @@ const ApiAiConversationsRouteWithChildren =
 
 interface ApiSettingsAiRouteChildren {
   ApiSettingsAiKeyRoute: typeof ApiSettingsAiKeyRoute
-  ApiSettingsAiRevealRoute: typeof ApiSettingsAiRevealRoute
   ApiSettingsAiTestRoute: typeof ApiSettingsAiTestRoute
 }
 
 const ApiSettingsAiRouteChildren: ApiSettingsAiRouteChildren = {
   ApiSettingsAiKeyRoute: ApiSettingsAiKeyRoute,
-  ApiSettingsAiRevealRoute: ApiSettingsAiRevealRoute,
   ApiSettingsAiTestRoute: ApiSettingsAiTestRoute,
 }
 
