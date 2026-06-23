@@ -38,6 +38,8 @@ Rules:
 - Keep subject line concise and imperative (about 50-72 chars when possible)
 - Always include a body with context (not only a one-line subject)
 - Prefer explaining "why" and impact, not just file-level "what"
+- Never add `Co-authored-by`, `Made-with`, or any vendor/tool attribution to commits or PRs
+- Never use `git commit --trailer`; write the full message in `-m` / HEREDOC only
 
 # react + tanstack engineering rules
 

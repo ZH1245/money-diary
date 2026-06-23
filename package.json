@@ -25,7 +25,8 @@
     "issue:bug": "bash scripts/gh-new-issue.sh bug",
     "issue:chore": "bash scripts/gh-new-issue.sh chore",
     "pr:open": "bash scripts/gh-new-pr.sh",
-    "pr:merge": "bash scripts/gh-merge-pr.sh"
+    "pr:merge": "bash scripts/gh-merge-pr.sh",
+    "prepare": "bash scripts/install-git-hooks.sh"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
