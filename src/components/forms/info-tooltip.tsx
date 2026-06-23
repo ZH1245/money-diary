@@ -17,7 +17,7 @@ export function InfoTooltip({ content, label = 'More information' }: InfoTooltip
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="size-6 shrink-0 text-muted-foreground hover:text-foreground"
+            className="size-6 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
             aria-label={label}
           >
             <Info className="size-3.5" />

@@ -1,5 +1,6 @@
 import { Button } from '#/components/ui/button'
 import { toolbarExpandableButtonClass } from '#/components/layout/toolbar-control-styles'
+import { ToolbarTooltip } from '#/components/layout/toolbar-tooltip'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -39,17 +40,20 @@ export function useThemeMode() {
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useThemeMode()
 
+  const tooltipLabel = isDark ? 'Switch to light mode' : 'Switch to dark mode'
+
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      className={toolbarExpandableButtonClass}
-      onClick={toggleTheme}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-    >
-      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      <span className="hidden xl:inline">{isDark ? 'Light' : 'Dark'}</span>
-    </Button>
+    <ToolbarTooltip label={tooltipLabel}>
+      <Button
+        type="button"
+        variant="ghost"
+        className={toolbarExpandableButtonClass}
+        onClick={toggleTheme}
+        aria-label={tooltipLabel}
+      >
+        {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        <span className="hidden xl:inline">{isDark ? 'Light' : 'Dark'}</span>
+      </Button>
+    </ToolbarTooltip>
   )
 }
