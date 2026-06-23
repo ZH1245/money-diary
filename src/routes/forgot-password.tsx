@@ -1,6 +1,7 @@
 import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
 import { FormField } from '#/components/forms/form-field'
+import { SecurityAnswerField } from '#/components/forms/security-answer-field'
 import { AuthFeaturePanel } from '#/components/layout/auth-feature-panel'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
 import { ThemeToggle } from '#/components/layout/theme-toggle'
@@ -207,19 +208,17 @@ function ForgotPasswordPage() {
               </button>
             </form>
           ) : (
-            <form className="mt-6 space-y-4" onSubmit={handleResetSubmit} noValidate>
+            <form className="mt-6 space-y-4" onSubmit={handleResetSubmit} noValidate autoComplete="off">
               <p className="rounded-md border border-border/70 bg-muted/40 px-3 py-2 text-xs opacity-80">
                 Account: {email}
                 {challenge.recoveryEmailHint ? ` · Recovery email on file: ${challenge.recoveryEmailHint}` : null}
               </p>
 
-              <FormField
+              <SecurityAnswerField
                 id="answer-one"
                 label={challenge.questionOneLabel ?? 'Security answer'}
-                type="password"
                 value={answerOne}
                 onChange={setAnswerOne}
-                placeholder="Your answer"
                 error={fieldErrors.answerOne}
                 isDisabled={isSubmitting}
               />
@@ -232,6 +231,7 @@ function ForgotPasswordPage() {
                 placeholder="At least 8 characters"
                 error={fieldErrors.newPassword}
                 isDisabled={isSubmitting}
+                autoComplete="new-password"
               />
               <FormField
                 id="confirm-password"
@@ -242,6 +242,7 @@ function ForgotPasswordPage() {
                 placeholder="Repeat new password"
                 error={fieldErrors.confirmPassword}
                 isDisabled={isSubmitting}
+                autoComplete="new-password"
               />
 
               {errorMessage ? <InlineError message={errorMessage} /> : null}

@@ -57,7 +57,7 @@ export function SecuritySetupForm() {
   }
 
   return (
-    <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
+    <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate autoComplete="off">
       <SecurityProfileFields
         values={form}
         fieldErrors={fieldErrors}

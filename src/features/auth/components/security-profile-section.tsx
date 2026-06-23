@@ -120,7 +120,7 @@ export function SecurityProfileSection() {
           Loading recovery settings...
         </p>
       ) : (
-        <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-4 space-y-4" onSubmit={handleSubmit} autoComplete="off">
           {hasProfile ? (
             <FormField
               id="recovery-current-password"
@@ -130,6 +130,7 @@ export function SecurityProfileSection() {
               onChange={setCurrentPassword}
               placeholder="Required to update recovery settings"
               isDisabled={isSubmitting}
+              autoComplete="current-password"
             />
           ) : null}
 

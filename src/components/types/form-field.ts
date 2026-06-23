@@ -14,4 +14,7 @@ export interface FormFieldProps {
   onChange: (value: string) => void
   rightElement?: ReactNode
   isDisabled?: boolean
+  autoComplete?: string
+  name?: string
+  spellCheck?: boolean
 }
