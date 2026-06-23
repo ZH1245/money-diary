@@ -40,6 +40,7 @@ export const Route = createFileRoute('/api/auth/change-password')({
           userId: userContext.id,
           currentPassword: parsed.data.currentPassword,
           newPassword: parsed.data.newPassword,
+          recoveryEmail: parsed.data.recoveryEmail,
           answerOne: parsed.data.answerOne,
         })
 
@@ -47,16 +48,16 @@ export const Route = createFileRoute('/api/auth/change-password')({
           return Response.json({ success: false, error: 'Current password is incorrect' }, { status: 403 })
         }
 
-        if (result === 'security_answers_required') {
+        if (result === 'recovery_verification_required') {
           return Response.json(
-            { success: false, error: 'Answer your security question to change your password' },
+            { success: false, error: 'Enter your recovery email and security answer' },
             { status: 400 },
           )
         }
 
-        if (result === 'invalid_security_answers') {
+        if (result === 'invalid_recovery_verification') {
           return Response.json(
-            { success: false, error: 'Security answer is incorrect. Try again.' },
+            { success: false, error: 'Recovery verification failed. Check your details and try again.' },
             { status: 403 },
           )
         }

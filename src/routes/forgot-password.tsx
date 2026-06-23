@@ -15,31 +15,24 @@ export const Route = createFileRoute('/forgot-password')({
   component: ForgotPasswordPage,
 })
 
-const emailSchema = z.object({
-  email: z.string().email('Enter a valid email address'),
-})
-
-const resetSchema = z.object({
-  answerOne: z.string().trim().min(2, 'Answer is required'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(8, 'Confirm your password'),
-}).refine((values) => values.newPassword === values.confirmPassword, {
-  message: 'Passwords must match',
-  path: ['confirmPassword'],
-})
-
-interface RecoveryChallenge {
-  available: boolean
-  message?: string
-  questionOneLabel?: string
-  recoveryEmailHint?: string | null
-}
+const resetSchema = z
+  .object({
+    email: z.string().trim().email('Enter a valid account email'),
+    recoveryEmail: z.string().trim().email('Enter a valid recovery email'),
+    answerOne: z.string().trim().min(2, 'Security answer is required'),
+    newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(8, 'Confirm your password'),
+  })
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    message: 'Passwords must match',
+    path: ['confirmPassword'],
+  })
 
 function ForgotPasswordPage() {
   const navigate = useNavigate()
   const { data: session } = authClient.useSession()
   const [email, setEmail] = useState('')
-  const [challenge, setChallenge] = useState<RecoveryChallenge | null>(null)
+  const [recoveryEmail, setRecoveryEmail] = useState('')
   const [answerOne, setAnswerOne] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -51,52 +44,14 @@ function ForgotPasswordPage() {
     return <Navigate to="/" />
   }
 
-  async function handleChallengeSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setErrorMessage(null)
-    setFieldErrors({})
-
-    const parsed = emailSchema.safeParse({ email })
-    if (!parsed.success) {
-      setFieldErrors({ email: parsed.error.issues[0]?.message ?? 'Invalid email' })
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      const response = await fetch('/api/auth/recovery/challenge', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: parsed.data.email }),
-      })
-
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: RecoveryChallenge
-      } | null
-
-      if (!response.ok || !payload?.success || !payload.data) {
-        throw new Error(payload?.error ?? 'Unable to start password recovery')
-      }
-
-      setChallenge(payload.data)
-      if (!payload.data.available) {
-        setErrorMessage(payload.data.message ?? 'Recovery is not available for this email.')
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to start password recovery')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   async function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage(null)
     setFieldErrors({})
 
     const parsed = resetSchema.safeParse({
+      email,
+      recoveryEmail,
       answerOne,
       newPassword,
       confirmPassword,
@@ -120,7 +75,8 @@ function ForgotPasswordPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          email,
+          email: parsed.data.email,
+          recoveryEmail: parsed.data.recoveryEmail,
           answerOne: parsed.data.answerOne,
           newPassword: parsed.data.newPassword,
         }),
@@ -150,13 +106,13 @@ function ForgotPasswordPage() {
         <AuthFeaturePanel
           kicker="Money Diary"
           title="Recover your account."
-          description="Answer your security question to set a new password. Email verification codes are coming in a later phase."
-          tags={['Recovery email', 'Security question', 'Private recovery']}
+          description="Enter the recovery details you chose during setup. Nothing is emailed — we only verify what you type."
+          tags={['Private recovery', 'Security answer', 'No email codes']}
           features={[
             {
               icon: CheckCircle2,
-              title: 'Question-based reset',
-              description: 'Use the answer you chose when setting up account recovery.',
+              title: 'Private verification',
+              description: 'Your recovery email and answer are checked silently on the server.',
             },
             {
               icon: Clock3,
@@ -165,8 +121,8 @@ function ForgotPasswordPage() {
             },
             {
               icon: FileText,
-              title: 'Future OTP support',
-              description: 'Recovery email verification will be added without changing your answers.',
+              title: 'Same recovery setup',
+              description: 'Use the recovery email and answer from your account setup.',
             },
           ]}
         />
@@ -178,85 +134,73 @@ function ForgotPasswordPage() {
             <ThemeToggle />
           </div>
           <p className="mt-2 text-sm opacity-80">
-            {challenge?.available
-              ? 'Answer your security question and choose a new password.'
-              : 'Enter your account email to load your recovery question.'}
+            Enter your account email, recovery email, security answer, and a new password.
           </p>
 
-          {!challenge?.available ? (
-            <form className="mt-6 space-y-4" onSubmit={handleChallengeSubmit} noValidate>
-              <FormField
-                id="recovery-email"
-                label="Account email"
-                type="email"
-                value={email}
-                onChange={setEmail}
-                placeholder="you@example.com"
-                error={fieldErrors.email}
-                isDisabled={isSubmitting}
-              />
+          <form className="mt-6 space-y-4" onSubmit={handleResetSubmit} noValidate autoComplete="off">
+            <FormField
+              id="account-email"
+              label="Account email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              error={fieldErrors.email}
+              isDisabled={isSubmitting}
+            />
+            <FormField
+              id="recovery-email"
+              label="Recovery email"
+              type="email"
+              value={recoveryEmail}
+              onChange={setRecoveryEmail}
+              placeholder="Recovery email you set up"
+              error={fieldErrors.recoveryEmail}
+              isDisabled={isSubmitting}
+              autoComplete="off"
+            />
+            <SecurityAnswerField
+              id="answer-one"
+              label="Security answer"
+              value={answerOne}
+              onChange={setAnswerOne}
+              error={fieldErrors.answerOne}
+              isDisabled={isSubmitting}
+            />
+            <FormField
+              id="new-password"
+              label="New password"
+              type="password"
+              value={newPassword}
+              onChange={setNewPassword}
+              placeholder="At least 8 characters"
+              error={fieldErrors.newPassword}
+              isDisabled={isSubmitting}
+              autoComplete="new-password"
+            />
+            <FormField
+              id="confirm-password"
+              label="Confirm password"
+              type="password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              placeholder="Repeat new password"
+              error={fieldErrors.confirmPassword}
+              isDisabled={isSubmitting}
+              autoComplete="new-password"
+            />
 
-              {errorMessage ? <InlineError message={errorMessage} /> : null}
+            {errorMessage ? <InlineError message={errorMessage} /> : null}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Continue
-              </button>
-            </form>
-          ) : (
-            <form className="mt-6 space-y-4" onSubmit={handleResetSubmit} noValidate autoComplete="off">
-              <p className="rounded-md border border-border/70 bg-muted/40 px-3 py-2 text-xs opacity-80">
-                Account: {email}
-                {challenge.recoveryEmailHint ? ` · Recovery email on file: ${challenge.recoveryEmailHint}` : null}
-              </p>
-
-              <SecurityAnswerField
-                id="answer-one"
-                label={challenge.questionOneLabel ?? 'Security answer'}
-                value={answerOne}
-                onChange={setAnswerOne}
-                error={fieldErrors.answerOne}
-                isDisabled={isSubmitting}
-              />
-              <FormField
-                id="new-password"
-                label="New password"
-                type="password"
-                value={newPassword}
-                onChange={setNewPassword}
-                placeholder="At least 8 characters"
-                error={fieldErrors.newPassword}
-                isDisabled={isSubmitting}
-                autoComplete="new-password"
-              />
-              <FormField
-                id="confirm-password"
-                label="Confirm password"
-                type="password"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                placeholder="Repeat new password"
-                error={fieldErrors.confirmPassword}
-                isDisabled={isSubmitting}
-                autoComplete="new-password"
-              />
-
-              {errorMessage ? <InlineError message={errorMessage} /> : null}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Reset password
-              </button>
-            </form>
-          )}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Reset password
+            </button>
+          </form>
 
           <p className="mt-5 text-sm opacity-80">
             <Link to="/sign-in" className="font-medium underline underline-offset-4">

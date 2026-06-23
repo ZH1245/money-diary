@@ -37,6 +37,7 @@ export const Route = createFileRoute('/api/auth/recovery/reset')({
 
         const result = await resetPasswordWithSecurityAnswers({
           email: parsed.data.email.toLowerCase(),
+          recoveryEmail: parsed.data.recoveryEmail,
           answerOne: parsed.data.answerOne,
           newPassword: parsed.data.newPassword,
         })

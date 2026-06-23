@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   createSecurityProfile,
-  getSecurityProfileForUser,
+  getSecurityProfileStatusForUser,
   updateSecurityProfile,
   verifyUserCurrentPassword,
 } from '#/features/auth/server/user-security-repository'
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
 
-        const profile = await getSecurityProfileForUser(userContext.id)
+        const profile = await getSecurityProfileStatusForUser(userContext.id)
         return Response.json({
           success: true,
           data: profile,
@@ -65,7 +65,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
             answerOne: parsed.data.answerOne,
           })
 
-          const profile = await getSecurityProfileForUser(userContext.id)
+          const profile = await getSecurityProfileStatusForUser(userContext.id)
           return Response.json({ success: true, data: profile }, { status: 201 })
         } catch (error) {
           if (error instanceof RecoveryEmailInUseError) {
@@ -125,7 +125,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
             answerOne: parsed.data.answerOne,
           })
 
-          const profile = await getSecurityProfileForUser(userContext.id)
+          const profile = await getSecurityProfileStatusForUser(userContext.id)
           return Response.json({ success: true, data: profile })
         } catch (error) {
           if (error instanceof RecoveryEmailInUseError) {
