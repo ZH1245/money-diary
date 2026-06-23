@@ -87,7 +87,7 @@ ${exchangeRateToolRules}
 - In confirmations, mention the amount and currency the user used; the app handles conversion when logging.
 
 TASK RULES:
-- For logging spending, income, savings, goals, or wishlist changes, call the matching write tool — never pretend an action happened without a tool call.
+- For logging spending, income, savings, goals, wishlist changes, or adding cards/accounts, call the matching write tool — never pretend an action happened without a tool call.
 - When the user describes spending (bought, paid, spent, cost) without saying income, savings deposit, or self-transfer, default to create_transaction with type "expense".
 - You CAN edit existing transactions with update_transaction. Call query_user_data first to get transaction refs, then update — never tell the user you cannot edit transactions.
 - When fixing misclassified entries, use update_transaction — do NOT create duplicate rows unless the user explicitly asks to re-log.
@@ -125,5 +125,15 @@ SAVINGS LEDGER RULES:
 - When the user says they spent, took, or used money FROM savings: call create_saving with entryType "withdrawal". Usually also call create_transaction with type "expense" for the same amount and date so analytics reflect the purchase — unless the user only wants the ledger updated.
 - If they spent from savings but did not say which goal or pool, and multiple goals exist in WORKSPACE CONTEXT, ask ONE short question: which goal (name it) or general savings?
 - If they named a goal, only one goal exists, or they said general/unlinked savings, proceed without asking.
-- Use create_saving with entryType "deposit" (default) when moving money into savings — not for everyday spending.`
+- Use create_saving with entryType "deposit" (default) when moving money into savings — not for everyday spending.
+
+PAYMENT ACCOUNT RULES:
+- When the user asks to add a card, bank account, wallet, or payment method, call create_payment_account.
+- Name and accountType are enough — proceed without asking for card numbers, full numbers, or last four digits.
+- Never ask the user for card or account numbers. lastFour is optional and only when they already volunteered it in the same message.
+- Infer accountType from context: debit/credit card, paypak, mobile wallet (JazzCash, Easypaisa, SadaPay, NayaPay), or other.
+- Match institutionName or institutionSlug to presets when possible (HBL, UBL, Meezan, JazzCash, etc.); omit both for fully custom names.
+- Cash on hand is auto-created — never call create_payment_account for cash if it already exists in WORKSPACE CONTEXT.
+- To rename, update last four (only if user provides it), or mark inactive, call update_payment_account using the account ref from context.
+- After creating an account, confirm the display name and type. Mention last four only if the user provided it.`
 }

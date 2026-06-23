@@ -16,6 +16,10 @@ export interface PasswordFieldProps {
   onChange: (value: string) => void
   isDisabled?: boolean
   autoComplete?: PasswordAutoComplete
+  hasStoredValue?: boolean
+  onRequestReveal?: () => void | Promise<void>
+  isRevealPending?: boolean
+  onHideStoredValue?: () => void
 }
 
 /** Labeled password input with a show/hide visibility toggle. */
@@ -29,11 +33,31 @@ export function PasswordField({
   onChange,
   isDisabled = false,
   autoComplete = 'current-password',
+  hasStoredValue = false,
+  onRequestReveal,
+  isRevealPending = false,
+  onHideStoredValue,
 }: PasswordFieldProps) {
   const [isVisible, setIsVisible] = useState(false)
 
-  function handleToggleVisibility() {
-    setIsVisible((previous) => !previous)
+  async function handleToggleVisibility() {
+    if (isVisible) {
+      onHideStoredValue?.()
+      setIsVisible(false)
+      return
+    }
+
+    if (!value.trim() && hasStoredValue && onRequestReveal) {
+      try {
+        await onRequestReveal()
+        setIsVisible(true)
+      } catch {
+        setIsVisible(false)
+      }
+      return
+    }
+
+    setIsVisible(true)
   }
 
   return (
@@ -66,12 +90,18 @@ export function PasswordField({
           variant="ghost"
           size="icon-sm"
           className="absolute top-1/2 right-1 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          onClick={handleToggleVisibility}
-          disabled={isDisabled}
+          onClick={() => void handleToggleVisibility()}
+          disabled={isDisabled || isRevealPending}
           aria-label={isVisible ? 'Hide password' : 'Show password'}
           aria-pressed={isVisible}
         >
-          {isVisible ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+          {isRevealPending ? (
+            <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+          ) : isVisible ? (
+            <EyeOff aria-hidden />
+          ) : (
+            <Eye aria-hidden />
+          )}
         </Button>
       </div>
       {error ? (

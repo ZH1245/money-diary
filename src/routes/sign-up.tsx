@@ -1,21 +1,15 @@
 import { authClient } from '#/lib/auth-client'
 import { InlineError } from '#/components/feedback/inline-error'
 import { FormField } from '#/components/forms/form-field'
+import { SearchableSelect } from '#/components/forms/searchable-select'
 import { AuthFeaturePanel } from '#/components/layout/auth-feature-panel'
 import { AuthSplitLayout } from '#/components/layout/auth-split-layout'
 import { ThemeToggle } from '#/components/layout/theme-toggle'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { AuthenticatedEntryRedirect } from '#/features/auth/components/authenticated-entry-redirect'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { BarChart3, Loader2, MessageSquare, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -44,6 +38,14 @@ function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const currencyOptions = useMemo(
+    () =>
+      SUPPORTED_CURRENCIES.map((currencyOption) => ({
+        value: currencyOption.code,
+        label: currencyOption.label,
+      })),
+    [],
+  )
 
   if (session?.user) {
     return <AuthenticatedEntryRedirect />
@@ -210,22 +212,17 @@ function SignUpPage() {
               <label htmlFor="currency" className="mb-1 block text-sm font-medium">
                 Preferred currency
               </label>
-              <Select
+              <SearchableSelect
+                id="currency"
                 value={currency}
                 onValueChange={handleCurrencyChange}
+                options={currencyOptions}
+                placeholder="Select currency"
+                searchPlaceholder="Search currencies..."
+                emptyMessage="No currencies found."
                 disabled={isSubmitting}
-              >
-                <SelectTrigger id="currency" className="h-10 w-full">
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_CURRENCIES.map((currencyOption) => (
-                    <SelectItem key={currencyOption.code} value={currencyOption.code}>
-                      {currencyOption.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                triggerClassName="h-10"
+              />
               {fieldErrors.currency ? (
                 <p className="mt-1 text-xs text-red-600 animate-in fade-in slide-in-from-top-1 duration-200">
                   {fieldErrors.currency}

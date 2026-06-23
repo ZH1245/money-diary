@@ -19,6 +19,10 @@ export function FormField({
   autoComplete,
   name,
   spellCheck,
+  hasStoredValue,
+  onRequestReveal,
+  isRevealPending,
+  onHideStoredValue,
 }: FormFieldProps) {
   if (type === 'password') {
     return (
@@ -32,6 +36,10 @@ export function FormField({
         onChange={onChange}
         isDisabled={isDisabled}
         autoComplete={(autoComplete as PasswordAutoComplete | undefined) ?? 'current-password'}
+        hasStoredValue={hasStoredValue}
+        onRequestReveal={onRequestReveal}
+        isRevealPending={isRevealPending}
+        onHideStoredValue={onHideStoredValue}
       />
     )
   }

@@ -2,20 +2,14 @@ import { useAuthSession } from '#/lib/use-auth-session'
 import { InlineError } from '#/components/feedback/inline-error'
 import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
 import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
+import { SearchableSelect } from '#/components/forms/searchable-select'
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '#/lib/currency'
 import { AiSettingsSection } from '#/features/settings/components/ai-settings-section'
 import { ChangePasswordSection } from '#/features/auth/components/change-password-section'
 import { SecurityProfileSection } from '#/features/auth/components/security-profile-section'
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -33,6 +27,14 @@ function SettingsPage() {
   const [isCurrencySubmitting, setIsCurrencySubmitting] = useState(false)
   const [currencyError, setCurrencyError] = useState<string | null>(null)
   const selectedCurrency = ((session?.user as { currency?: string } | undefined)?.currency ?? DEFAULT_CURRENCY).toUpperCase()
+  const currencyOptions = useMemo(
+    () =>
+      SUPPORTED_CURRENCIES.map((currencyOption) => ({
+        value: currencyOption.code,
+        label: currencyOption.label,
+      })),
+    [],
+  )
 
   useEffect(() => {
     if (!session?.user) return
@@ -127,22 +129,17 @@ function SettingsPage() {
                   <label htmlFor="currency" className="mb-1 block text-sm font-medium">
                     Currency
                   </label>
-                  <Select
+                  <SearchableSelect
+                    id="currency"
                     value={currency}
                     onValueChange={setCurrency}
+                    options={currencyOptions}
+                    placeholder="Select currency"
+                    searchPlaceholder="Search currencies..."
+                    emptyMessage="No currencies found."
                     disabled={isCurrencySubmitting}
-                  >
-                    <SelectTrigger id="currency" className="h-10 w-full">
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUPPORTED_CURRENCIES.map((currencyOption) => (
-                        <SelectItem key={currencyOption.code} value={currencyOption.code}>
-                          {currencyOption.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    triggerClassName="h-10"
+                  />
                 </div>
 
                 {currencyError ? <InlineError message={currencyError} /> : null}

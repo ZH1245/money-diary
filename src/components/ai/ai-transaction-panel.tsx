@@ -56,6 +56,8 @@ const ACTION_LABELS: Record<string, string> = {
   create_transaction: 'Transaction',
   update_transaction: 'Transaction updated',
   create_saving: 'Saving',
+  create_payment_account: 'Account',
+  update_payment_account: 'Account updated',
   create_goal: 'Goal',
   create_wishlist_item: 'Wishlist item',
   update_wishlist_item: 'Wishlist updated',
@@ -70,7 +72,7 @@ const ACTION_LABELS: Record<string, string> = {
 const EXAMPLES = [
   'Spent 2500 on groceries yesterday',
   'Got salary of 85000 today',
-  'Saved 10000 toward my goal',
+  'Add my HBL debit card',
 ]
 
 /**

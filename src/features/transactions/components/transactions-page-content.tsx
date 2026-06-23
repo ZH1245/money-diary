@@ -1,5 +1,6 @@
 import { Button } from '#/components/ui/button'
 import { DatePickerField } from '#/components/ui/date-picker'
+import { SearchableSelect } from '#/components/forms/searchable-select'
 import { Input } from '#/components/ui/input'
 import {
   Select,
@@ -105,6 +106,14 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
   const tableRows = useMemo(
     () => buildTransactionTableRows(filteredTransactions, paymentAccounts, categories),
     [filteredTransactions, paymentAccounts, categories],
+  )
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        value: String(category.id),
+        label: category.name,
+      })),
+    [categories],
   )
 
   const handleDeleteTransaction = useCallback(
@@ -436,21 +445,14 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
                             Manage
                           </Link>
                         </div>
-                        <Select
+                        <SearchableSelect
                           value={createForm.categoryId}
                           onValueChange={(value) => setCreateForm((state) => ({ ...state, categoryId: value }))}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={String(category.id)}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={categoryOptions}
+                          placeholder="Select category"
+                          searchPlaceholder="Search categories..."
+                          emptyMessage="No categories found."
+                        />
                       </div>
                     ) : null}
                   </div>
