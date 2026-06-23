@@ -23,8 +23,22 @@ export const Route = createFileRoute('/api/savings')({
         const userIdRejected = rejectClientSuppliedUserId(request)
         if (userIdRejected) return userIdRejected
 
-        const rows = await getUserSavings(userContext.id)
-        return Response.json({ success: true, data: rows })
+        try {
+          const rows = await getUserSavings(userContext.id)
+          return Response.json({ success: true, data: rows })
+        } catch (error) {
+          console.error('[GET /api/savings]', error)
+          return Response.json(
+            {
+              success: false,
+              error:
+                error instanceof Error && /entry_type/i.test(error.message)
+                  ? 'Savings schema is out of date. Run database migration 0024_savings_entry_type.'
+                  : 'Unable to load savings',
+            },
+            { status: 500 },
+          )
+        }
       },
       POST: async ({ request }) => {
         const blockedResponse = guardApiRequest(request)

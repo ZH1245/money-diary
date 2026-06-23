@@ -162,6 +162,13 @@
       "when": 1782584000000,
       "tag": "0023_unique_recovery_email",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1782684000000,
+      "tag": "0024_savings_entry_type",
+      "breakpoints": true
     }
   ]
 }
