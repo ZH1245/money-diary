@@ -39,11 +39,16 @@
 - `Saving`
   - `id`
   - `title`
-  - `amount`
+  - `amount` (always positive; sign from entry type)
+  - `entryType` (`deposit` | `withdrawal`) — deposit = into savings, withdrawal = out of savings
   - `savedAt`
   - `goalId` (optional)
   - `paymentAccountId` (optional)
   - `note`
+
+**Ledger math**
+- Net saved = sum of deposits minus withdrawals (`getSavingLedgerDelta`).
+- Linked payment account: deposit decreases balance; withdrawal increases balance.
 
 **Routes**
 - `/savings`
@@ -172,10 +177,17 @@
 - AI side panel UI and `/api/ai/chat` tool orchestration.
 
 **Supported tools**
-- `create_transaction`
-- `create_saving`
-- `create_goal`
-- `create_wishlist_item`
+- `query_user_data`
+- `create_transaction`, `update_transaction`, `delete_transaction`
+- `create_saving` (`entryType`: deposit | withdrawal)
+- `create_goal`, `update_goal`, `delete_goal`
+- `create_wishlist_item`, `update_wishlist_item`, `delete_wishlist_item`
+- `get_exchange_rate` (when local/offline model path enables it)
+
+**Behavior highlights**
+- Unspecified spending → log expense transaction.
+- "From savings" → savings withdrawal (+ usually matching expense).
+- Self-transfer vs paying someone else → see `docs/domain-knowledge.md`.
 
 **Security model**
 - Session-authenticated API only
@@ -194,3 +206,8 @@
 - Virtualized tables (`@tanstack/react-virtual`) with internal scroll
 - Query key invalidation strategy in `src/features/query-keys.ts`
 - Better Auth session model with user-scoped data access
+
+## Agent documentation
+
+- [AI agent reference](./ai-agent-reference.md) — stack, AI architecture, delivery checklist
+- [Domain knowledge](./domain-knowledge.md) — business rules and entity semantics

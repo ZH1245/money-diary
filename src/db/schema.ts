@@ -120,6 +120,7 @@ export const savings = pgTable('savings', {
   }),
   title: text().notNull(),
   amount: text().notNull(),
+  entryType: text('entry_type').notNull().default('deposit'),
   note: text(),
   savedAt: timestamp('saved_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

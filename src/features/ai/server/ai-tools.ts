@@ -35,7 +35,7 @@ export const AI_TOOLS = [
     function: {
       name: 'create_transaction',
       description:
-        'Log a new income, expense, or self-transfer transaction. Do NOT use for bulk fixes — use update_transaction to correct existing rows. For any payment to another person, use type expense (not transfer). Ask the user before logging anything as transfer.',
+        'Log a new income, expense, or self-transfer transaction. Default to expense when the user describes spending without specifying income, savings deposit, or self-transfer. Do NOT use for bulk fixes — use update_transaction to correct existing rows. For any payment to another person, use type expense (not transfer). Ask the user before logging anything as transfer.',
       parameters: {
         type: 'object',
         required: ['title', 'amount', 'type'],
@@ -101,16 +101,22 @@ export const AI_TOOLS = [
     type: 'function',
     function: {
       name: 'create_saving',
-      description: 'Record money moved into savings.',
+      description:
+        'Record money moved into savings (deposit) or spent/withdrawn from savings (withdrawal). Use withdrawal only when the user explicitly says the money came from savings.',
       parameters: {
         type: 'object',
         required: ['title', 'amount'],
         properties: {
           title: { type: 'string' },
           amount: { type: 'number' },
+          entryType: {
+            type: 'string',
+            enum: ['deposit', 'withdrawal'],
+            description: 'deposit = money into savings (default). withdrawal = money spent or taken from savings.',
+          },
           date: { type: 'string', description: 'YYYY-MM-DD when saved. Omit to use today.' },
           goalId: { type: 'integer', description: 'Goal id to link to, or omit' },
-          paymentAccountId: { type: 'integer', description: 'Account id or omit' },
+          paymentAccountId: { type: 'integer', description: 'Source account for deposits or destination for withdrawals, or omit' },
           note: { type: 'string' },
         },
       },
