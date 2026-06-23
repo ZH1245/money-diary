@@ -10,6 +10,7 @@ import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/react'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
+import { ServiceWorkerRegistration } from '#/components/pwa/service-worker-registration'
 
 import appCss from '../styles.css?url'
 
@@ -28,11 +29,47 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         title: 'Money Diary',
       },
+      {
+        name: 'description',
+        content: 'Track income, expenses, savings, and financial goals.',
+      },
+      {
+        name: 'theme-color',
+        content: '#2563eb',
+      },
+      {
+        name: 'mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-status-bar-style',
+        content: 'default',
+      },
+      {
+        name: 'apple-mobile-web-app-title',
+        content: 'Money Diary',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
+      },
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/logo192.png',
       },
     ],
   }),
@@ -57,6 +94,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           {children}
         </div>
         <Toaster richColors position="top-right" closeButton />
+        <ServiceWorkerRegistration />
         <Analytics />
         <TanStackDevtools
           config={{
