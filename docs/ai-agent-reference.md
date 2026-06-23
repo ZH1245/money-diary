@@ -99,8 +99,15 @@ Prompt source of truth: `buildSecureSystemPrompt()` in `ai-prompt-builder.ts`. D
 
 - Legal docs are **not** embedded in the system prompt; users are directed to `/privacy` and `/terms`.
 - History is bounded in SQL (recent messages only).
-- `OPENROUTER_MAX_OUTPUT_TOKENS` capped (see `openrouter-defaults.ts`).
+- `OPENROUTER_MAX_OUTPUT_TOKENS` capped for normal chat; **bulk paste** raises output tokens and tool-chain steps automatically.
 - `query_user_data` returns truncated lists with full-set aggregate lines.
+
+### Bulk paste in chat
+
+- Multi-row pasted lists (4+ lines, multiple amounts) allow up to **10,000** characters per message.
+- Server detects bulk paste and widens tool-chain rounds and model output budget for that turn only.
+- One transfer clarification applies to the **whole** paste when bulk mode is active.
+- User can say **continue** to process remaining rows after a batch limit.
 
 ## Savings implementation map
 

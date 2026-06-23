@@ -103,6 +103,8 @@ export function recordAbuseStrike(userId: string): AiSecurityCheckResult {
   }
 }
 
+import { getMessageContentCharLimit } from '#/features/ai/utils/ai-bulk-paste'
+
 /**
  * Validates incoming chat messages before they reach the model.
  */
@@ -114,8 +116,15 @@ export function validateChatMessages(messages: Array<{ role: string; content: st
     return { allowed: false, reason: 'A user message is required.' }
   }
 
-  if (lastUserMessage.content.length > 1200) {
-    return { allowed: false, reason: 'Message is too long.' }
+  const charLimit = getMessageContentCharLimit(lastUserMessage.content)
+  if (lastUserMessage.content.length > charLimit) {
+    return {
+      allowed: false,
+      reason:
+        charLimit > 1200
+          ? `Pasted list is too long (max ${charLimit.toLocaleString()} characters). Split into smaller chunks.`
+          : 'Message is too long.',
+    }
   }
 
   if (detectPromptInjection(lastUserMessage.content)) {
