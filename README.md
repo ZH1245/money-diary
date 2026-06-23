@@ -92,4 +92,7 @@ pnpm db:studio
 
 ## References
 
+- [AI agent reference](./docs/ai-agent-reference.md)
+- [Domain knowledge](./docs/domain-knowledge.md)
+- [Feature modules](./docs/feature-modules.md)
 - [TanStack Start docs](https://tanstack.com/start/latest)
