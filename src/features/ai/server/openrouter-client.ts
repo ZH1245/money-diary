@@ -3,6 +3,7 @@ import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-e
 import {
   OPENROUTER_DEFAULT_BASE_URL,
   OPENROUTER_DEFAULT_MODEL,
+  OPENROUTER_MAX_OUTPUT_TOKENS,
 } from '#/features/settings/constants/openrouter-defaults'
 
 export const DEFAULT_OPENROUTER_BASE_URL = OPENROUTER_DEFAULT_BASE_URL
@@ -308,7 +309,7 @@ export async function callOpenRouterChat({
     tools: toOpenRouterTools(tools),
     tool_choice: 'auto' as const,
     temperature: 0.3,
-    max_tokens: 4096,
+    max_tokens: OPENROUTER_MAX_OUTPUT_TOKENS,
     provider: {
       require_parameters: true,
       allow_fallbacks: true,
