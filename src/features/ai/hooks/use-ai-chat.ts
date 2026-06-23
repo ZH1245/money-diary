@@ -44,11 +44,37 @@ async function postAiChat(input: AiChatRequest): Promise<AiChatResponse> {
     body: JSON.stringify(input),
   })
 
-  const json = (await response.json()) as AiChatResponse
-  // Conversation may already exist even when Ollama fails — still return id for store sync.
-  if (!response.ok && !json.conversationId && json.action !== 'clarification') {
-    throw new Error(json.error ?? 'AI chat request failed')
+  const json = (await response.json().catch(() => ({}))) as AiChatResponse & {
+    message?: string
+    unhandled?: boolean
   }
+
+  if (!response.ok) {
+    const errorMessage =
+      json.error ??
+      (json.message === 'HTTPError'
+        ? 'The AI service is temporarily unavailable. Try again in a moment.'
+        : typeof json.message === 'string' && json.message.trim()
+          ? json.message
+          : 'AI chat request failed')
+
+    if (json.conversationId) {
+      return {
+        success: false,
+        conversationId: json.conversationId,
+        action: 'provider_error',
+        error: errorMessage,
+        message: errorMessage,
+      }
+    }
+
+    if (json.action === 'clarification') {
+      return json
+    }
+
+    throw new Error(errorMessage)
+  }
+
   return json
 }
 

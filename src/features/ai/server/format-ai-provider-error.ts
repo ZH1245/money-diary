@@ -18,6 +18,13 @@ export function formatAiProviderError(raw: string, provider?: string): string {
     return `${providerName} is busy right now — too many requests for this model. Wait a minute and try again, or switch to another model in Settings → AI Provider (e.g. gemini-2.0-flash-lite).`
   }
 
+  if (/insufficient credits|requires more credits|can only afford|payment required|\b402\b/i.test(normalized)) {
+    if (providerName === 'OpenRouter') {
+      return 'Your OpenRouter credits are used up. Add credits at openrouter.ai/settings/credits or switch to a free model in Settings → AI Provider.'
+    }
+    return `Your ${providerName} credits are used up. Check billing or switch models in Settings → AI Provider.`
+  }
+
   if (/quota|rate limit|resource exhausted|too many requests/i.test(normalized)) {
     const retryMatch = normalized.match(/retry in ([\d.]+)s/i)
     const retrySeconds = retryMatch ? Math.ceil(Number.parseFloat(retryMatch[1])) : null
@@ -41,7 +48,7 @@ export function formatAiProviderError(raw: string, provider?: string): string {
     return `Your ${providerName} API key looks invalid or expired. Update it in Settings → AI Provider.`
   }
 
-  if (/could not reach|connection timed out|econnrefused|network/i.test(normalized)) {
+  if (/could not reach|connection timed out|econnrefused|network|httperror|fetch failed/i.test(normalized)) {
     return `${providerName} could not be reached. Check your connection settings and try again.`
   }
 
@@ -70,4 +77,17 @@ export function formatAiProviderError(raw: string, provider?: string): string {
   }
 
   return withoutPrefix
+}
+
+/**
+ * Maps thrown server errors (DB, network) into user-facing chat text.
+ */
+export function resolveUnexpectedChatError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : 'AI chat request failed'
+  if (/HTTPError|fetch failed|Failed query|ECONNREFUSED|ECONNRESET/i.test(raw)) {
+    return formatAiProviderError(
+      'Could not reach the database or AI service. Try again in a moment.',
+    )
+  }
+  return formatAiProviderError(raw)
 }

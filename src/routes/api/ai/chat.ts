@@ -19,7 +19,7 @@ import {
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
 import { sanitizeAssistantUserFacingMessage } from '#/features/ai/server/ai-security'
-import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
+import { formatAiProviderError, resolveUnexpectedChatError } from '#/features/ai/server/format-ai-provider-error'
 
 export const Route = createFileRoute('/api/ai/chat')({
   server: {
@@ -51,6 +51,7 @@ export const Route = createFileRoute('/api/ai/chat')({
         const { message } = parsed.data
         let conversationId = parsed.data.conversationId
 
+        try {
         if (conversationId) {
           const existing = await getUserAiConversation({
             userId: userContext.id,
@@ -154,6 +155,10 @@ export const Route = createFileRoute('/api/ai/chat')({
           return Response.json(responseBody, { status: 403 })
         }
 
+        if (result.action === 'provider_error' || (!result.success && userFacingError)) {
+          return Response.json(responseBody, { status: 200 })
+        }
+
         if (!result.success && result.error && /Ollama|Gemini/.test(result.error)) {
           return Response.json(responseBody, {
             status: result.error.includes('Could not reach') ? 503 : 502,
@@ -164,6 +169,35 @@ export const Route = createFileRoute('/api/ai/chat')({
         const status = hasWrites ? 201 : 200
 
         return Response.json(responseBody, { status })
+        } catch (error) {
+          console.error('[api/ai/chat]', error)
+          const userFacingError = resolveUnexpectedChatError(error)
+
+          if (conversationId) {
+            try {
+              await appendAiConversationMessage({
+                userId: userContext.id,
+                conversationId,
+                role: 'assistant',
+                content: sanitizeAssistantUserFacingMessage(userFacingError),
+                metadata: { action: 'provider_error', ok: false },
+              })
+            } catch (persistError) {
+              console.error('[api/ai/chat] failed to persist assistant error', persistError)
+            }
+          }
+
+          return Response.json(
+            {
+              success: false,
+              conversationId,
+              action: 'provider_error',
+              error: userFacingError,
+              message: userFacingError,
+            },
+            { status: conversationId ? 200 : 503 },
+          )
+        }
       },
 
       OPTIONS: ({ request }) => buildOptionsResponse(request),

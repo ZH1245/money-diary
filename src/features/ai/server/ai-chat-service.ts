@@ -455,7 +455,21 @@ export async function runAiChat({
     }
   }
 
-  const resolved = await resolveAiProviderForUser(userId)
+  const resolved = await resolveAiProviderForUser(userId).catch((error) => {
+    const message = error instanceof Error ? error.message : 'Unable to load AI provider settings'
+    return {
+      error: formatAiProviderError(message),
+    } as const
+  })
+
+  if ('error' in resolved) {
+    return {
+      success: false,
+      action: 'provider_error',
+      error: resolved.error,
+    }
+  }
+
   const runtime = {
     provider: resolved.provider,
     baseUrl: resolved.baseUrl,
