@@ -29,6 +29,11 @@ import { useStore } from '@tanstack/react-store'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { queryKeys } from '#/features/query-keys'
 import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
+import {
+  AI_CHAT_MESSAGE_LIMIT_BULK,
+  getMessageContentCharLimit,
+  isBulkPasteContent,
+} from '#/features/ai/utils/ai-bulk-paste'
 import { toast } from 'sonner'
 
 interface ThreadMessage {
@@ -131,6 +136,8 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
   const [historyFeedback, setHistoryFeedback] = useState<string | null>(null)
   const activeConversationId = useStore(activeAiConversationStore, (state) => state.conversationId)
   const mutation = useAiChatMutation()
+  const isBulkPasteDraft = useMemo(() => isBulkPasteContent(prompt), [prompt])
+  const promptCharLimit = useMemo(() => getMessageContentCharLimit(prompt), [prompt])
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const deleteConversationMutation = useDeleteAiConversationMutation()
@@ -244,6 +251,16 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
 
     const text = prompt.trim()
     if (!text) return
+
+    const charLimit = getMessageContentCharLimit(text)
+    if (text.length > charLimit) {
+      toast.error(
+        charLimit > 1200
+          ? `Pasted list is too long (${text.length.toLocaleString()} chars). Split into smaller chunks (max ${charLimit.toLocaleString()}).`
+          : 'Message is too long.',
+      )
+      return
+    }
 
     setPrompt('')
 
@@ -616,6 +633,10 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
           </div>
           <p className="text-[11px] text-muted-foreground">
             Shift+Enter for a new line · Enter to send
+            {isBulkPasteDraft
+              ? ` · Bulk paste mode (up to ${AI_CHAT_MESSAGE_LIMIT_BULK.toLocaleString()} chars)`
+              : null}
+            {prompt.length > 900 ? ` · ${prompt.length.toLocaleString()}/${promptCharLimit.toLocaleString()}` : null}
           </p>
           <p className="text-[11px] text-muted-foreground">
             <Link to="/privacy" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>

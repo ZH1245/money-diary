@@ -288,12 +288,14 @@ export async function callOpenRouterChat({
   apiKey,
   messages,
   tools,
+  maxTokens = OPENROUTER_MAX_OUTPUT_TOKENS,
 }: {
   baseUrl: string
   model: string
   apiKey: string
   messages: OpenRouterChatMessage[]
   tools: ReturnType<typeof getAiToolsForProvider>
+  maxTokens?: number
 }): Promise<
   | { ok: true; assistantText: string; toolCalls: OpenRouterToolCall[]; truncated: boolean }
   | { ok: false; error: string; status?: number }
@@ -309,7 +311,7 @@ export async function callOpenRouterChat({
     tools: toOpenRouterTools(tools),
     tool_choice: 'auto' as const,
     temperature: 0.3,
-    max_tokens: OPENROUTER_MAX_OUTPUT_TOKENS,
+    max_tokens: maxTokens,
     provider: {
       require_parameters: true,
       allow_fallbacks: true,

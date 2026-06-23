@@ -116,6 +116,7 @@ export async function callGeminiChat({
   systemPrompt,
   messages,
   tools,
+  maxOutputTokens = 4096,
 }: {
   baseUrl?: string
   model: string
@@ -123,6 +124,7 @@ export async function callGeminiChat({
   systemPrompt: string
   messages: GeminiChatMessage[]
   tools: ReturnType<typeof getAiToolsForProvider>
+  maxOutputTokens?: number
 }): Promise<
   | {
       ok: true
@@ -146,6 +148,7 @@ export async function callGeminiChat({
       systemPrompt,
       messages,
       tools,
+      maxOutputTokens,
     })
   } catch {
     return { ok: false, error: 'Could not reach Gemini API.' }
@@ -161,6 +164,7 @@ export async function callGeminiChat({
         systemPrompt,
         messages,
         tools,
+        maxOutputTokens,
       })
     } catch {
       return { ok: false, error: 'Could not reach Gemini API.' }
@@ -218,6 +222,7 @@ async function fetchGeminiGenerateContent({
   systemPrompt,
   messages,
   tools,
+  maxOutputTokens = 4096,
 }: {
   baseUrl?: string
   model: string
@@ -225,6 +230,7 @@ async function fetchGeminiGenerateContent({
   systemPrompt: string
   messages: GeminiChatMessage[]
   tools: ReturnType<typeof getAiToolsForProvider>
+  maxOutputTokens?: number
 }): Promise<Response> {
   return fetch(`${baseUrl.replace(/\/$/, '')}/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
@@ -245,7 +251,7 @@ async function fetchGeminiGenerateContent({
       },
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 4096,
+        maxOutputTokens,
       },
     }),
   })

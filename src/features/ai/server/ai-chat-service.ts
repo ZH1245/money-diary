@@ -33,8 +33,12 @@ import {
   resolveFallbackToolInvocation,
 } from '#/features/ai/server/ai-tool-fallback'
 import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
+import { resolveBulkChatRuntimeLimits } from '#/features/ai/utils/ai-bulk-paste'
 
-const MAX_TOOL_CHAIN_STEPS = 5
+interface ProviderGenerationLimits {
+  maxOutputTokens: number
+  ollamaNumPredict: number
+}
 
 export interface AiChatStep {
   action: AiToolAction
@@ -123,12 +127,14 @@ async function callOllamaChat({
   apiKey,
   messages,
   tools,
+  numPredict = 4096,
 }: {
   baseUrl: string
   model: string
   apiKey: string | null
   messages: OllamaChatMessage[]
   tools: ReturnType<typeof getAiToolsForProvider>
+  numPredict?: number
 }): Promise<
   | { ok: true; assistantText: string; toolCalls: ProviderToolCall[]; truncated: boolean }
   | { ok: false; error: string; status?: number }
@@ -145,7 +151,7 @@ async function callOllamaChat({
         messages,
         tools,
         options: {
-          num_predict: 4096,
+          num_predict: numPredict,
           temperature: 0.3,
         },
       }),
@@ -178,6 +184,7 @@ async function callProviderChat({
   state,
   settings,
   tools,
+  generationLimits,
 }: {
   provider: LiveAiProviderId
   systemPrompt: string
@@ -188,6 +195,7 @@ async function callProviderChat({
     apiKey: string | null
   }
   tools: ReturnType<typeof getAiToolsForProvider>
+  generationLimits: ProviderGenerationLimits
 }): Promise<
   | { ok: true; assistantText: string; toolCalls: ProviderToolCall[]; truncated: boolean }
   | { ok: false; error: string; status?: number }
@@ -200,6 +208,7 @@ async function callProviderChat({
       systemPrompt,
       messages: state.geminiMessages,
       tools,
+      maxOutputTokens: generationLimits.maxOutputTokens,
     })
   }
 
@@ -210,6 +219,7 @@ async function callProviderChat({
       apiKey: settings.apiKey ?? '',
       messages: state.openrouterMessages,
       tools,
+      maxTokens: generationLimits.maxOutputTokens,
     })
 
     if (!result.ok) return result
@@ -232,6 +242,7 @@ async function callProviderChat({
     apiKey: settings.apiKey,
     messages: state.ollamaMessages,
     tools,
+    numPredict: generationLimits.ollamaNumPredict,
   })
 }
 
@@ -428,6 +439,12 @@ export async function runAiChat({
 
   const lastUserMessage = messages.filter((message) => message.role === 'user').at(-1)
   const today = new Date().toISOString().split('T')[0]
+  const bulkRuntime = resolveBulkChatRuntimeLimits(lastUserMessage?.content ?? '')
+  const generationLimits: ProviderGenerationLimits = {
+    maxOutputTokens: bulkRuntime.maxOutputTokens,
+    ollamaNumPredict: bulkRuntime.ollamaNumPredict,
+  }
+  const maxToolChainSteps = bulkRuntime.toolChainSteps
 
   if (lastUserMessage && isPrimarilyLegalQuestion(lastUserMessage.content)) {
     return {
@@ -456,6 +473,7 @@ export async function runAiChat({
     goalList: userContext.goalList,
     wishlistList: userContext.wishlistList,
     includeExchangeRateTool: isOllamaProvider,
+    bulkPasteMode: bulkRuntime.isBulkPaste,
   })
 
   const sanitized = sanitizeChatMessages(messages)
@@ -468,13 +486,14 @@ export async function runAiChat({
   const executedSteps: AiChatStep[] = []
   let truncationWarning: string | undefined
 
-  for (let step = 0; step < MAX_TOOL_CHAIN_STEPS; step += 1) {
+  for (let step = 0; step < maxToolChainSteps; step += 1) {
     const providerResult = await callProviderChat({
       provider: runtime.provider,
       systemPrompt,
       state: chatState,
       settings: runtime,
       tools: aiTools,
+      generationLimits,
     })
 
     if (!providerResult.ok) {
@@ -497,7 +516,9 @@ export async function runAiChat({
     }
 
     if (providerResult.truncated) {
-      truncationWarning = 'The model response was truncated. Try a shorter question or a larger model.'
+      truncationWarning = bulkRuntime.isBulkPaste
+        ? 'The model response was truncated while processing your list. Say "continue" to log remaining rows.'
+        : 'The model response was truncated. Try a shorter question or a larger model.'
     }
 
     const toolCalls = providerResult.toolCalls
@@ -508,7 +529,7 @@ export async function runAiChat({
         return {
           success: executedSteps.every((entry) => entry.success),
           action: executedSteps.length === 1 ? executedSteps[0].action : 'chained',
-          message: reply || summarizeSteps(executedSteps),
+          message: reply || summarizeSteps(executedSteps, { bulkPaste: bulkRuntime.isBulkPaste }),
           steps: executedSteps,
           navigateTo: pickNavigateTo(executedSteps),
           warning: truncationWarning,
@@ -588,12 +609,14 @@ export async function runAiChat({
   return {
     success: executedSteps.some((entry) => entry.success),
     action: executedSteps.length === 1 ? executedSteps[0].action : 'chained',
-    message: summarizeSteps(executedSteps),
+    message: summarizeSteps(executedSteps, { bulkPaste: bulkRuntime.isBulkPaste, hitStepLimit: true }),
     steps: executedSteps,
     navigateTo: pickNavigateTo(executedSteps),
     warning:
       truncationWarning ??
-      'Stopped after maximum tool steps. Review results and continue if needed.',
+      (bulkRuntime.isBulkPaste
+        ? 'Logged what fit in this batch. Say "continue" to process remaining rows from your list.'
+        : 'Stopped after maximum tool steps. Review results and continue if needed.'),
   }
 }
 
@@ -626,7 +649,29 @@ function pickNavigateTo(steps: AiChatStep[]): string | undefined {
 /**
  * Builds a short user-facing summary from chained tool results.
  */
-function summarizeSteps(steps: AiChatStep[]): string {
-  const lines = steps.map((step) => `${step.success ? '✓' : '✗'} ${step.message}`)
-  return lines.join('\n')
+function summarizeSteps(
+  steps: AiChatStep[],
+  options?: { bulkPaste?: boolean; hitStepLimit?: boolean },
+): string {
+  const successes = steps.filter((step) => step.success)
+  const failures = steps.filter((step) => !step.success)
+
+  if (options?.bulkPaste || steps.length > 3) {
+    const lines = [`Logged ${successes.length} entr${successes.length === 1 ? 'y' : 'ies'}.`]
+
+    if (failures.length > 0) {
+      lines.push(`${failures.length} need attention:`)
+      for (const step of failures) {
+        lines.push(`✗ ${step.message}`)
+      }
+    }
+
+    if (options?.hitStepLimit) {
+      lines.push('Say "continue" if more rows from your paste are still pending.')
+    }
+
+    return lines.join('\n')
+  }
+
+  return steps.map((step) => `${step.success ? '✓' : '✗'} ${step.message}`).join('\n')
 }
