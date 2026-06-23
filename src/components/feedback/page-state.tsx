@@ -5,15 +5,55 @@ interface PageStateProps {
 }
 
 /**
- * Full-page skeleton shown while the auth session is loading.
+ * Full-page branded loader shown while the auth session is loading.
  */
 export function SessionLoadingSkeleton() {
   return (
     <div className="flex min-h-svh items-center justify-center p-8">
-      <div className="w-full max-w-sm space-y-4">
-        <Skeleton className="mx-auto size-12 rounded-full" />
-        <Skeleton className="mx-auto h-4 w-40" />
-        <Skeleton className="mx-auto h-4 w-56" />
+      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-border/60 bg-card/50 p-8 backdrop-blur-sm">
+        <div className="relative flex size-24 items-center justify-center">
+          <div className="absolute inset-0 animate-pulse rounded-full bg-primary/10 blur-xl" />
+          <svg
+            viewBox="0 0 120 120"
+            className="size-20"
+            role="img"
+            aria-label="Money Diary loading"
+          >
+            <circle
+              cx="60"
+              cy="60"
+              r="44"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="6"
+              strokeOpacity="0.2"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r="44"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray="180 100"
+              className="origin-center animate-spin text-primary"
+            />
+            <path
+              d="M38 73V50m22 23V42m22 31V57"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="7"
+              strokeLinecap="round"
+              className="text-primary/80"
+            />
+          </svg>
+        </div>
+
+        <div className="w-full space-y-1 text-center">
+          <p className="text-sm font-medium">Loading your money diary...</p>
+          <p className="text-xs opacity-70">Syncing your private workspace</p>
+        </div>
       </div>
     </div>
   )
