@@ -1,13 +1,13 @@
 import { buildLegalPolicyAnswer, isPrimarilyLegalQuestion } from '#/features/legal/utils/legal-knowledge'
 import { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
 import { resolveAiProviderForUser } from '#/features/admin/server/resolve-ai-provider'
+import { buildSecureSystemPrompt } from '#/features/ai/server/ai-prompt-builder'
+import { sanitizeChatMessages } from '#/features/ai/server/ai-history-window'
 import {
-  buildSecureSystemPrompt,
   evaluateAbuseState,
   detectPromptInjection,
   recordAbuseStrike,
   sanitizeAssistantUserFacingMessage,
-  sanitizeChatMessages,
   validateChatMessages,
 } from '#/features/ai/server/ai-security'
 import { executeAiTool, loadUserAiContext } from '#/features/ai/server/ai-tool-executor'
