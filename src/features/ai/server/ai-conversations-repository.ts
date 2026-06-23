@@ -2,6 +2,7 @@ import { and, desc, eq, exists } from 'drizzle-orm'
 import { db } from '#/db/index'
 import { aiConversations, aiMessages } from '#/db/schema'
 import type { AiMessageMetadata } from '#/features/ai/types/ai-conversation'
+import { AI_CHAT_HISTORY_MESSAGE_LIMIT } from '#/features/ai/server/ai-history-window'
 import { userOwnsAiConversation } from '#/lib/server/ownership-guards'
 
 const MAX_MESSAGES_PER_CONVERSATION = 100
@@ -130,7 +131,7 @@ export async function appendAiConversationMessage({
 }
 
 /**
- * Loads chat messages formatted for the AI model when the user owns the conversation.
+ * Loads the most recent chat messages for the model (bounded by AI_CHAT_HISTORY_MESSAGE_LIMIT).
  */
 export async function getAiConversationModelMessages(userId: string, conversationId: number) {
   if (!(await userOwnsAiConversation(userId, conversationId))) {
@@ -144,9 +145,11 @@ export async function getAiConversationModelMessages(userId: string, conversatio
     })
     .from(aiMessages)
     .where(eq(aiMessages.conversationId, conversationId))
-    .orderBy(aiMessages.createdAt)
+    .orderBy(desc(aiMessages.createdAt))
+    .limit(AI_CHAT_HISTORY_MESSAGE_LIMIT)
 
-  return messages
+  return [...messages]
+    .reverse()
     .filter((message) => message.role === 'user' || message.role === 'assistant')
     .map((message) => ({
       role: message.role as 'user' | 'assistant',
