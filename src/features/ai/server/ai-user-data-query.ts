@@ -6,6 +6,9 @@ import { getUserTransactions } from '#/features/transactions/server/transactions
 import { getUserWishlistItems } from '#/features/wishlist/server/wishlist-repository'
 import { format, parseISO } from 'date-fns'
 
+/** Default row cap for AI data reads; totals still reflect the full filtered set. */
+export const DEFAULT_QUERY_USER_DATA_LIMIT = 20
+
 interface QueryUserDataInput {
   userId: string
   currency: string
@@ -51,6 +54,10 @@ function formatLedgerAmount(amount: number, currency: string): string {
 
 function formatRangeLabel(from: string, to: string): string {
   return `${format(parseISO(from), 'MMM d, yyyy')} – ${format(parseISO(to), 'MMM d, yyyy')}`
+}
+
+function formatTruncationNote(shown: number, total: number): string {
+  return `\nShowing newest ${shown} of ${total} entries. Totals above include all ${total} matches.`
 }
 
 /**
@@ -102,15 +109,25 @@ async function queryTransactions(input: QueryUserDataInput): Promise<string> {
   }
 
   if (input.groupBy === 'date') {
+    const grandTotal = rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)
+    const limitedRows = rows.slice(0, input.limit)
     const byDate = new Map<string, typeof rows>()
-    for (const row of rows.slice(0, input.limit)) {
+
+    for (const row of limitedRows) {
       const day = format(row.happenedAt, 'yyyy-MM-dd')
       const bucket = byDate.get(day) ?? []
       bucket.push(row)
       byDate.set(day, bucket)
     }
 
-    const lines = [`Transactions by date (${rangeLabel}):`]
+    const lines = [
+      `Transactions by date (${rangeLabel}): ${formatLedgerAmount(grandTotal, input.currency)} across ${rows.length} entries.`,
+    ]
+
+    if (rows.length > input.limit) {
+      lines.push(`Newest ${input.limit} rows:`)
+    }
+
     for (const day of [...byDate.keys()].sort((a, b) => b.localeCompare(a))) {
       const dayRows = byDate.get(day) ?? []
       const dayTotal = dayRows.reduce((sum, row) => sum + parseAmount(row.amount), 0)
@@ -123,13 +140,22 @@ async function queryTransactions(input: QueryUserDataInput): Promise<string> {
     }
 
     if (rows.length > input.limit) {
-      lines.push(`\nShowing ${input.limit} of ${rows.length} transactions. Open Transactions for the full list.`)
+      lines.push(formatTruncationNote(input.limit, rows.length))
     }
 
     return lines.join('\n')
   }
 
-  const lines = [`Transactions (${rangeLabel}):`]
+  const grandTotal = rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)
+  const typeLabel = input.transactionType === 'all' ? 'transactions' : `${input.transactionType}s`
+  const lines = [
+    `${typeLabel.charAt(0).toUpperCase()}${typeLabel.slice(1)} for ${rangeLabel}: ${formatLedgerAmount(grandTotal, input.currency)} across ${rows.length} entries.`,
+  ]
+
+  if (rows.length > input.limit) {
+    lines.push(`Newest ${input.limit} rows:`)
+  }
+
   for (const row of rows.slice(0, input.limit)) {
     const day = format(row.happenedAt, 'MMM d, yyyy')
     const category = row.categoryId ? categoryNames.get(row.categoryId) : null
@@ -140,7 +166,7 @@ async function queryTransactions(input: QueryUserDataInput): Promise<string> {
   }
 
   if (rows.length > input.limit) {
-    lines.push(`\nShowing ${input.limit} of ${rows.length}. Open Transactions for more.`)
+    lines.push(formatTruncationNote(input.limit, rows.length))
   }
 
   return lines.join('\n')
@@ -170,6 +196,10 @@ async function querySavings(input: QueryUserDataInput): Promise<string> {
     )
   }
 
+  if (rows.length > input.limit) {
+    lines.push(formatTruncationNote(Math.min(input.limit, rows.length), rows.length))
+  }
+
   return lines.join('\n')
 }
 
@@ -189,6 +219,10 @@ async function queryGoals(input: QueryUserDataInput): Promise<string> {
     )
   }
 
+  if (rows.length > input.limit) {
+    lines.push(formatTruncationNote(Math.min(input.limit, rows.length), rows.length))
+  }
+
   return lines.join('\n')
 }
 
@@ -206,6 +240,10 @@ async function queryWishlist(input: QueryUserDataInput): Promise<string> {
     lines.push(
       `- ${row.title}: target ${formatLedgerAmount(parseAmount(row.targetAmount), input.currency)} (${row.priority} priority)`,
     )
+  }
+
+  if (rows.length > input.limit) {
+    lines.push(formatTruncationNote(Math.min(input.limit, rows.length), rows.length))
   }
 
   return lines.join('\n')

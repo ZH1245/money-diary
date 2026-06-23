@@ -25,7 +25,7 @@ export const AI_TOOLS = [
             enum: ['none', 'date', 'category'],
             description: 'Group transactions by date or category; use date for date-wise breakdowns',
           },
-          limit: { type: 'integer', description: 'Max rows to return (default 50)' },
+          limit: { type: 'integer', description: 'Max detail rows returned (default 20); totals use the full filtered set' },
         },
       },
     },

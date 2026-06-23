@@ -33,7 +33,7 @@ import { fetchExchangeRate } from '#/features/exchange-rates/server/fetch-exchan
 import { format, parseISO, startOfMonth } from 'date-fns'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
-import { queryUserData } from '#/features/ai/server/ai-user-data-query'
+import { queryUserData, DEFAULT_QUERY_USER_DATA_LIMIT } from '#/features/ai/server/ai-user-data-query'
 import { formatTransferSource, isTransferDirectionEncoded } from '#/features/transactions/utils/transfer-direction'
 
 const createTransactionArgsSchema = z.object({
@@ -633,7 +633,7 @@ export async function executeAiTool({
       toDate: to,
       transactionType: args.data.transactionType ?? 'all',
       groupBy: args.data.groupBy ?? 'none',
-      limit: args.data.limit ?? 50,
+      limit: args.data.limit ?? DEFAULT_QUERY_USER_DATA_LIMIT,
     })
 
     return {
