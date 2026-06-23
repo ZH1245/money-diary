@@ -1,35 +1,26 @@
 ---
-description: AI code review on pull requests before merge
+description: Code review on pull requests before merge
 alwaysApply: true
 ---
 
-# PR code review (AI agent)
+# PR code review
 
-Every pull request should receive an AI code review before merge.
+Every pull request should receive a code review on the branch diff before merge.
 
 ## When to review
 
 - After opening a PR or when the user asks to review a branch/PR.
 - After pushing substantive fixes to an open PR (re-review the branch diff).
 
-## How to review (Cursor Bugbot)
+## How to review
 
-Launch exactly one `bugbot` subagent (`readonly: true`, `run_in_background: false`):
+Run a read-only review of the branch diff against `main` (include committed, staged, and unstaged changes on the branch).
 
-```text
-Full Repository Path: <absolute repo path>
-Diff: branch changes
-Change Description: <only if diff computation fails>
-Custom Instructions: <only if user gave specific review focus>
-```
-
-- Use `Diff: branch changes` against the repo default branch (`main`).
-- Use `Diff: uncommitted changes` only when reviewing dirty working tree before the first commit.
-- If the target is a specific PR, check out that PR’s head branch locally before launching Bugbot.
+If the target is a specific PR, check out that PR’s head branch locally before reviewing.
 
 ## Present findings
 
-Summarize Bugbot output as a table:
+Summarize review output as a table:
 
 | Severity | Location | Finding |
 |----------|----------|---------|
@@ -38,16 +29,15 @@ Sort by severity (highest first). Do not auto-fix unless the user asks.
 
 ## PR readiness gate
 
-A PR is **ready for human merge** when:
+A PR is **ready to merge** when:
 
 1. Linked issue is clear and `Closes #N` is in the PR body.
-2. Bugbot review completed (note “no findings” or list open items).
+2. Code review completed (note “no findings” or list open items).
 3. Typecheck passes for TS changes.
 4. Test plan in the PR is filled in.
 
-If Bugbot reports high-severity issues, fix on the same branch, push, and re-run review.
+If review reports high-severity issues, fix on the same branch, push, and re-run review.
 
 ## GitHub
 
-- Prefer `gh issue create`, `gh pr create`, and `gh pr view` for issue/PR operations.
-- Optional: enable [Cursor Bugbot](https://cursor.com/docs/bugbot) on the repo for automated reviews on GitHub PRs in addition to local agent review.
+Prefer `gh issue create`, `gh pr create`, and `gh pr view` for issue/PR operations.

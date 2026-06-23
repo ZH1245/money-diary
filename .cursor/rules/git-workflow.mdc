@@ -34,7 +34,7 @@ Or: `gh issue create --template Feature --title "..." --web`
 
 ## During development
 
-- Commit on the feature branch with Conventional Commits (see `.cursorrules`).
+- Commit on the feature branch with Conventional Commits (see repository commit message rules).
 - Reference the issue in commit bodies: `Refs #123` or `Closes #123` when the PR will fully resolve it.
 - Run `pnpm exec tsc --noEmit` before opening a PR when TypeScript changed.
 
@@ -42,7 +42,7 @@ Or: `gh issue create --template Feature --title "..." --web`
 
 1. Push the branch: `pnpm pr:open` or `git push -u origin HEAD`
 2. Fill `.github/PULL_REQUEST_TEMPLATE.md` sections (Summary, Scope, Out of scope, Implementation abstract, Acceptance criteria, Test plan, `Closes #N`)
-3. Wait for CI (when present) and **AI code review** (see `pr-code-review.mdc`) before merge.
+3. Wait for CI (when present) and complete code review before merge.
 
 ## Merge rules
 
@@ -57,5 +57,5 @@ When the user asks for implementation work:
 1. Confirm or create the GitHub issue (use template automation).
 2. Create/checkout the branch before editing.
 3. Implement, commit on the branch, push, and open the PR (`pnpm pr:open`).
-4. Run PR code review per `pr-code-review.mdc` before merge.
+4. Run code review on the branch diff before merge.
 5. When the user approves, merge with `pnpm pr:merge -- <number>` and delete the branch.
