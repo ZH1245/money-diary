@@ -102,18 +102,21 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
-      <div className={cn('rounded-xl border border-border', fillWidth ? 'w-full' : 'overflow-x-auto')}>
+      <div className="rounded-xl border border-border w-full">
         <div
           ref={scrollContainerRef}
           className={maxBodyHeight != null ? 'overflow-auto' : undefined}
           style={maxBodyHeight != null ? { maxHeight: `${maxBodyHeight}px` } : undefined}
         >
           <Table className={fillWidth ? 'w-full table-fixed' : 'min-w-[720px]'}>
-            <TableHeader className="sticky top-0 z-10 bg-muted/40">
+            <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="px-3">
+                  <TableHead
+                    key={header.id}
+                    className="sticky top-0 z-10 bg-background px-3 shadow-[inset_0_-1px_0_var(--border)]"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}

@@ -1,4 +1,5 @@
 import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
+import { SearchableSelect } from '#/components/forms/searchable-select'
 import { PageEmptyState, PageErrorState, PageContentSkeleton } from '#/components/feedback/page-state'
 import { TableRowActions } from '#/components/feedback/table-row-actions'
 import { Button } from '#/components/ui/button'
@@ -78,6 +79,26 @@ export function PaymentAccountsPageContent({ userCurrency }: { userCurrency: str
         })),
       }),
     [accounts, transactions, savings],
+  )
+
+  const institutionOptions = useMemo(
+    () => [
+      { value: 'custom', label: 'Custom name' },
+      ...PAYMENT_INSTITUTIONS.map((institution) => ({
+        value: institution.slug,
+        label: institution.name,
+      })),
+    ],
+    [],
+  )
+
+  const accountTypeOptions = useMemo(
+    () =>
+      ACCOUNT_TYPE_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.label,
+      })),
+    [],
   )
 
   const handleDeleteAccount = useCallback(
@@ -294,19 +315,14 @@ export function PaymentAccountsPageContent({ userCurrency }: { userCurrency: str
             <form className="grid gap-4 px-4" onSubmit={handleSaveAccount}>
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Bank / provider</label>
-                <Select value={form.institutionChoice} onValueChange={handleInstitutionChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="custom">Custom name</SelectItem>
-                    {PAYMENT_INSTITUTIONS.map((institution) => (
-                      <SelectItem key={institution.slug} value={institution.slug}>
-                        {institution.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.institutionChoice}
+                  onValueChange={handleInstitutionChange}
+                  options={institutionOptions}
+                  placeholder="Select provider"
+                  searchPlaceholder="Search banks and wallets..."
+                  emptyMessage="No providers found."
+                />
               </div>
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Display name</label>
@@ -318,23 +334,16 @@ export function PaymentAccountsPageContent({ userCurrency }: { userCurrency: str
               </div>
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Type</label>
-                <Select
+                <SearchableSelect
                   value={form.accountType}
                   onValueChange={(value) =>
                     setForm((state) => ({ ...state, accountType: value as PaymentAccountType }))
                   }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACCOUNT_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={accountTypeOptions}
+                  placeholder="Select account type"
+                  searchPlaceholder="Search account types..."
+                  emptyMessage="No account types found."
+                />
               </div>
               {isEditing ? (
                 <div className="grid gap-2">

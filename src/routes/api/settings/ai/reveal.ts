@@ -20,17 +20,34 @@ export const Route = createFileRoute('/api/settings/ai/reveal')({
         const userIdRejected = rejectClientSuppliedUserId(request)
         if (userIdRejected) return userIdRejected
 
-        const settings = await getUserAiSettingsForRuntime({ userId: userContext.id })
-        if (!settings || !settings.apiKey) {
-          return Response.json({ success: false, error: 'No API key stored' }, { status: 404 })
-        }
+        try {
+          const settings = await getUserAiSettingsForRuntime({ userId: userContext.id })
+          if (!settings?.apiKey) {
+            return Response.json({ success: false, error: 'No API key stored' }, { status: 404 })
+          }
 
-        return Response.json({
-          success: true,
-          data: {
-            apiKey: settings.apiKey,
-          },
-        })
+          return Response.json({
+            success: true,
+            data: {
+              apiKey: settings.apiKey,
+            },
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to reveal API key'
+
+          if (message.includes('Invalid encrypted payload')) {
+            return Response.json(
+              {
+                success: false,
+                error:
+                  'Saved API key could not be decrypted. ENV_SECRETS may have changed — remove the key and save a new one.',
+              },
+              { status: 500 },
+            )
+          }
+
+          return Response.json({ success: false, error: message }, { status: 500 })
+        }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
     },

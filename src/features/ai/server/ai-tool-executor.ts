@@ -11,9 +11,16 @@ import {
   createUserCategory,
 } from '#/features/categories/server/categories-repository'
 import {
+  createUserPaymentAccount,
+  getUserPaymentAccountById,
   getUserPaymentAccounts,
   isPaymentAccountAccessibleByUser,
+  updateUserPaymentAccount,
 } from '#/features/payment-accounts/server/payment-accounts-repository'
+import { resolvePaymentAccountInstitutionSlug, userHasCashPaymentAccount } from '#/features/payment-accounts/utils/resolve-payment-account-institution'
+import { formatPaymentAccountLabel } from '#/features/payment-accounts/utils/account-label'
+import { isProtectedPaymentAccount } from '#/features/payment-accounts/utils/protected-account'
+import type { PaymentAccountType } from '#/features/payment-accounts/types/payment-account'
 import { createUserSaving } from '#/features/savings/server/savings-repository'
 import { DEFAULT_SAVING_TITLE, DEFAULT_SAVING_WITHDRAWAL_TITLE } from '#/features/savings/schemas/saving'
 import { createUserGoal, deleteUserGoal, getUserGoalById, getUserGoals, updateUserGoal } from '#/features/goals/server/goals-repository'
@@ -75,6 +82,35 @@ const createSavingArgsSchema = z.object({
   goalId: z.number().int().positive().optional(),
   paymentAccountId: z.number().int().positive().optional(),
   note: z.string().optional(),
+})
+
+const createPaymentAccountArgsSchema = z.object({
+  name: z.string().min(1),
+  accountType: z.enum(['debit', 'credit', 'paypak', 'wallet', 'cash', 'other']),
+  institutionSlug: z.string().min(1).optional(),
+  institutionName: z.string().min(1).optional(),
+  lastFour: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/)
+    .optional(),
+  note: z.string().optional(),
+})
+
+const updatePaymentAccountArgsSchema = z.object({
+  paymentAccountId: z.number().int().positive(),
+  name: z.string().min(1).optional(),
+  accountType: z.enum(['debit', 'credit', 'paypak', 'wallet', 'cash', 'other']).optional(),
+  institutionSlug: z.string().min(1).optional(),
+  institutionName: z.string().min(1).optional(),
+  lastFour: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/)
+    .nullable()
+    .optional(),
+  note: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 })
 
 const createGoalArgsSchema = z.object({
@@ -464,6 +500,107 @@ export async function executeAiTool({
     })
   }
 
+  if (toolName === 'create_payment_account') {
+    const args = createPaymentAccountArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'create_payment_account', success: false, message: 'Invalid payment account arguments.' }
+    }
+
+    const { name, accountType, institutionSlug, institutionName, lastFour, note } = args.data
+    const institution = resolvePaymentAccountInstitutionSlug({ institutionSlug, institutionName })
+    if (institution.error) {
+      return { action: 'create_payment_account', success: false, message: institution.error }
+    }
+
+    if (institution.slug === 'cash' || accountType === 'cash') {
+      const existingAccounts = await getUserPaymentAccounts(context.userId)
+      if (userHasCashPaymentAccount(existingAccounts)) {
+        return {
+          action: 'create_payment_account',
+          success: false,
+          message: 'Cash on hand already exists. Use update_payment_account to rename it if needed.',
+        }
+      }
+    }
+
+    const row = await createUserPaymentAccount({
+      userId: context.userId,
+      name: name.trim(),
+      institutionSlug: institution.slug,
+      accountType,
+      lastFour: lastFour ?? null,
+      note: note?.trim() || null,
+    })
+
+    return buildWriteStepResult({
+      action: 'create_payment_account',
+      success: true,
+      message: `Account added: ${formatPaymentAccountLabel({
+        ...row,
+        accountType: row.accountType as PaymentAccountType,
+      })}${row.lastFour ? ` ending ${row.lastFour}` : ''}`,
+      entityId: row.id,
+    })
+  }
+
+  if (toolName === 'update_payment_account') {
+    const args = updatePaymentAccountArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'update_payment_account', success: false, message: 'Invalid payment account update arguments.' }
+    }
+
+    const existing = await getUserPaymentAccountById(context.userId, args.data.paymentAccountId)
+    if (!existing) {
+      return { action: 'update_payment_account', success: false, message: 'Account not accessible.' }
+    }
+
+    let nextInstitutionSlug: string | null | undefined
+    if (args.data.institutionSlug !== undefined || args.data.institutionName !== undefined) {
+      const institution = resolvePaymentAccountInstitutionSlug({
+        institutionSlug: args.data.institutionSlug,
+        institutionName: args.data.institutionName,
+      })
+      if (institution.error) {
+        return { action: 'update_payment_account', success: false, message: institution.error }
+      }
+      nextInstitutionSlug = institution.slug
+    }
+
+    if (isProtectedPaymentAccount(existing) && args.data.isActive === false) {
+      return {
+        action: 'update_payment_account',
+        success: false,
+        message: 'Cash on hand cannot be marked inactive.',
+      }
+    }
+
+    const row = await updateUserPaymentAccount({
+      userId: context.userId,
+      paymentAccountId: args.data.paymentAccountId,
+      name: args.data.name?.trim(),
+      accountType: args.data.accountType as PaymentAccountType | undefined,
+      institutionSlug: nextInstitutionSlug,
+      lastFour: args.data.lastFour,
+      note: args.data.note,
+      isActive: args.data.isActive,
+    })
+
+    if (!row) {
+      return { action: 'update_payment_account', success: false, message: 'Account could not be updated.' }
+    }
+
+    const statusLabel = row.isActive ? 'active' : 'inactive'
+    return buildWriteStepResult({
+      action: 'update_payment_account',
+      success: true,
+      message: `Account updated: ${formatPaymentAccountLabel({
+        ...row,
+        accountType: row.accountType as PaymentAccountType,
+      })} (${statusLabel})${row.lastFour ? ` ending ${row.lastFour}` : ''}`,
+      entityId: row.id,
+    })
+  }
+
   if (toolName === 'create_goal') {
     const args = createGoalArgsSchema.safeParse(toolArgs)
     if (!args.success) {
@@ -728,7 +865,13 @@ export async function loadUserAiContext(userId: string) {
 
   return {
     categoryList: userCategories.map((category) => `${category.name} [ref ${category.id}]`).join(', '),
-    accountList: userAccounts.map((account) => `${account.name} [ref ${account.id}]`).join(', '),
+    accountList: userAccounts
+      .map((account) => {
+        const suffix = account.lastFour ? ` ••${account.lastFour}` : ''
+        const status = account.isActive ? '' : ' inactive'
+        return `${account.name} (${account.accountType}${suffix})${status} [ref ${account.id}]`
+      })
+      .join(', '),
     goalList: userGoals.map((goal) => `${goal.title} [ref ${goal.id}]`).join(', '),
     wishlistList: userWishlist
       .map((item) => `${item.title} [ref ${item.id}] (${item.status})`)

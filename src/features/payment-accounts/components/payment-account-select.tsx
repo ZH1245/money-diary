@@ -1,13 +1,8 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
+import { SearchableSelect } from '#/components/forms/searchable-select'
 import { formatPaymentAccountLabel } from '#/features/payment-accounts/utils/account-label'
 import type { PaymentAccountDto } from '#/features/payment-accounts/types/payment-account'
 import { Link } from '@tanstack/react-router'
+import { useMemo } from 'react'
 
 interface PaymentAccountSelectProps {
   value: string
@@ -29,7 +24,18 @@ export function PaymentAccountSelect({
   showManageLink = true,
   label = 'Paid from / saved to',
 }: PaymentAccountSelectProps) {
-  const activeAccounts = accounts.filter((account) => account.isActive)
+  const options = useMemo(
+    () => [
+      { value: 'none', label: 'Not specified' },
+      ...accounts
+        .filter((account) => account.isActive)
+        .map((account) => ({
+          value: String(account.id),
+          label: formatPaymentAccountLabel(account),
+        })),
+    ],
+    [accounts],
+  )
 
   return (
     <div className="grid gap-2">
@@ -41,19 +47,15 @@ export function PaymentAccountSelect({
           </Link>
         </div>
       ) : null}
-      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Not specified" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">Not specified</SelectItem>
-          {activeAccounts.map((account) => (
-            <SelectItem key={account.id} value={String(account.id)}>
-              {formatPaymentAccountLabel(account)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={value}
+        onValueChange={onValueChange}
+        options={options}
+        placeholder="Not specified"
+        searchPlaceholder="Search accounts..."
+        emptyMessage="No accounts found."
+        disabled={disabled}
+      />
     </div>
   )
 }

@@ -57,6 +57,8 @@ const INVALIDATION_MAP: Record<string, Array<readonly string[]>> = {
   create_transaction: [queryKeys.transactions.all],
   update_transaction: [queryKeys.transactions.all],
   create_saving: [queryKeys.savings.all, queryKeys.goals.all],
+  create_payment_account: [queryKeys.paymentAccounts.all],
+  update_payment_account: [queryKeys.paymentAccounts.all],
   create_goal: [queryKeys.goals.all],
   create_wishlist_item: [queryKeys.wishlist.all],
   update_wishlist_item: [queryKeys.wishlist.all],

@@ -413,6 +413,15 @@ export function AiSettingsSection() {
   }
 
   async function handleRevealApiKey() {
+    if (apiKey.trim()) {
+      return
+    }
+
+    if (revealedApiKey) {
+      setApiKey(revealedApiKey)
+      return
+    }
+
     setIsRevealingKey(true)
     setErrorMessage(null)
     try {
@@ -429,12 +438,26 @@ export function AiSettingsSection() {
       if (!response.ok || !payload?.success || !payload.data?.apiKey) {
         throw new Error(payload?.error ?? 'Unable to reveal API key')
       }
+      setApiKey(payload.data.apiKey)
       setRevealedApiKey(payload.data.apiKey)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to reveal API key')
+      throw error
     } finally {
       setIsRevealingKey(false)
     }
+  }
+
+  function handleHideStoredApiKey() {
+    setApiKey('')
+    setRevealedApiKey('')
+  }
+
+  const storedApiKeyFieldProps = {
+    hasStoredValue: Boolean(savedApiKeyMask && !apiKey.trim()),
+    onRequestReveal: handleRevealApiKey,
+    isRevealPending: isRevealingKey,
+    onHideStoredValue: handleHideStoredApiKey,
   }
 
   const saveButtonLabel =
@@ -590,6 +613,7 @@ export function AiSettingsSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'Only needed for secured Ollama gateways'}
               isRequired={false}
               isDisabled={isLoading || isSubmitting}
+              {...storedApiKeyFieldProps}
             />
           </>
         ) : providerId === 'gemini' ? (
@@ -603,6 +627,7 @@ export function AiSettingsSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'AIza...'}
               isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
+              {...storedApiKeyFieldProps}
             />
             <FormField
               id="ai-gemini-model"
@@ -640,6 +665,7 @@ export function AiSettingsSection() {
               placeholder={savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : 'sk-or-...'}
               isRequired={!savedApiKeyMask}
               isDisabled={isLoading || isSubmitting}
+              {...storedApiKeyFieldProps}
             />
             <FormField
               id="ai-openrouter-base-url"

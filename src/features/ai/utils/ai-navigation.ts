@@ -4,6 +4,8 @@ const ACTION_ROUTE_MAP: Partial<Record<AiToolAction, string>> = {
   create_transaction: '/transactions',
   update_transaction: '/transactions',
   create_saving: '/savings',
+  create_payment_account: '/accounts',
+  update_payment_account: '/accounts',
   create_goal: '/goals',
   update_goal: '/goals',
   delete_goal: '/goals',

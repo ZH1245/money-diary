@@ -1,13 +1,7 @@
 import { PageErrorState, PageContentSkeleton } from '#/components/feedback/page-state'
+import { SearchableSelect } from '#/components/forms/searchable-select'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
 import {
   Sheet,
   SheetContent,
@@ -168,21 +162,17 @@ export function CategoriesPageContent({ userId }: CategoriesPageContentProps) {
               </div>
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Kind</label>
-                <Select
+                <SearchableSelect
                   value={form.kind}
                   onValueChange={(value) => setForm((state) => ({ ...state, kind: value as CategoryDto['kind'] }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Kind" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORY_KIND_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={CATEGORY_KIND_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                  placeholder="Kind"
+                  searchPlaceholder="Search kinds..."
+                  emptyMessage="No kinds found."
+                />
               </div>
               <SheetFooter className="px-0">
                 <Button type="submit" disabled={createCategoryMutation.isPending} className="w-full">

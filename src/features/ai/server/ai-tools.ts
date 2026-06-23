@@ -130,6 +130,72 @@ export const AI_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'create_payment_account',
+      description:
+        'Add a new card, bank account, or wallet. Name and account type are enough — do not ask for card numbers or last four digits.',
+      parameters: {
+        type: 'object',
+        required: ['name', 'accountType'],
+        properties: {
+          name: { type: 'string', description: 'Display name, e.g. "HBL Salary" or "JazzCash"' },
+          accountType: {
+            type: 'string',
+            enum: ['debit', 'credit', 'paypak', 'wallet', 'cash', 'other'],
+            description:
+              'debit/credit/paypak for bank cards, wallet for JazzCash/Easypaisa/SadaPay/NayaPay, cash for physical cash, other when unclear',
+          },
+          institutionSlug: {
+            type: 'string',
+            description:
+              'Preset slug when known: hbl, ubl, mcb, meezan, jazzcash, easypaisa, sadapay, nayapay, cash, etc. Omit for custom names.',
+          },
+          institutionName: {
+            type: 'string',
+            description: 'Bank or wallet name when slug is unknown; server matches presets or treats as custom',
+          },
+          lastFour: {
+            type: 'string',
+            description: 'Optional. Only when the user already stated the last 4 digits — never request card numbers.',
+          },
+          note: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_payment_account',
+      description:
+        'Update an existing card or account (rename, change type, last four digits, note, or mark inactive). Match account by name from WORKSPACE CONTEXT.',
+      parameters: {
+        type: 'object',
+        required: ['paymentAccountId'],
+        properties: {
+          paymentAccountId: { type: 'integer', description: 'Internal account ref from context' },
+          name: { type: 'string' },
+          accountType: {
+            type: 'string',
+            enum: ['debit', 'credit', 'paypak', 'wallet', 'cash', 'other'],
+          },
+          institutionSlug: { type: 'string' },
+          institutionName: { type: 'string' },
+          lastFour: {
+            type: 'string',
+            description: 'Optional. Only when the user already gave last 4 digits — never request card numbers.',
+          },
+          note: { type: 'string' },
+          isActive: {
+            type: 'boolean',
+            description: 'false to mark inactive/archived; true to reactivate',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'create_goal',
       description: 'Create a new financial goal.',
       parameters: {
@@ -261,6 +327,8 @@ export type AiWriteToolAction =
   | 'create_transaction'
   | 'update_transaction'
   | 'create_saving'
+  | 'create_payment_account'
+  | 'update_payment_account'
   | 'create_goal'
   | 'create_wishlist_item'
   | 'update_wishlist_item'

@@ -17,4 +17,8 @@ export interface FormFieldProps {
   autoComplete?: string
   name?: string
   spellCheck?: boolean
+  hasStoredValue?: boolean
+  onRequestReveal?: () => void | Promise<void>
+  isRevealPending?: boolean
+  onHideStoredValue?: () => void
 }
