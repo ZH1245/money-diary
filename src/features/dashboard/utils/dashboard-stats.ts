@@ -1,6 +1,7 @@
 import { parseLedgerAmount } from '#/features/shared/utils/amount'
 import { buildTrendSeriesForDateRange } from '#/features/dashboard/utils/dashboard-date-range'
 import type { DashboardStatsInput, DashboardStatsOutput } from '#/features/dashboard/types/dashboard-stats'
+import { computePaymentAccountBalance } from '#/features/payment-accounts/utils/payment-account-balance'
 
 /** Formats transaction dates for dashboard table rows. */
 export function formatDashboardTransactionDate(value: string): string {
@@ -10,6 +11,9 @@ export function formatDashboardTransactionDate(value: string): string {
 /** Builds aggregate metrics for the dashboard view. */
 export function buildDashboardStats({
   transactions,
+  allTransactions,
+  allSavings,
+  cashPaymentAccountId,
   categories,
   savings,
   wishlist,
@@ -60,6 +64,15 @@ export function buildDashboardStats({
     monthLabel: new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date()),
   }
 
+  const cashOnHandBalance =
+    cashPaymentAccountId != null && allTransactions
+      ? computePaymentAccountBalance({
+          paymentAccountId: cashPaymentAccountId,
+          transactions: allTransactions,
+          savings: allSavings ?? [],
+        })
+      : null
+
   return {
     balance: totalIncome - totalExpense,
     totalIncome,
@@ -76,5 +89,6 @@ export function buildDashboardStats({
     recentTransactions,
     weeklyTrend,
     calendar,
+    cashOnHandBalance,
   }
 }

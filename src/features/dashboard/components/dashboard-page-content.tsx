@@ -8,6 +8,8 @@ import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { buildDashboardStats } from '#/features/dashboard/utils/dashboard-stats'
 import type { RecentTransactionRow } from '#/features/dashboard/types/dashboard-stats'
 import { useGoalsQuery } from '#/features/goals/hooks/use-goals'
+import { findCashPaymentAccountId } from '#/features/payment-accounts/utils/payment-account-balance'
+import { usePaymentAccountsQuery } from '#/features/payment-accounts/hooks/use-payment-accounts'
 import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
 import { useWishlistQuery } from '#/features/wishlist/hooks/use-wishlist'
@@ -15,7 +17,7 @@ import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import { SensitiveText } from '#/components/privacy/sensitive-text'
 import { formatSensitiveCompactAmount, formatSensitiveCurrency, formatSensitiveText, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
 import { chartColors } from '#/lib/chart-colors'
-import { Wallet, TrendingUp, TrendingDown, Target, Star, WalletCards } from 'lucide-react'
+import { Wallet, TrendingUp, TrendingDown, Target, Star, WalletCards, Banknote } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -41,6 +43,7 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
     error: categoriesError,
   } = useCategoriesQuery()
   const { data: savings = [], isError: isSavingsError, error: savingsError } = useSavingsQuery()
+  const { data: paymentAccounts = [] } = usePaymentAccountsQuery()
   const { data: wishlist = [], isError: isWishlistError, error: wishlistError } = useWishlistQuery()
   const { data: goals = [], isError: isGoalsError, error: goalsError } = useGoalsQuery()
   const isPrivacyMode = usePrivacyModeEnabled()
@@ -53,17 +56,42 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
     () => savings.filter((saving) => isDateInRange(saving.savedAt, dateRange.from, dateRange.to)),
     [savings, dateRange.from, dateRange.to],
   )
+  const cashPaymentAccountId = useMemo(
+    () => findCashPaymentAccountId(paymentAccounts),
+    [paymentAccounts],
+  )
   const stats = useMemo(
     () =>
       buildDashboardStats({
         transactions: filteredTransactions,
+        allTransactions: transactions.map((transaction) => ({
+          amount: transaction.amount,
+          type: transaction.type,
+          paymentAccountId: transaction.paymentAccountId,
+          source: transaction.source,
+        })),
+        allSavings: savings.map((saving) => ({
+          amount: saving.amount,
+          paymentAccountId: saving.paymentAccountId,
+        })),
+        cashPaymentAccountId,
         categories,
         savings: filteredSavings,
         wishlist,
         goals,
         dateRange,
       }),
-    [filteredTransactions, categories, filteredSavings, wishlist, goals, dateRange],
+    [
+      filteredTransactions,
+      transactions,
+      savings,
+      cashPaymentAccountId,
+      categories,
+      filteredSavings,
+      wishlist,
+      goals,
+      dateRange,
+    ],
   )
 
   const isStatsPending = isTransactionsPending || isCategoriesPending
@@ -124,6 +152,12 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
                   icon={<Wallet className="size-4 text-muted-foreground" />}
                   label="Total Balance"
                   value={formatSensitiveCurrency(stats.balance, userCurrency, isPrivacyMode)}
+                  isSensitive
+                />
+                <InsightMiniCard
+                  icon={<Banknote className="size-4 text-lime-600" />}
+                  label="Cash on hand"
+                  value={formatSensitiveCurrency(stats.cashOnHandBalance ?? 0, userCurrency, isPrivacyMode)}
                   isSensitive
                 />
                 <InsightMiniCard

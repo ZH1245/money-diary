@@ -32,6 +32,9 @@ import {
   buildTransactionTotals,
   formatTransactionCurrency,
   getDefaultTransactionForm,
+  getTransactionPaymentAccountLabel,
+  getTransferDirectionFromTransactionSource,
+  resolveTransactionSourceForSave,
 } from '#/features/transactions/utils/transaction-display'
 import {
   useCreateTransactionMutation,
@@ -128,6 +131,7 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
         type: row.type,
         categoryId: row.categoryId ? String(row.categoryId) : '',
         paymentAccountId: row.paymentAccountId ? String(row.paymentAccountId) : 'none',
+        transferDirection: getTransferDirectionFromTransactionSource(row.source),
         source: row.source,
         note: row.note,
         happenedAt: toInputDate(row.happenedAt),
@@ -252,6 +256,7 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
     }
 
     const happenedAt = toIsoDateAtNoon(createForm.happenedAt)
+    const resolvedSource = resolveTransactionSourceForSave(createForm)
     const payload = {
       title: createForm.title.trim(),
       amount: createForm.amount.trim(),
@@ -263,7 +268,7 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
         createForm.categoryId ? Number(createForm.categoryId) : null,
       ),
       paymentAccountId: createForm.paymentAccountId === 'none' ? null : Number(createForm.paymentAccountId),
-      source: createForm.source.trim() || undefined,
+      source: resolvedSource,
       note: createForm.note.trim() || undefined,
       happenedAt,
     }
@@ -273,7 +278,7 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
         id: editingTransactionId,
         input: {
           ...payload,
-          source: createForm.source.trim() || null,
+          source: resolvedSource ?? null,
           note: createForm.note.trim() || null,
         },
       })
@@ -451,8 +456,33 @@ export function TransactionsPageContent({ userCurrency }: TransactionsPageConten
                     value={createForm.paymentAccountId}
                     onValueChange={(value) => setCreateForm((state) => ({ ...state, paymentAccountId: value }))}
                     accounts={paymentAccounts}
-                    label="Paid from"
+                    label={getTransactionPaymentAccountLabel(createForm.type)}
                   />
+                  {createForm.type === 'transfer' ? (
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium">Transfer direction</label>
+                      <Select
+                        value={createForm.transferDirection}
+                        onValueChange={(value) =>
+                          setCreateForm((state) => ({
+                            ...state,
+                            transferDirection: value as 'in' | 'out',
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="in">Money into this account</SelectItem>
+                          <SelectItem value="out">Money out of this account</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Example: bank to Cash on hand → choose Cash on hand and &quot;Money into this account&quot;.
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="grid gap-2">
                     <label className="text-sm font-medium">Note (optional)</label>
                     <Input

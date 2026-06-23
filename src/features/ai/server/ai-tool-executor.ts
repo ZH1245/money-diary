@@ -34,6 +34,7 @@ import { format, parseISO, startOfMonth } from 'date-fns'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
 import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
 import { queryUserData } from '#/features/ai/server/ai-user-data-query'
+import { formatTransferSource } from '#/features/transactions/utils/transfer-direction'
 
 const createTransactionArgsSchema = z.object({
   title: z.string().min(1),
@@ -44,6 +45,7 @@ const createTransactionArgsSchema = z.object({
   categoryId: z.number().int().optional(),
   categoryName: z.string().optional(),
   paymentAccountId: z.number().int().positive().optional(),
+  transferDirection: z.enum(['in', 'out']).optional(),
   note: z.string().optional(),
 })
 
@@ -57,6 +59,7 @@ const updateTransactionArgsSchema = z.object({
   categoryId: z.number().int().optional(),
   categoryName: z.string().optional(),
   paymentAccountId: z.number().int().positive().optional(),
+  transferDirection: z.enum(['in', 'out']).optional(),
   note: z.string().optional(),
 })
 
@@ -157,7 +160,7 @@ export async function executeAiTool({
       return { action: 'create_transaction', success: false, message: 'Invalid transaction arguments.' }
     }
 
-    const { title, amount, type, date, currency: rawCurrency, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, note } = args.data
+    const { title, amount, type, date, currency: rawCurrency, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, transferDirection, note } = args.data
 
     let categoryId: number | null = null
     if (type === 'income') {
@@ -207,6 +210,14 @@ export async function executeAiTool({
       return { action: 'create_transaction', success: false, message: amountResult.error }
     }
 
+    if (type === 'transfer' && rawAccId != null && !transferDirection) {
+      return {
+        action: 'create_transaction',
+        success: false,
+        message: 'transferDirection is required for transfers linked to an account (in or out).',
+      }
+    }
+
     const row = await createUserTransaction({
       userId: context.userId,
       title: title.trim(),
@@ -217,7 +228,7 @@ export async function executeAiTool({
       type,
       categoryId,
       paymentAccountId,
-      source: 'ai',
+      source: type === 'transfer' && transferDirection ? formatTransferSource(transferDirection) : 'ai',
       note: note?.trim() || null,
       happenedAt,
     })
@@ -324,6 +335,14 @@ export async function executeAiTool({
     }
 
     const shouldUpdateCategory = args.data.type !== undefined || args.data.categoryId !== undefined
+    let sourceUpdate: string | null | undefined
+    if (args.data.transferDirection !== undefined) {
+      sourceUpdate = formatTransferSource(args.data.transferDirection)
+    } else if (args.data.type === 'transfer' && existing.type !== 'transfer') {
+      sourceUpdate = formatTransferSource('out')
+    } else if (args.data.type !== undefined && args.data.type !== 'transfer' && existing.type === 'transfer') {
+      sourceUpdate = 'ai'
+    }
 
     const row = await updateUserTransaction({
       userId: context.userId,
@@ -336,6 +355,7 @@ export async function executeAiTool({
       ...(args.data.type !== undefined ? { type: args.data.type } : {}),
       ...(shouldUpdateCategory ? { categoryId } : {}),
       ...(paymentAccountId !== undefined ? { paymentAccountId } : {}),
+      ...(sourceUpdate !== undefined ? { source: sourceUpdate } : {}),
       ...(args.data.note !== undefined ? { note: args.data.note.trim() || null } : {}),
       ...(happenedAtUpdate !== undefined ? { happenedAt: happenedAtUpdate } : {}),
     })

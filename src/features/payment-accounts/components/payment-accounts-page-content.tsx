@@ -25,7 +25,11 @@ import {
   usePaymentAccountsQuery,
   useUpdatePaymentAccountMutation,
 } from '#/features/payment-accounts/hooks/use-payment-accounts'
+import { buildPaymentAccountBalances } from '#/features/payment-accounts/utils/payment-account-balance'
 import type { PaymentAccountDto, PaymentAccountType } from '#/features/payment-accounts/types/payment-account'
+import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
+import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
+import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
 import {
   formatPaymentAccountLabel,
   formatPaymentAccountType,
@@ -44,8 +48,10 @@ import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 /** Cards & accounts page: table and create/edit sheet. */
-export function PaymentAccountsPageContent() {
+export function PaymentAccountsPageContent({ userCurrency }: { userCurrency: string }) {
   const { data: accounts = [], isPending, isError, error } = usePaymentAccountsQuery()
+  const { data: transactions = [] } = useTransactionsQuery()
+  const { data: savings = [] } = useSavingsQuery()
   const createAccountMutation = useCreatePaymentAccountMutation()
   const updateAccountMutation = useUpdatePaymentAccountMutation()
   const deleteAccountMutation = useDeletePaymentAccountMutation()
@@ -55,6 +61,24 @@ export function PaymentAccountsPageContent() {
 
   const isEditing = editingAccountId !== null
   const isSaving = createAccountMutation.isPending || updateAccountMutation.isPending
+
+  const accountBalances = useMemo(
+    () =>
+      buildPaymentAccountBalances({
+        accountIds: accounts.map((account) => account.id),
+        transactions: transactions.map((transaction) => ({
+          amount: transaction.amount,
+          type: transaction.type,
+          paymentAccountId: transaction.paymentAccountId,
+          source: transaction.source,
+        })),
+        savings: savings.map((saving) => ({
+          amount: saving.amount,
+          paymentAccountId: saving.paymentAccountId,
+        })),
+      }),
+    [accounts, transactions, savings],
+  )
 
   const handleDeleteAccount = useCallback(
     async (id: number, accountName: string) => {
@@ -170,6 +194,24 @@ export function PaymentAccountsPageContent() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Provider" />,
       },
       {
+        id: 'balance',
+        accessorFn: (row) => accountBalances[row.id] ?? 0,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Balance" />,
+        cell: ({ row }) => {
+          if (row.original.institutionSlug !== 'cash') {
+            return '—'
+          }
+
+          return (
+            <SensitiveAmount
+              amount={String(accountBalances[row.original.id] ?? 0)}
+              currency={userCurrency}
+              className="font-medium"
+            />
+          )
+        },
+      },
+      {
         accessorKey: 'isActive',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
         cell: ({ row }) => (row.original.isActive ? 'Active' : 'Inactive'),
@@ -191,7 +233,7 @@ export function PaymentAccountsPageContent() {
         ),
       },
     ],
-    [deleteAccountMutation.isPending, handleDeleteAccount, openEditAccount],
+    [accountBalances, deleteAccountMutation.isPending, handleDeleteAccount, openEditAccount, userCurrency],
   )
 
   return (
@@ -201,7 +243,8 @@ export function PaymentAccountsPageContent() {
           <div>
             <h1 className="display-title text-3xl">Cards &amp; accounts</h1>
             <p className="mt-2 text-sm opacity-70">
-              Bank cards, wallets, and cash accounts you can link on transactions and savings.
+              Bank cards, wallets, and cash accounts you can link on transactions and savings. Cash on hand balance
+              updates from linked income, expenses, transfers, and savings.
             </p>
           </div>
           <Button className="gap-2" onClick={openCreateSheet}>

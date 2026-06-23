@@ -68,18 +68,103 @@ function buildOpenRouterHeaders(apiKey: string): Record<string, string> {
 }
 
 /**
+ * Extracts a detailed upstream message from OpenRouter provider metadata.
+ */
+function parseOpenRouterProviderRawError(raw: unknown): string | null {
+  if (raw == null) return null
+
+  let parsed: unknown = raw
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+    try {
+      parsed = JSON.parse(trimmed) as unknown
+    } catch {
+      return trimmed
+    }
+  }
+
+  if (typeof parsed !== 'object' || parsed == null) return null
+
+  const record = parsed as Record<string, unknown>
+  const nestedError = record.error
+  if (nestedError && typeof nestedError === 'object') {
+    const nestedMessage = (nestedError as { message?: unknown }).message
+    if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+      return nestedMessage.trim()
+    }
+  }
+
+  const message = record.message
+  if (typeof message === 'string' && message.trim()) {
+    return message.trim()
+  }
+
+  return null
+}
+
+/**
+ * Gemma models on OpenRouter reject native system roles; fold them into user content.
+ */
+export function prepareOpenRouterMessages(
+  model: string,
+  messages: OpenRouterChatMessage[],
+): OpenRouterChatMessage[] {
+  const needsSystemFold = /\/gemma/i.test(model)
+  if (!needsSystemFold) return messages
+
+  const systemMessage = messages.find((message) => message.role === 'system')
+  if (!systemMessage || typeof systemMessage.content !== 'string') return messages
+
+  const conversationMessages = messages.filter((message) => message.role !== 'system')
+  if (conversationMessages.length === 0) {
+    return [{ role: 'user', content: systemMessage.content }]
+  }
+
+  const [firstMessage, ...rest] = conversationMessages
+  if (firstMessage.role === 'user') {
+    return [
+      {
+        role: 'user',
+        content: `${systemMessage.content}\n\n---\n\n${firstMessage.content}`,
+      },
+      ...rest,
+    ]
+  }
+
+  return [{ role: 'user', content: systemMessage.content }, ...conversationMessages]
+}
+
+/**
  * Builds a user-facing message from OpenRouter top-level or per-choice errors.
  */
 function resolveOpenRouterErrorMessage(data: OpenRouterChatCompletionResponse | null): string | null {
-  const topLevel = data?.error?.message?.trim()
-  if (topLevel) return topLevel
-
   const choice = data?.choices?.[0]
+  const metadata = data?.error?.metadata ?? choice?.error?.metadata
+  const rawDetail = parseOpenRouterProviderRawError(metadata?.raw)
+  const providerName =
+    typeof metadata?.provider_name === 'string' ? metadata.provider_name : undefined
+
+  const topLevel = data?.error?.message?.trim()
   const choiceError = choice?.error?.message?.trim()
-  if (choiceError) return choiceError
+  const genericMessage = topLevel ?? choiceError
+
+  if (genericMessage && genericMessage !== 'Provider returned error') {
+    return genericMessage
+  }
+
+  if (rawDetail) {
+    return rawDetail
+  }
+
+  if (genericMessage) {
+    return providerName ? `${genericMessage} (${providerName})` : genericMessage
+  }
 
   if (choice?.finish_reason === 'error') {
-    return 'The upstream model provider returned an error.'
+    return providerName
+      ? `The upstream model provider returned an error (${providerName}).`
+      : 'The upstream model provider returned an error.'
   }
 
   return null
@@ -219,11 +304,15 @@ export async function callOpenRouterChat({
 
   const requestBody = {
     model,
-    messages,
+    messages: prepareOpenRouterMessages(model, messages),
     tools: toOpenRouterTools(tools),
     tool_choice: 'auto' as const,
     temperature: 0.3,
     max_tokens: 4096,
+    provider: {
+      require_parameters: true,
+      allow_fallbacks: true,
+    },
   }
 
   let response: Response
