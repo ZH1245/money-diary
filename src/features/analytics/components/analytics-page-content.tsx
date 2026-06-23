@@ -2,8 +2,10 @@ import { PageEmptyState, PageErrorState, AnalyticsLoadingSkeleton } from '#/comp
 import { StatCard } from '#/components/feedback/stat-card'
 import { useCategoriesQuery } from '#/features/categories/hooks/use-categories'
 import { InsightTable } from '#/features/analytics/components/insight-table'
+import { CategoryExpenseGroups } from '#/features/analytics/components/category-expense-groups'
 import {
   buildAnalyticsStats,
+  buildCategoryExpenseGroups,
   buildTopCategories,
   buildTopIncome,
   buildTopTitles,
@@ -59,6 +61,10 @@ export function AnalyticsPageContent({ userCurrency }: AnalyticsPageContentProps
     [filteredTransactions, categories],
   )
   const topTitles = useMemo(() => buildTopTitles(filteredTransactions), [filteredTransactions])
+  const categoryExpenseGroups = useMemo(
+    () => buildCategoryExpenseGroups(filteredTransactions, categories),
+    [filteredTransactions, categories],
+  )
   const categoryChartData = useMemo(
     () =>
       topCategories.map((row, index) => ({
@@ -187,10 +193,24 @@ export function AnalyticsPageContent({ userCurrency }: AnalyticsPageContentProps
             </div>
 
             {hasExpenseData ? (
-              <div className="grid gap-4 lg:grid-cols-2">
-                <InsightTable title="Top categories" rows={topCategories} currency={currency} colors={[...chartColors.series]} isPrivacyMode={isPrivacyMode} />
-                <InsightTable title="Top expense titles" rows={topTitles} currency={currency} colors={[...chartColors.series]} isPrivacyMode={isPrivacyMode} />
-              </div>
+              <>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <InsightTable title="Top categories" rows={topCategories} currency={currency} colors={[...chartColors.series]} isPrivacyMode={isPrivacyMode} />
+                  <InsightTable title="Top expense titles" rows={topTitles} currency={currency} colors={[...chartColors.series]} isPrivacyMode={isPrivacyMode} />
+                </div>
+
+                <div className="feature-card rounded-2xl border border-border p-5">
+                  <p className="text-sm font-semibold">Expenses by category</p>
+                  <p className="mt-1 text-xs opacity-70">All expense entries grouped under their category</p>
+                  <div className="mt-4">
+                    <CategoryExpenseGroups
+                      groups={categoryExpenseGroups}
+                      currency={currency}
+                      isPrivacyMode={isPrivacyMode}
+                    />
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="island-shell rounded-2xl p-6">
                 <PageEmptyState message="No expense data in this date range. Log expenses to see category and title breakdowns." />

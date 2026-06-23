@@ -13,6 +13,68 @@ export interface AnalyticsInsightRow {
   amount: number
 }
 
+export interface CategoryExpenseGroup {
+  categoryId: number | null
+  label: string
+  total: number
+  transactions: Array<{
+    title: string
+    amount: number
+    happenedAt: string
+  }>
+}
+
+/** Groups expense transactions by category for analytics breakdowns. */
+export function buildCategoryExpenseGroups(
+  transactions: Array<{
+    title: string
+    amount: string
+    type: string
+    categoryId: number | null
+    happenedAt: string
+  }>,
+  categories: Array<{ id: number; name: string }>,
+): CategoryExpenseGroup[] {
+  const groups = new Map<string, CategoryExpenseGroup>()
+
+  for (const transaction of transactions) {
+    if (transaction.type !== 'expense') {
+      continue
+    }
+
+    const amount = parseLedgerAmount(transaction.amount)
+    const label =
+      transaction.categoryId == null
+        ? 'Uncategorized'
+        : (categories.find((category) => category.id === transaction.categoryId)?.name ?? 'Unknown')
+    const key = transaction.categoryId == null ? 'uncategorized' : String(transaction.categoryId)
+
+    const existing = groups.get(key) ?? {
+      categoryId: transaction.categoryId,
+      label,
+      total: 0,
+      transactions: [],
+    }
+
+    existing.total += amount
+    existing.transactions.push({
+      title: transaction.title,
+      amount,
+      happenedAt: transaction.happenedAt,
+    })
+    groups.set(key, existing)
+  }
+
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      transactions: [...group.transactions].sort(
+        (first, second) => new Date(second.happenedAt).getTime() - new Date(first.happenedAt).getTime(),
+      ),
+    }))
+    .sort((first, second) => second.total - first.total)
+}
+
 /** Aggregates income, expense, transfer, and net for analytics cards. */
 export function buildAnalyticsStats(transactions: Array<{ amount: string; type: string }>): AnalyticsTotals {
   return transactions.reduce(
