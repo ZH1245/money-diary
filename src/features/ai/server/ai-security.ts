@@ -64,22 +64,27 @@ export function detectOffTopicRequest(content: string): boolean {
  * Tracks repeated abuse attempts and blocks chat after threshold.
  */
 export async function evaluateAbuseState(userId: string): Promise<AiSecurityCheckResult> {
-  const bucket = await getRateLimitBucket(abuseBucketKey(userId))
-  if (!bucket) return { allowed: true }
+  try {
+    const bucket = await getRateLimitBucket(abuseBucketKey(userId))
+    if (!bucket) return { allowed: true }
 
-  const now = Date.now()
-  const blockedUntil = bucket.resetAt.getTime()
+    const now = Date.now()
+    const blockedUntil = bucket.resetAt.getTime()
 
-  if (bucket.hitCount >= MAX_STRIKES && blockedUntil > now) {
-    return {
-      allowed: false,
-      closeChat: true,
-      reason: 'Chat closed due to repeated unsafe requests. Try again later.',
+    if (bucket.hitCount >= MAX_STRIKES && blockedUntil > now) {
+      return {
+        allowed: false,
+        closeChat: true,
+        reason: 'Chat closed due to repeated unsafe requests. Try again later.',
+      }
     }
-  }
 
-  if (blockedUntil <= now) {
-    await deleteRateLimitBucket(abuseBucketKey(userId))
+    if (blockedUntil <= now) {
+      await deleteRateLimitBucket(abuseBucketKey(userId))
+    }
+  } catch {
+    // Allow chat when rate_limit_buckets is missing or the store is unavailable.
+    return { allowed: true }
   }
 
   return { allowed: true }
@@ -89,34 +94,38 @@ export async function evaluateAbuseState(userId: string): Promise<AiSecurityChec
  * Records an unsafe user attempt and may block further chat usage.
  */
 export async function recordAbuseStrike(userId: string): Promise<AiSecurityCheckResult> {
-  const bucketKey = abuseBucketKey(userId)
-  const existing = await getRateLimitBucket(bucketKey)
-  const now = Date.now()
-  const strikes =
-    existing && existing.resetAt.getTime() > now ? existing.hitCount + 1 : 1
+  try {
+    const bucketKey = abuseBucketKey(userId)
+    const existing = await getRateLimitBucket(bucketKey)
+    const now = Date.now()
+    const strikes =
+      existing && existing.resetAt.getTime() > now ? existing.hitCount + 1 : 1
 
-  if (strikes >= MAX_STRIKES) {
+    if (strikes >= MAX_STRIKES) {
+      await upsertRateLimitBucket({
+        bucketKey,
+        hitCount: strikes,
+        resetAt: new Date(now + BLOCK_DURATION_MS),
+      })
+      return {
+        allowed: false,
+        closeChat: true,
+        reason: 'Chat closed after repeated unsafe requests.',
+      }
+    }
+
     await upsertRateLimitBucket({
       bucketKey,
       hitCount: strikes,
       resetAt: new Date(now + BLOCK_DURATION_MS),
     })
+
     return {
-      allowed: false,
-      closeChat: true,
-      reason: 'Chat closed after repeated unsafe requests.',
+      allowed: true,
+      warning: 'Stay within Money Diary finance actions only.',
     }
-  }
-
-  await upsertRateLimitBucket({
-    bucketKey,
-    hitCount: strikes,
-    resetAt: new Date(now + BLOCK_DURATION_MS),
-  })
-
-  return {
-    allowed: true,
-    warning: 'Stay within Money Diary finance actions only.',
+  } catch {
+    return { allowed: true }
   }
 }
 

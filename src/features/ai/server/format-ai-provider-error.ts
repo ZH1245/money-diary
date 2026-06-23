@@ -84,10 +84,17 @@ export function formatAiProviderError(raw: string, provider?: string): string {
  */
 export function resolveUnexpectedChatError(error: unknown): string {
   const raw = error instanceof Error ? error.message : 'AI chat request failed'
-  if (/HTTPError|fetch failed|Failed query|ECONNREFUSED|ECONNRESET/i.test(raw)) {
-    return formatAiProviderError(
-      'Could not reach the database or AI service. Try again in a moment.',
-    )
+  const cause =
+    error instanceof Error && error.cause instanceof Error ? error.cause.message : ''
+  const combined = `${raw} ${cause}`
+
+  if (/rate_limit_buckets|42P01/i.test(combined)) {
+    return 'AI chat is temporarily unavailable because a server database update is pending. Try again after the app is migrated, or contact the admin.'
   }
+
+  if (/HTTPError|fetch failed|Failed query|ECONNREFUSED|ECONNRESET/i.test(combined)) {
+    return 'Something went wrong on the server while handling your message. Try again in a moment.'
+  }
+
   return formatAiProviderError(raw)
 }
