@@ -14,17 +14,23 @@ import {
 
 import { cn } from "#/lib/utils.ts"
 import { Button, buttonVariants } from "#/components/ui/button.tsx"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "#/components/ui/tooltip.tsx"
 import { format } from "date-fns"
 
 export interface DayActivityMarkers {
   income?: boolean
   expense?: boolean
   transfer?: boolean
+  incomeTotal?: number
+  expenseTotal?: number
+  transferTotal?: number
 }
 
 interface CalendarActivityContextValue {
   dayActivityByDate?: Record<string, DayActivityMarkers>
   onDayDoubleClick?: (day: Date) => void
+  currency?: string
+  isPrivacyMode?: boolean
 }
 
 const CalendarActivityContext = React.createContext<CalendarActivityContextValue>({})
@@ -39,16 +45,21 @@ function Calendar({
   components,
   dayActivityByDate,
   onDayDoubleClick,
+  currency,
+  isPrivacyMode,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
   dayActivityByDate?: Record<string, DayActivityMarkers>
   onDayDoubleClick?: (day: Date) => void
+  currency?: string
+  isPrivacyMode?: boolean
 }) {
   const defaultClassNames = getDefaultClassNames()
 
   return (
-    <CalendarActivityContext.Provider value={{ dayActivityByDate, onDayDoubleClick }}>
+    <CalendarActivityContext.Provider value={{ dayActivityByDate, onDayDoubleClick, currency, isPrivacyMode }}>
+    <TooltipProvider delayDuration={300}>
       <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
@@ -194,6 +205,7 @@ function Calendar({
       }}
       {...props}
     />
+    </TooltipProvider>
     </CalendarActivityContext.Provider>
   )
 }
@@ -205,7 +217,7 @@ function CalendarDayButton({
   ...props
 }: React.ComponentProps<typeof DayButton>) {
   const defaultClassNames = getDefaultClassNames()
-  const { dayActivityByDate, onDayDoubleClick } = React.useContext(CalendarActivityContext)
+  const { dayActivityByDate, onDayDoubleClick, currency, isPrivacyMode } = React.useContext(CalendarActivityContext)
   const dateKey = format(day.date, 'yyyy-MM-dd')
   const activity = dayActivityByDate?.[dateKey]
 
@@ -219,7 +231,18 @@ function CalendarDayButton({
     onDayDoubleClick?.(day.date)
   }
 
-  return (
+  const hasStats = currency && activity && (
+    (activity.income && (activity.incomeTotal ?? 0) > 0) ||
+    (activity.expense && (activity.expenseTotal ?? 0) > 0) ||
+    (activity.transfer && (activity.transferTotal ?? 0) > 0)
+  )
+
+  function formatAmount(amount: number) {
+    if (isPrivacyMode) return '•••'
+    return `${currency} ${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+  }
+
+  const button = (
     <Button
       ref={ref}
       variant="ghost"
@@ -251,6 +274,44 @@ function CalendarDayButton({
         </span>
       ) : null}
     </Button>
+  )
+
+  if (!hasStats) return button
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="top" className="min-w-[140px] space-y-1 p-2.5 text-xs">
+        <p className="mb-1.5 font-medium opacity-80">{format(day.date, 'MMM d, yyyy')}</p>
+        {activity.expense && (activity.expenseTotal ?? 0) > 0 && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-red-500" />
+              Out
+            </span>
+            <span className="font-medium">{formatAmount(activity.expenseTotal ?? 0)}</span>
+          </div>
+        )}
+        {activity.income && (activity.incomeTotal ?? 0) > 0 && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              In
+            </span>
+            <span className="font-medium">{formatAmount(activity.incomeTotal ?? 0)}</span>
+          </div>
+        )}
+        {activity.transfer && (activity.transferTotal ?? 0) > 0 && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-sky-500" />
+              Transfer
+            </span>
+            <span className="font-medium">{formatAmount(activity.transferTotal ?? 0)}</span>
+          </div>
+        )}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
