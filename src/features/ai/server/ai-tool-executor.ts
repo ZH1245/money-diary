@@ -863,18 +863,20 @@ export async function loadUserAiContext(userId: string) {
     getUserWishlistItems(userId),
   ])
 
+  const sanitizeName = (s: string) => s.replace(/[\r\n]+/g, ' ').trim()
+
   return {
-    categoryList: userCategories.map((category) => `${category.name} [ref ${category.id}]`).join(', '),
+    categoryList: userCategories.map((category) => `${sanitizeName(category.name)} [ref ${category.id}]`).join(', '),
     accountList: userAccounts
       .map((account) => {
         const suffix = account.lastFour ? ` ••${account.lastFour}` : ''
         const status = account.isActive ? '' : ' inactive'
-        return `${account.name} (${account.accountType}${suffix})${status} [ref ${account.id}]`
+        return `${sanitizeName(account.name)} (${account.accountType}${suffix})${status} [ref ${account.id}]`
       })
       .join(', '),
-    goalList: userGoals.map((goal) => `${goal.title} [ref ${goal.id}]`).join(', '),
+    goalList: userGoals.map((goal) => `${sanitizeName(goal.title)} [ref ${goal.id}]`).join(', '),
     wishlistList: userWishlist
-      .map((item) => `${item.title} [ref ${item.id}] (${item.status})`)
+      .map((item) => `${sanitizeName(item.title)} [ref ${item.id}] (${item.status})`)
       .join(', '),
     userGoals,
     userWishlist,
