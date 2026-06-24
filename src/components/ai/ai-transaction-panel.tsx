@@ -45,6 +45,7 @@ interface ThreadMessage {
   isWarning?: boolean
   action?: string
   steps?: Array<{ action: string; success: boolean }>
+  createdAt?: string
 }
 
 interface AiTransactionPanelProps {
@@ -153,6 +154,16 @@ function formatThreadMessageText(content: string, isError?: boolean): string {
   return content
 }
 
+function formatMessageTime(createdAt: string): string {
+  const date = new Date(createdAt)
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  if (isToday) {
+    return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  }
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
 /**
  * Maps persisted conversation messages into renderable thread bubbles.
  */
@@ -166,6 +177,7 @@ function mapConversationMessage(message: AiConversationMessage): ThreadMessage {
     isError,
     action: message.metadata?.action,
     steps: message.metadata?.steps,
+    createdAt: message.createdAt,
   }
 }
 
@@ -191,6 +203,7 @@ function buildAssistantThreadMessage(
     ok: options.ok,
     action: options.action,
     steps: options.steps,
+    createdAt: new Date().toISOString(),
   }
 }
 
@@ -275,10 +288,17 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
         : 'Start typing below'
       : conversationQuery.data?.title ?? 'Loading...'
 
+  // Snap instantly when panel opens or an existing conversation loads into view
+  useEffect(() => {
+    if (!open) return
+    bottomRef.current?.scrollIntoView({ behavior: 'instant' })
+  }, [open, thread])
+
+  // Smooth scroll as new messages stream in during an active session
   useEffect(() => {
     if (!open) return
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [open, thread, mutation.isPending])
+  }, [mutation.isPending])
 
   function handleNewChat() {
     setActiveAiConversationId(null)
@@ -332,7 +352,7 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
     setPrompt('')
 
     if (activeConversationId == null) {
-      setPendingMessages((current) => [...current, { role: 'user', text }])
+      setPendingMessages((current) => [...current, { role: 'user', text, createdAt: new Date().toISOString() }])
     } else {
       queryClient.setQueryData<AiConversationDetail | undefined>(
         queryKeys.ai.conversation(activeConversationId),
@@ -627,8 +647,9 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
           {thread.map((message, index) => (
             <div
               key={message.id ?? index}
-              className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col gap-0.5 ${message.role === 'user' ? 'items-end' : 'items-start'}`}
             >
+              <div className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {message.role === 'assistant' && message.isError ? (
                 <AlertTriangle className="mt-1 size-4 shrink-0 text-destructive" />
               ) : message.role === 'assistant' && message.ok ? (
@@ -676,6 +697,12 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                   </div>
                 ) : null}
               </div>
+              </div>
+              {message.createdAt ? (
+                <span className="px-1 text-[10px] text-muted-foreground/60">
+                  {formatMessageTime(message.createdAt)}
+                </span>
+              ) : null}
             </div>
           ))}
 
