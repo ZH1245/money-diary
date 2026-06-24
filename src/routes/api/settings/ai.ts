@@ -78,7 +78,7 @@ export const Route = createFileRoute('/api/settings/ai')({
             },
           })
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unable to load AI settings'
+          const message = error instanceof Error ? error.message : ''
 
           if (message.includes('ai_provider_settings') || message.includes('does not exist')) {
             return Response.json(
@@ -90,7 +90,8 @@ export const Route = createFileRoute('/api/settings/ai')({
             )
           }
 
-          return Response.json({ success: false, error: message }, { status: 500 })
+          console.error('[settings/ai GET]', error)
+          return Response.json({ success: false, error: 'Unable to load AI settings.' }, { status: 500 })
         }
       },
       PATCH: async ({ request }) => {
@@ -199,7 +200,7 @@ export const Route = createFileRoute('/api/settings/ai')({
             },
           })
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unable to save AI settings'
+          const message = error instanceof Error ? error.message : ''
 
           if (message.includes('ENV_SECRETS') || message.includes('ENCRYPTION_KEY') || message.includes('BETTER_AUTH_SECRET')) {
             return Response.json(
@@ -221,7 +222,8 @@ export const Route = createFileRoute('/api/settings/ai')({
             )
           }
 
-          return Response.json({ success: false, error: message }, { status: 500 })
+          console.error('[settings/ai PATCH]', error)
+          return Response.json({ success: false, error: 'Unable to save AI settings.' }, { status: 500 })
         }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),

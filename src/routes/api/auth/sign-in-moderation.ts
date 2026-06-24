@@ -38,8 +38,8 @@ export const Route = createFileRoute('/api/auth/sign-in-moderation')({
             },
           })
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unable to check account status'
-          return Response.json({ success: false, error: message }, { status: 500 })
+          console.error('[sign-in-moderation POST]', error)
+          return Response.json({ success: false, error: 'Unable to check account status.' }, { status: 500 })
         }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),

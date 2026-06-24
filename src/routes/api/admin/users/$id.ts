@@ -69,8 +69,8 @@ export const Route = createFileRoute('/api/admin/users/$id')({
 
           return Response.json({ success: true, data })
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unable to update user moderation'
-          return Response.json({ success: false, error: message }, { status: 400 })
+          console.error('[admin/users PATCH]', error)
+          return Response.json({ success: false, error: 'Unable to update user moderation.' }, { status: 400 })
         }
       },
       DELETE: async ({ request, params }) => {
@@ -97,8 +97,8 @@ export const Route = createFileRoute('/api/admin/users/$id')({
 
           return Response.json({ success: true, data: { id: params.id } })
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unable to delete user'
-          return Response.json({ success: false, error: message }, { status: 400 })
+          console.error('[admin/users DELETE]', error)
+          return Response.json({ success: false, error: 'Unable to delete user.' }, { status: 400 })
         }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),

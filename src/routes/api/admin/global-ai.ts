@@ -93,8 +93,8 @@ export const Route = createFileRoute('/api/admin/global-ai')({
           const settings = await getGlobalAiSettings()
           return Response.json({ success: true, data: settings })
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unable to save global AI settings'
-          return Response.json({ success: false, error: message }, { status: 500 })
+          console.error('[admin/global-ai PATCH]', error)
+          return Response.json({ success: false, error: 'Unable to save global AI settings.' }, { status: 500 })
         }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),

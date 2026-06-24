@@ -49,6 +49,7 @@ export const Route = createFileRoute('/api/settings/ai/test')({
             data: result,
           })
         } catch (error) {
+          console.error('[settings/ai/test POST]', error)
           return Response.json(
             {
               success: false,

@@ -79,9 +79,17 @@ export const Route = createFileRoute('/api/auth/security-profile')({
             )
           }
 
-          const message = error instanceof Error ? error.message : 'Unable to save security profile'
-          const status = message.includes('already exists') ? 409 : 500
-          return Response.json({ success: false, error: message }, { status })
+          const isAlreadyExists = error instanceof Error && error.message.includes('already exists')
+          console.error('[security-profile POST]', error)
+          return Response.json(
+            {
+              success: false,
+              error: isAlreadyExists
+                ? 'A security profile already exists for this account'
+                : 'Unable to save security profile. Please try again.',
+            },
+            { status: isAlreadyExists ? 409 : 500 },
+          )
         }
       },
       PATCH: async ({ request }) => {
@@ -139,8 +147,8 @@ export const Route = createFileRoute('/api/auth/security-profile')({
             )
           }
 
-          const message = error instanceof Error ? error.message : 'Unable to update security profile'
-          return Response.json({ success: false, error: message }, { status: 500 })
+          console.error('[security-profile PATCH]', error)
+          return Response.json({ success: false, error: 'Unable to update security profile. Please try again.' }, { status: 500 })
         }
       },
       OPTIONS: ({ request }) => buildOptionsResponse(request),
