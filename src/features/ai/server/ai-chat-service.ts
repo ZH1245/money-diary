@@ -248,6 +248,32 @@ async function callProviderChat({
 }
 
 /**
+ * Returns true for errors that are worth retrying (transient model/network failures).
+ * Auth failures, config errors, and permanent rejections are not retried.
+ */
+function isRetryableProviderError(error: string): boolean {
+  if (/api key|invalid.*key|permission denied|unauthorized/i.test(error)) return false
+  if (/insufficient credits|requires more credits|payment required/i.test(error)) return false
+  if (/no endpoints found that support tool/i.test(error)) return false
+  if (/developer instruction is not enabled|system instruction is not enabled/i.test(error)) return false
+  return true
+}
+
+/**
+ * Calls the provider once and, on transient failure, waits 1.5 s and retries exactly once.
+ */
+async function callProviderChatWithRetry(
+  params: Parameters<typeof callProviderChat>[0],
+): ReturnType<typeof callProviderChat> {
+  const result = await callProviderChat(params)
+  if (!result.ok && isRetryableProviderError(result.error)) {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    return callProviderChat(params)
+  }
+  return result
+}
+
+/**
  * Appends assistant and tool messages to the active provider thread.
  */
 function appendProviderTurn({
@@ -502,7 +528,7 @@ export async function runAiChat({
   let truncationWarning: string | undefined
 
   for (let step = 0; step < maxToolChainSteps; step += 1) {
-    const providerResult = await callProviderChat({
+    const providerResult = await callProviderChatWithRetry({
       provider: runtime.provider,
       systemPrompt,
       state: chatState,
