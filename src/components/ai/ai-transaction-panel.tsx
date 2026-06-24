@@ -69,6 +69,34 @@ const ACTION_LABELS: Record<string, string> = {
   chained: 'Multiple actions',
 }
 
+const ACTION_ROUTE_MAP: Partial<Record<string, string>> = {
+  create_transaction: '/transactions',
+  update_transaction: '/transactions',
+  create_saving: '/savings',
+  create_payment_account: '/accounts',
+  update_payment_account: '/accounts',
+  create_goal: '/goals',
+  update_goal: '/goals',
+  delete_goal: '/goals',
+  create_wishlist_item: '/wishlist',
+  update_wishlist_item: '/wishlist',
+  delete_wishlist_item: '/wishlist',
+}
+
+const ACTION_LINK_LABELS: Partial<Record<string, string>> = {
+  create_transaction: 'View in Expenses',
+  update_transaction: 'View in Expenses',
+  create_saving: 'View in Savings',
+  create_payment_account: 'View Accounts',
+  update_payment_account: 'View Accounts',
+  create_goal: 'View Goals',
+  update_goal: 'View Goals',
+  delete_goal: 'View Goals',
+  create_wishlist_item: 'View Wishlist',
+  update_wishlist_item: 'View Wishlist',
+  delete_wishlist_item: 'View Wishlist',
+}
+
 const EXAMPLES = [
   'Spent 2500 on groceries yesterday',
   'Got salary of 85000 today',
@@ -435,7 +463,7 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
             toast.error('Some actions could not be completed.')
           }
         }
-        if (allOk && result.navigateTo) {
+        if (allOk && result.navigateTo && shouldUseToast()) {
           void navigate({ to: result.navigateTo })
         }
         return
@@ -444,9 +472,9 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
       if (result.success && result.message && result.action && result.action !== 'chained') {
         if (shouldUseToast()) {
           toast.success(ACTION_LABELS[result.action] ?? 'Entry created')
-        }
-        if (result.navigateTo) {
-          void navigate({ to: result.navigateTo })
+          if (result.navigateTo) {
+            void navigate({ to: result.navigateTo })
+          }
         }
       }
     } catch (error) {
@@ -632,9 +660,20 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                     ))}
                   </div>
                 ) : message.ok && message.action ? (
-                  <span className="mt-1 block text-[10px] font-medium uppercase tracking-wide opacity-60">
-                    {ACTION_LABELS[message.action] ?? message.action}
-                  </span>
+                  <div className="mt-1 flex items-center justify-between gap-2 border-t border-emerald-200/60 pt-1.5 dark:border-emerald-800/60">
+                    <span className="text-[10px] font-medium uppercase tracking-wide opacity-60">
+                      {ACTION_LABELS[message.action] ?? message.action}
+                    </span>
+                    {ACTION_ROUTE_MAP[message.action] ? (
+                      <Link
+                        to={ACTION_ROUTE_MAP[message.action]!}
+                        className="text-[11px] font-medium text-emerald-700 underline underline-offset-2 dark:text-emerald-300"
+                        onClick={() => onOpenChange(false)}
+                      >
+                        {ACTION_LINK_LABELS[message.action] ?? 'View'}
+                      </Link>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>

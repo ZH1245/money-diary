@@ -909,10 +909,12 @@ function buildWriteStepResult({
 
 /**
  * Resolves YYYY-MM-DD tool date, defaulting to calendar today when omitted.
+ * Uses noon local time to match form-created transactions so same-day entries
+ * sort correctly when ordered by happenedAt DESC.
  */
 function resolveToolDate(rawDate: string | undefined, today: string): Date | null {
   const value = rawDate?.trim() || today
-  const parsed = new Date(value)
+  const parsed = new Date(`${value}T12:00:00`)
   if (Number.isNaN(parsed.getTime())) {
     return null
   }
