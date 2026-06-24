@@ -54,11 +54,9 @@ export const Route = createFileRoute('/api/exchange-rate')({
             },
           })
         } catch (error) {
+          console.error('[exchange-rate GET]', error)
           return Response.json(
-            {
-              success: false,
-              error: error instanceof Error ? error.message : 'Unable to fetch exchange rate',
-            },
+            { success: false, error: 'Unable to fetch exchange rate. Please try again.' },
             { status: 502 },
           )
         }

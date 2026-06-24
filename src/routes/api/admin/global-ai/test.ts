@@ -31,6 +31,7 @@ export const Route = createFileRoute('/api/admin/global-ai/test')({
           const result = await probeGlobalAiConnection(parsed.data)
           return Response.json({ success: true, data: result })
         } catch (error) {
+          console.error('[admin/global-ai/test POST]', error)
           return Response.json(
             {
               success: false,
