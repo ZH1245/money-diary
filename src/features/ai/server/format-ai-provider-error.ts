@@ -67,6 +67,10 @@ export function formatAiProviderError(raw: string, provider?: string): string {
     return `${providerName} could not run this Gemma model for Money Diary — free Gemma endpoints often reject tools and system prompts. In Settings → AI Provider, set the model to google/gemini-2.0-flash-exp:free.`
   }
 
+  if (/upstream model provider returned an error/i.test(normalized)) {
+    return `The AI model ran into an error processing your request. This usually means the free model is rate-limited or temporarily overloaded — wait a moment and try again, or switch to a paid model like google/gemini-2.5-flash-lite in Settings → AI Provider.`
+  }
+
   const withoutPrefix = normalized.replace(/^(Gemini|Ollama|OpenRouter):\s*/i, '')
 
   if (

@@ -6,6 +6,7 @@ import { InsightMiniCard } from '#/features/dashboard/components/insight-mini-ca
 import { dashboardDateRangeStore } from '#/features/dashboard/store/dashboard-date-range-store'
 import { isDateInRange } from '#/features/dashboard/utils/dashboard-date-range'
 import { buildDashboardStats } from '#/features/dashboard/utils/dashboard-stats'
+import { buildTransactionCalendarActivity } from '#/features/dashboard/utils/transaction-calendar-activity'
 import type { RecentTransactionRow } from '#/features/dashboard/types/dashboard-stats'
 import { useGoalsQuery } from '#/features/goals/hooks/use-goals'
 import { findCashPaymentAccountId } from '#/features/payment-accounts/utils/payment-account-balance'
@@ -47,6 +48,11 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
   const { data: wishlist = [], isError: isWishlistError, error: wishlistError } = useWishlistQuery()
   const { data: goals = [], isError: isGoalsError, error: goalsError } = useGoalsQuery()
   const isPrivacyMode = usePrivacyModeEnabled()
+
+  const dayActivityByDate = useMemo(
+    () => buildTransactionCalendarActivity(transactions),
+    [transactions],
+  )
 
   const filteredTransactions = useMemo(
     () => transactions.filter((transaction) => isDateInRange(transaction.happenedAt, dateRange.from, dateRange.to)),
@@ -274,6 +280,9 @@ export function DashboardPageContent({ userCurrency }: DashboardPageContentProps
                       selected={selectedDate}
                       onSelect={setSelectedDate}
                       className="w-full bg-transparent p-0"
+                      dayActivityByDate={dayActivityByDate}
+                      currency={userCurrency}
+                      isPrivacyMode={isPrivacyMode}
                     />
                   </div>
                   <p className="mt-4 text-xs opacity-70">

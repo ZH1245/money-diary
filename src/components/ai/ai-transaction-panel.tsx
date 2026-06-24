@@ -22,7 +22,7 @@ import {
 import type { AiConversationDetail, AiConversationMessage } from '#/features/ai/types/ai-conversation'
 import { toolbarIconButtonClass } from '#/components/layout/toolbar-control-styles'
 import { AlertTriangle, CheckCircle2, History, MessageSquarePlus, Sparkles, Trash2 } from 'lucide-react'
-import type { FormEvent, KeyboardEvent } from 'react'
+import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
@@ -74,6 +74,43 @@ const EXAMPLES = [
   'Got salary of 85000 today',
   'Add my HBL debit card',
 ]
+
+/**
+ * Renders inline markdown: **bold**, then returns text segments as React nodes.
+ */
+function renderInline(text: string): ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/)
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : part
+  )
+}
+
+/**
+ * Renders AI assistant text with basic markdown: numbered lists and **bold**.
+ */
+function AiMessageText({ text }: { text: string }) {
+  const blocks = text.split(/\n{2,}/)
+  return (
+    <div className="space-y-1.5">
+      {blocks.map((block, i) => {
+        const lines = block.split('\n').filter(Boolean)
+        const listLines = lines.filter((l) => /^\d+\.\s+/.test(l))
+        if (listLines.length > 0 && listLines.length === lines.length) {
+          return (
+            <ol key={i} className="list-decimal space-y-1 pl-4">
+              {listLines.map((line, j) => (
+                <li key={j}>{renderInline(line.replace(/^\d+\.\s+/, ''))}</li>
+              ))}
+            </ol>
+          )
+        }
+        return <p key={i}>{renderInline(block)}</p>
+      })}
+    </div>
+  )
+}
 
 /**
  * Formats assistant text for display, including legacy raw provider errors.
@@ -570,9 +607,9 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                 <CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-500" />
               ) : null}
               <div
-                className={`rounded-xl px-3 py-2 text-sm max-w-[84%] whitespace-pre-wrap ${
+                className={`rounded-xl px-3 py-2 text-sm max-w-[84%] ${
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'whitespace-pre-wrap bg-primary text-primary-foreground'
                     : message.isError
                       ? 'border border-destructive/30 bg-destructive/10 text-destructive'
                       : message.isWarning
@@ -582,7 +619,7 @@ export function AiTransactionPanel({ open, onOpenChange }: AiTransactionPanelPro
                         : 'bg-muted text-foreground'
                 }`}
               >
-                {message.text}
+                {message.role === 'user' ? message.text : <AiMessageText text={message.text} />}
                 {message.steps?.length ? (
                   <div className="mt-2 space-y-1 border-t border-emerald-200/60 pt-2 dark:border-emerald-800/60">
                     {message.steps.map((step, stepIndex) => (
