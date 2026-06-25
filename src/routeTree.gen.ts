@@ -30,6 +30,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWishlistRouteImport } from './routes/api/wishlist'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
 import { Route as ApiSavingsRouteImport } from './routes/api/savings'
+import { Route as ApiRecurringRouteImport } from './routes/api/recurring'
 import { Route as ApiPaymentAccountsRouteImport } from './routes/api/payment-accounts'
 import { Route as ApiGoalsRouteImport } from './routes/api/goals'
 import { Route as ApiExchangeRateRouteImport } from './routes/api/exchange-rate'
@@ -39,6 +40,7 @@ import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
 import { Route as ApiSettingsAiRouteImport } from './routes/api/settings/ai'
 import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
+import { Route as ApiRecurringIdRouteImport } from './routes/api/recurring/$id'
 import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
@@ -170,6 +172,11 @@ const ApiSavingsRoute = ApiSavingsRouteImport.update({
   path: '/api/savings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRecurringRoute = ApiRecurringRouteImport.update({
+  id: '/api/recurring',
+  path: '/api/recurring',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPaymentAccountsRoute = ApiPaymentAccountsRouteImport.update({
   id: '/api/payment-accounts',
   path: '/api/payment-accounts',
@@ -214,6 +221,11 @@ const ApiSavingsIdRoute = ApiSavingsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiSavingsRoute,
+} as any)
+const ApiRecurringIdRoute = ApiRecurringIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiRecurringRoute,
 } as any)
 const ApiPaymentAccountsIdRoute = ApiPaymentAccountsIdRouteImport.update({
   id: '/$id',
@@ -366,6 +378,7 @@ export interface FileRoutesByFullPath {
   '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
+  '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
@@ -385,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/recurring/$id': typeof ApiRecurringIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
@@ -423,6 +437,7 @@ export interface FileRoutesByTo {
   '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
+  '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
@@ -442,6 +457,7 @@ export interface FileRoutesByTo {
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/recurring/$id': typeof ApiRecurringIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
@@ -481,6 +497,7 @@ export interface FileRoutesById {
   '/api/exchange-rate': typeof ApiExchangeRateRoute
   '/api/goals': typeof ApiGoalsRouteWithChildren
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
+  '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
@@ -500,6 +517,7 @@ export interface FileRoutesById {
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/recurring/$id': typeof ApiRecurringIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
@@ -540,6 +558,7 @@ export interface FileRouteTypes {
     | '/api/exchange-rate'
     | '/api/goals'
     | '/api/payment-accounts'
+    | '/api/recurring'
     | '/api/savings'
     | '/api/transactions'
     | '/api/wishlist'
@@ -559,6 +578,7 @@ export interface FileRouteTypes {
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
+    | '/api/recurring/$id'
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
@@ -597,6 +617,7 @@ export interface FileRouteTypes {
     | '/api/exchange-rate'
     | '/api/goals'
     | '/api/payment-accounts'
+    | '/api/recurring'
     | '/api/savings'
     | '/api/transactions'
     | '/api/wishlist'
@@ -616,6 +637,7 @@ export interface FileRouteTypes {
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
+    | '/api/recurring/$id'
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
@@ -654,6 +676,7 @@ export interface FileRouteTypes {
     | '/api/exchange-rate'
     | '/api/goals'
     | '/api/payment-accounts'
+    | '/api/recurring'
     | '/api/savings'
     | '/api/transactions'
     | '/api/wishlist'
@@ -673,6 +696,7 @@ export interface FileRouteTypes {
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
+    | '/api/recurring/$id'
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
@@ -712,6 +736,7 @@ export interface RootRouteChildren {
   ApiExchangeRateRoute: typeof ApiExchangeRateRoute
   ApiGoalsRoute: typeof ApiGoalsRouteWithChildren
   ApiPaymentAccountsRoute: typeof ApiPaymentAccountsRouteWithChildren
+  ApiRecurringRoute: typeof ApiRecurringRouteWithChildren
   ApiSavingsRoute: typeof ApiSavingsRouteWithChildren
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   ApiWishlistRoute: typeof ApiWishlistRouteWithChildren
@@ -883,6 +908,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSavingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/recurring': {
+      id: '/api/recurring'
+      path: '/api/recurring'
+      fullPath: '/api/recurring'
+      preLoaderRoute: typeof ApiRecurringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/payment-accounts': {
       id: '/api/payment-accounts'
       path: '/api/payment-accounts'
@@ -945,6 +977,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/savings/$id'
       preLoaderRoute: typeof ApiSavingsIdRouteImport
       parentRoute: typeof ApiSavingsRoute
+    }
+    '/api/recurring/$id': {
+      id: '/api/recurring/$id'
+      path: '/$id'
+      fullPath: '/api/recurring/$id'
+      preLoaderRoute: typeof ApiRecurringIdRouteImport
+      parentRoute: typeof ApiRecurringRoute
     }
     '/api/payment-accounts/$id': {
       id: '/api/payment-accounts/$id'
@@ -1159,6 +1198,18 @@ const ApiPaymentAccountsRouteChildren: ApiPaymentAccountsRouteChildren = {
 const ApiPaymentAccountsRouteWithChildren =
   ApiPaymentAccountsRoute._addFileChildren(ApiPaymentAccountsRouteChildren)
 
+interface ApiRecurringRouteChildren {
+  ApiRecurringIdRoute: typeof ApiRecurringIdRoute
+}
+
+const ApiRecurringRouteChildren: ApiRecurringRouteChildren = {
+  ApiRecurringIdRoute: ApiRecurringIdRoute,
+}
+
+const ApiRecurringRouteWithChildren = ApiRecurringRoute._addFileChildren(
+  ApiRecurringRouteChildren,
+)
+
 interface ApiSavingsRouteChildren {
   ApiSavingsIdRoute: typeof ApiSavingsIdRoute
 }
@@ -1279,6 +1330,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiExchangeRateRoute: ApiExchangeRateRoute,
   ApiGoalsRoute: ApiGoalsRouteWithChildren,
   ApiPaymentAccountsRoute: ApiPaymentAccountsRouteWithChildren,
+  ApiRecurringRoute: ApiRecurringRouteWithChildren,
   ApiSavingsRoute: ApiSavingsRouteWithChildren,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   ApiWishlistRoute: ApiWishlistRouteWithChildren,

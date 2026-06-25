@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { processDueRecurringRules } from "#/features/recurring/server/recurring-repository";
 
 /**
  * Scheduled worker endpoint invoked by Vercel Cron (see `vercel.json` → `crons`).
@@ -34,14 +35,12 @@ export const Route = createFileRoute("/api/cron/run-recurring")({
 					);
 				}
 
-				// TODO(recurring): select recurring_rules where nextRunAt <= now() and
-				// isActive, create the due transaction(s) with a dedupe key of
-				// `${ruleId}:${period}`, then advance nextRunAt to the next occurrence.
-				const ranAt = new Date().toISOString();
+				const ranAt = new Date();
+				const { processed } = await processDueRecurringRules(ranAt);
 
 				return Response.json({
 					success: true,
-					data: { processed: 0, ranAt },
+					data: { processed, ranAt: ranAt.toISOString() },
 				});
 			},
 		},

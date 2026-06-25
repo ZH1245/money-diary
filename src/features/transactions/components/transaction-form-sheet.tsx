@@ -25,6 +25,12 @@ import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { getExchangeRate } from "#/features/exchange-rates/api/exchange-rate-api";
 import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
 import { formatPaymentAccountLabel } from "#/features/payment-accounts/utils/account-label";
+import { useCreateRecurringMutation } from "#/features/recurring/hooks/use-recurring";
+import {
+	advanceRecurringDate,
+	RECURRING_CADENCES,
+	type RecurringCadence,
+} from "#/features/recurring/utils/recurring-schedule";
 import {
 	useCreateTransactionMutation,
 	useDeleteTransactionMutation,
@@ -124,12 +130,15 @@ export function TransactionFormSheet({
 	const createTransactionMutation = useCreateTransactionMutation();
 	const updateTransactionMutation = useUpdateTransactionMutation();
 	const deleteTransactionMutation = useDeleteTransactionMutation();
+	const createRecurringMutation = useCreateRecurringMutation();
 
 	const [createForm, setCreateForm] = useState<TransactionFormState>(() =>
 		getDefaultTransactionForm(userCurrency),
 	);
 	const [isFetchingRate, setIsFetchingRate] = useState(false);
 	const [isCurrencyPickerOpen, setIsCurrencyPickerOpen] = useState(false);
+	const [isRecurring, setIsRecurring] = useState(false);
+	const [cadence, setCadence] = useState<RecurringCadence>("monthly");
 
 	const editingTransactionId = editingRow?.id ?? null;
 	const isEditing = editingTransactionId !== null;
@@ -146,6 +155,8 @@ export function TransactionFormSheet({
 			setCreateForm(getDefaultTransactionForm(userCurrency));
 			setIsCurrencyPickerOpen(false);
 		}
+		setIsRecurring(false);
+		setCadence("monthly");
 	}, [open, editingRow, userCurrency]);
 
 	const isForeignCurrency = createForm.currency !== userCurrency;
@@ -307,6 +318,37 @@ export function TransactionFormSheet({
 						? message.message
 						: "Unable to create transaction",
 			});
+
+			if (isRecurring) {
+				// The transaction above covers this occurrence; the rule schedules the
+				// next one for the cron to materialize automatically.
+				const nextRunAt = advanceRecurringDate(new Date(happenedAt), cadence);
+				const recurringPromise = createRecurringMutation.mutateAsync({
+					title: createForm.title.trim(),
+					amount: createForm.amount.trim(),
+					currency: createForm.currency,
+					type: createForm.type,
+					categoryId: createForm.categoryId
+						? Number(createForm.categoryId)
+						: null,
+					paymentAccountId:
+						createForm.paymentAccountId === "none"
+							? null
+							: Number(createForm.paymentAccountId),
+					note: createForm.note.trim() || null,
+					cadence,
+					nextRunAt: nextRunAt.toISOString(),
+				});
+
+				await toast.promise(recurringPromise, {
+					loading: "Scheduling repeat...",
+					success: `Repeats ${cadence} — next on ${nextRunAt.toLocaleDateString()}`,
+					error: (message) =>
+						message instanceof Error
+							? message.message
+							: "Transaction saved, but the repeat schedule failed",
+				});
+			}
 		}
 
 		onOpenChange(false);
@@ -586,6 +628,48 @@ export function TransactionFormSheet({
 							setCreateForm((state) => ({ ...state, happenedAt }))
 						}
 					/>
+
+					{!isEditing ? (
+						<div className="grid gap-3 rounded-panel border border-border bg-input-bg p-3">
+							<label className="flex items-center justify-between gap-3">
+								<span className="grid gap-0.5">
+									<span className="text-sm font-medium">Repeat this</span>
+									<span className="text-xs text-muted-foreground">
+										Auto-add it on a schedule (e.g. subscriptions, rent).
+									</span>
+								</span>
+								<input
+									type="checkbox"
+									checked={isRecurring}
+									onChange={(event) => setIsRecurring(event.target.checked)}
+									className="size-4 shrink-0 accent-primary"
+								/>
+							</label>
+							{isRecurring ? (
+								<div className="grid grid-cols-3 gap-1 rounded-panel bg-panel p-1">
+									{RECURRING_CADENCES.map((option) => {
+										const active = cadence === option.value;
+										return (
+											<button
+												key={option.value}
+												type="button"
+												aria-pressed={active}
+												onClick={() => setCadence(option.value)}
+												className={cn(
+													"rounded-[calc(var(--radius-panel)-4px)] px-3 py-1.5 text-xs font-semibold transition-colors",
+													active
+														? "bg-primary text-primary-foreground"
+														: "text-muted-foreground hover:text-foreground",
+												)}
+											>
+												{option.label}
+											</button>
+										);
+									})}
+								</div>
+							) : null}
+						</div>
+					) : null}
 
 					<div className="grid gap-2">
 						<label htmlFor="transaction-note" className="text-sm font-medium">

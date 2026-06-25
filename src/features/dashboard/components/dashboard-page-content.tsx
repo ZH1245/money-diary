@@ -19,10 +19,7 @@ import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { AccountCardsRow } from "#/features/dashboard/components/account-cards-row";
 import { InsightMiniCard } from "#/features/dashboard/components/insight-mini-card";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
-import {
-	MONTHLY_BUDGET_STUB,
-	UPCOMING_BILLS_STUB,
-} from "#/features/dashboard/types/planning-stub";
+import { MONTHLY_BUDGET_STUB } from "#/features/dashboard/types/planning-stub";
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
 import { buildDashboardStats } from "#/features/dashboard/utils/dashboard-stats";
 import { useGoalsQuery } from "#/features/goals/hooks/use-goals";
@@ -31,6 +28,7 @@ import {
 	buildPaymentAccountBalances,
 	findCashPaymentAccountId,
 } from "#/features/payment-accounts/utils/payment-account-balance";
+import { useRecurringRulesQuery } from "#/features/recurring/hooks/use-recurring";
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { useTransactionsQuery } from "#/features/transactions/hooks/use-transactions";
 import { useWishlistQuery } from "#/features/wishlist/hooks/use-wishlist";
@@ -230,6 +228,26 @@ export function DashboardPageContent({
 	);
 	const budgetRemaining = MONTHLY_BUDGET_STUB.limit - MONTHLY_BUDGET_STUB.spent;
 
+	const { data: recurringRules = [] } = useRecurringRulesQuery();
+	const upcomingBills = useMemo(
+		() =>
+			recurringRules
+				.filter((rule) => rule.isActive)
+				.slice(0, 4)
+				.map((rule) => ({
+					id: String(rule.id),
+					name: rule.title,
+					badge: rule.title.slice(0, 2).toUpperCase(),
+					dueLabel: new Intl.DateTimeFormat(undefined, {
+						month: "short",
+						day: "numeric",
+					}).format(new Date(rule.nextRunAt)),
+					amount: Number(rule.amount),
+					cadence: rule.cadence,
+				})),
+		[recurringRules],
+	);
+
 	return (
 		<main className="w-full max-w-full overflow-x-hidden p-4 sm:p-6 lg:p-8">
 			<section className="space-y-6">
@@ -381,15 +399,19 @@ export function DashboardPageContent({
 
 						{/* 3) Two-up: Monthly budget + Upcoming bills */}
 						<div className="grid gap-4 lg:grid-cols-2">
-							{/* Monthly budget — TODO(api): wire monthly budget */}
+							{/* Monthly budget — TODO(api): placeholder figures until a budgets
+							    feature exists; flagged with a SOON badge. */}
 							<div className="md-panel p-5 sm:p-6">
 								<div className="flex items-center justify-between">
 									<div>
-										<p className="text-base font-bold text-foreground">
+										<p className="flex items-center gap-2 text-base font-bold text-foreground">
 											Monthly budget
+											<span className="rounded-full bg-soft-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+												Soon
+											</span>
 										</p>
 										<p className="text-xs text-muted-foreground">
-											{MONTHLY_BUDGET_STUB.periodLabel}
+											{MONTHLY_BUDGET_STUB.periodLabel} · sample data
 										</p>
 									</div>
 									<span
@@ -441,45 +463,54 @@ export function DashboardPageContent({
 								</p>
 							</div>
 
-							{/* Upcoming bills — TODO(api): wire upcoming bills */}
+							{/* Upcoming bills — real recurring rules, soonest first. */}
 							<div className="md-panel p-5 sm:p-6">
-								<div className="flex items-center justify-between">
+								<div className="flex items-center justify-between gap-2">
 									<p className="text-base font-bold text-foreground">
 										Upcoming bills
 									</p>
-									<span className="text-xs text-muted-foreground">
-										{UPCOMING_BILLS_STUB.length} due soon
+									<span className="shrink-0 text-xs text-muted-foreground">
+										{upcomingBills.length
+											? `${upcomingBills.length} scheduled`
+											: "Set up a repeat"}
 									</span>
 								</div>
-								<ul className="mt-4 space-y-1">
-									{UPCOMING_BILLS_STUB.map((bill) => (
-										<li
-											key={bill.id}
-											className="md-row flex items-center gap-3 px-2 py-2.5"
-										>
-											<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
-												{bill.badge}
-											</span>
-											<div className="min-w-0 flex-1">
-												<p className="truncate text-sm font-medium text-foreground">
-													{bill.name}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													Due {bill.dueLabel}
-												</p>
-											</div>
-											<span className="font-num font-extrabold tabular-nums text-foreground">
-												<SensitiveText
-													text={formatSensitiveCurrency(
-														bill.amount,
-														userCurrency,
-														isPrivacyMode,
-													)}
-												/>
-											</span>
-										</li>
-									))}
-								</ul>
+								{upcomingBills.length === 0 ? (
+									<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
+										No recurring items yet. Add a transaction and turn on
+										“Repeat this” to schedule bills and subscriptions.
+									</p>
+								) : (
+									<ul className="mt-4 space-y-1">
+										{upcomingBills.map((bill) => (
+											<li
+												key={bill.id}
+												className="md-row flex items-center gap-3 px-2 py-2.5"
+											>
+												<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
+													{bill.badge}
+												</span>
+												<div className="min-w-0 flex-1">
+													<p className="truncate text-sm font-medium text-foreground">
+														<SensitiveText text={bill.name} />
+													</p>
+													<p className="truncate text-xs capitalize text-muted-foreground">
+														{bill.cadence} · next {bill.dueLabel}
+													</p>
+												</div>
+												<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
+													<SensitiveText
+														text={formatSensitiveCurrency(
+															bill.amount,
+															userCurrency,
+															isPrivacyMode,
+														)}
+													/>
+												</span>
+											</li>
+										))}
+									</ul>
+								)}
 							</div>
 						</div>
 

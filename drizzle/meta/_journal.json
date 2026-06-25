@@ -176,6 +176,13 @@
       "when": 1782784000000,
       "tag": "0025_rate_limit_and_recovery_lockout",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1782884000000,
+      "tag": "0026_recurring_rules",
+      "breakpoints": true
     }
   ]
 }
