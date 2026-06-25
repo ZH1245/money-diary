@@ -114,7 +114,7 @@ export function SettingsPageLayout({
 
 	return (
 		<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-			<aside className="sticky top-4 z-10 -mx-1 w-full shrink-0 self-start bg-canvas/95 px-1 backdrop-blur supports-backdrop-filter:bg-canvas/85 lg:top-6 lg:z-auto lg:w-56 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+			<aside className="sticky top-0 z-20 -mx-4 w-[calc(100%+2rem)] shrink-0 self-start bg-canvas px-4 pt-3 lg:top-6 lg:z-auto lg:mx-0 lg:w-56 lg:bg-transparent lg:px-0 lg:pt-0">
 				<nav
 					aria-label={navAriaLabel}
 					className="border-b border-border-faint pb-2 lg:max-h-[calc(100svh-8rem)] lg:overflow-y-auto lg:border-0 lg:pb-0 lg:pr-2"

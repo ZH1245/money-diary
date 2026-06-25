@@ -259,7 +259,6 @@ export function AdminGlobalCategoriesSection() {
 						data={categories}
 						filterPlaceholder="Filter by name, slug, or kind..."
 						emptyMessage="No global categories found."
-						fillWidth
 						maxBodyHeight={undefined}
 					/>
 				) : (

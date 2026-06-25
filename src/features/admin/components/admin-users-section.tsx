@@ -1,15 +1,29 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { Ban, Loader2, ShieldAlert, ShieldCheck, Users } from "lucide-react";
+import {
+	Ban,
+	Loader2,
+	MoreHorizontal,
+	ShieldAlert,
+	ShieldCheck,
+	Trash2,
+	Users,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
 	DataTable,
 	DataTableColumnHeader,
 } from "#/components/data-table/data-table";
-import { DeleteRowButton } from "#/components/feedback/delete-row-button";
 import { InlineError } from "#/components/feedback/inline-error";
 import { PageEmptyState } from "#/components/feedback/page-state";
 import { Button } from "#/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "#/components/ui/dropdown-menu";
 import {
 	Sheet,
 	SheetContent,
@@ -254,61 +268,75 @@ export function AdminUsersSection() {
 
 					if (isAdminUser) {
 						return (
-							<span className="text-xs text-muted-foreground">Protected</span>
+							<div className="text-right">
+								<span className="text-xs text-muted-foreground">Protected</span>
+							</div>
 						);
 					}
 
 					return (
-						<div className="flex flex-wrap items-center gap-1">
-							{target.accountStatus === "active" ? (
-								<>
+						<div className="flex justify-end">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
 									<Button
 										type="button"
-										variant="outline"
-										size="sm"
-										className="h-8 text-xs"
+										variant="ghost"
+										size="icon"
+										className="size-8"
 										disabled={isActionPending}
-										onClick={() => {
-											setModerationReason("");
-											setModerationSheet({ user: target, action: "restrict" });
+										aria-label={`Actions for ${target.email}`}
+									>
+										<MoreHorizontal className="size-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end" className="w-44">
+									{target.accountStatus === "active" ? (
+										<>
+											<DropdownMenuItem
+												onSelect={() => {
+													setModerationReason("");
+													setModerationSheet({
+														user: target,
+														action: "restrict",
+													});
+												}}
+											>
+												<ShieldAlert className="size-4" />
+												Restrict
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-destructive focus:text-destructive"
+												onSelect={() => {
+													setModerationReason("");
+													setModerationSheet({ user: target, action: "ban" });
+												}}
+											>
+												<Ban className="size-4" />
+												Ban
+											</DropdownMenuItem>
+										</>
+									) : (
+										<DropdownMenuItem
+											onSelect={() => void handleRestore(target)}
+										>
+											<ShieldCheck className="size-4" />
+											Restore
+										</DropdownMenuItem>
+									)}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="text-destructive focus:text-destructive"
+										onSelect={() => {
+											if (window.confirm(`Delete ${target.email}?`)) {
+												void handleDelete(target);
+											}
 										}}
 									>
-										<ShieldAlert className="size-3.5" />
-										Restrict
-									</Button>
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="h-8 text-xs text-destructive hover:text-destructive"
-										disabled={isActionPending}
-										onClick={() => {
-											setModerationReason("");
-											setModerationSheet({ user: target, action: "ban" });
-										}}
-									>
-										<Ban className="size-3.5" />
-										Ban
-									</Button>
-								</>
-							) : (
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="h-8 text-xs"
-									disabled={isActionPending}
-									onClick={() => void handleRestore(target)}
-								>
-									<ShieldCheck className="size-3.5" />
-									Restore
-								</Button>
-							)}
-							<DeleteRowButton
-								label={target.email}
-								isPending={isActionPending}
-								onConfirm={() => void handleDelete(target)}
-							/>
+										<Trash2 className="size-4" />
+										Delete
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
 					);
 				},
@@ -341,12 +369,7 @@ export function AdminUsersSection() {
 				) : users.length === 0 ? (
 					<PageEmptyState message="No registered users yet." />
 				) : (
-					<DataTable
-						columns={columns}
-						data={users}
-						fillWidth
-						maxBodyHeight={undefined}
-					/>
+					<DataTable columns={columns} data={users} maxBodyHeight={undefined} />
 				)}
 			</div>
 

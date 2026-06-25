@@ -246,14 +246,15 @@ export function AuthenticatedAppShell({
 		return (
 			<div className="flex h-svh flex-col overflow-hidden bg-canvas text-foreground">
 				<header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-					<button
-						type="button"
-						onClick={() => setMobileNavOpen(true)}
-						aria-label="Open menu"
-						className="flex size-9 items-center justify-center rounded-lg text-foreground hover:bg-nav-hover"
+					<Link
+						to="/"
+						aria-label="Dashboard"
+						className="flex items-center no-underline"
 					>
-						<Menu className="size-5" />
-					</button>
+						<span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+							<CircleDollarSign className="size-4" />
+						</span>
+					</Link>
 					<span className="truncate text-[15px] font-extrabold tracking-tight">
 						{pageTitle}
 					</span>
@@ -267,15 +268,17 @@ export function AuthenticatedAppShell({
 						>
 							<Sparkles className="size-[18px]" />
 						</button>
-						<Avatar className="size-8">
-							<AvatarImage
-								src={user.image ?? undefined}
-								alt={user.name ?? "User"}
-							/>
-							<AvatarFallback className="bg-avatar text-avatar-fg text-xs font-bold">
-								{fallbackText}
-							</AvatarFallback>
-						</Avatar>
+						<Link to="/settings" aria-label="Settings" className="no-underline">
+							<Avatar className="size-8">
+								<AvatarImage
+									src={user.image ?? undefined}
+									alt={user.name ?? "User"}
+								/>
+								<AvatarFallback className="bg-avatar text-avatar-fg text-xs font-bold">
+									{fallbackText}
+								</AvatarFallback>
+							</Avatar>
+						</Link>
 					</div>
 				</header>
 
@@ -310,7 +313,7 @@ export function AuthenticatedAppShell({
 		<div className="flex h-svh overflow-hidden bg-canvas text-foreground">
 			<aside
 				className={cn(
-					"flex shrink-0 flex-col border-r border-border bg-sidebar transition-[width] duration-200 ease-out",
+					"flex shrink-0 flex-col border-r border-border bg-sidebar transition-all duration-300 ease-in-out",
 					collapsed ? "w-[72px] px-2 py-4" : "w-[232px] px-3 py-4",
 				)}
 			>
@@ -531,7 +534,7 @@ function MobileNavSheet({
 				className="fixed inset-0 z-[60] animate-in fade-in bg-black/45"
 				onClick={onClose}
 			/>
-			<div className="fixed inset-y-0 left-0 z-[70] flex w-[82%] max-w-[300px] flex-col bg-sidebar p-4 shadow-xl">
+			<div className="fixed inset-y-0 left-0 z-[70] flex w-[82%] max-w-[300px] animate-in flex-col bg-sidebar p-4 shadow-xl duration-200 slide-in-from-left">
 				<div className="mb-5 flex items-center justify-between">
 					<span className="flex items-center gap-2.5">
 						<span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">

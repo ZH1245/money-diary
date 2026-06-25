@@ -826,8 +826,9 @@ export function AiSettingsSection() {
 
 						{savedApiKeyMask && isProviderEnabled ? (
 							<div className="space-y-2 rounded-md border border-border-faint bg-input-bg p-3">
-								<p className="text-xs text-muted-foreground">
-									Stored API key: {savedApiKeyMask}
+								<p className="break-all text-xs text-muted-foreground">
+									Stored API key:{" "}
+									<span className="font-mono">{savedApiKeyMask}</span>
 								</p>
 								<button
 									type="button"

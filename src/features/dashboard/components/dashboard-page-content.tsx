@@ -485,8 +485,9 @@ export function DashboardPageContent({
 
 						{/* 4) Two-up: Recent activity + Spending by category */}
 						<div className="grid gap-4 lg:grid-cols-2">
-							{/* Recent activity */}
-							<div className="md-panel p-5 sm:p-6">
+							{/* Recent activity — fixed-layout table so long titles/amounts
+							    truncate instead of forcing horizontal overflow. */}
+							<div className="md-panel overflow-hidden p-5 sm:p-6">
 								<div className="flex items-center justify-between">
 									<p className="text-base font-bold text-foreground">
 										Recent activity
@@ -503,62 +504,68 @@ export function DashboardPageContent({
 										</Link>
 									</Button>
 								</div>
-								<ul className="mt-3 space-y-1">
-									{stats.recentTransactions.length === 0 ? (
-										<li className="px-2 py-6 text-center text-sm text-muted-foreground">
-											No transactions yet.
-										</li>
-									) : (
-										stats.recentTransactions.map((transaction) => (
-											<li
-												key={transaction.id}
-												className="md-row flex items-center gap-3 px-2 py-2.5"
-											>
-												<span
-													className={cn(
-														"grid size-9 shrink-0 place-items-center rounded-lg",
-														transaction.type === "income"
-															? "bg-income/15 text-income"
-															: transaction.type === "expense"
-																? "bg-expense/15 text-expense"
-																: "bg-soft-accent text-primary",
-													)}
-												>
-													{transaction.type === "income" ? (
-														<TrendingUp className="size-4" />
-													) : transaction.type === "expense" ? (
-														<TrendingDown className="size-4" />
-													) : (
-														<Wallet className="size-4" />
-													)}
-												</span>
-												<div className="min-w-0 flex-1">
-													<p className="truncate text-sm font-medium text-foreground">
-														<SensitiveText text={transaction.title} />
-													</p>
-													<p className="text-xs text-muted-foreground">
-														{transaction.happenedAtLabel}
-													</p>
-												</div>
-												<SignedTransactionAmount
-													amount={transaction.amount}
-													currency={userCurrency}
-													type={transaction.type as TransactionFlowType}
-													className="font-num shrink-0 text-right"
-												/>
-											</li>
-										))
-									)}
-								</ul>
+								<table className="mt-3 w-full table-fixed">
+									<tbody>
+										{stats.recentTransactions.length === 0 ? (
+											<tr>
+												<td className="px-2 py-6 text-center text-sm text-muted-foreground">
+													No transactions yet.
+												</td>
+											</tr>
+										) : (
+											stats.recentTransactions.map((transaction) => (
+												<tr key={transaction.id} className="md-row">
+													<td className="w-11 py-2.5 pl-2 align-middle">
+														<span
+															className={cn(
+																"grid size-9 place-items-center rounded-lg",
+																transaction.type === "income"
+																	? "bg-income/15 text-income"
+																	: transaction.type === "expense"
+																		? "bg-expense/15 text-expense"
+																		: "bg-soft-accent text-primary",
+															)}
+														>
+															{transaction.type === "income" ? (
+																<TrendingUp className="size-4" />
+															) : transaction.type === "expense" ? (
+																<TrendingDown className="size-4" />
+															) : (
+																<Wallet className="size-4" />
+															)}
+														</span>
+													</td>
+													<td className="truncate py-2.5 pl-3 align-middle">
+														<p className="truncate text-sm font-medium text-foreground">
+															<SensitiveText text={transaction.title} />
+														</p>
+														<p className="truncate text-xs text-muted-foreground">
+															{transaction.happenedAtLabel}
+														</p>
+													</td>
+													<td className="w-[7rem] py-2.5 pr-2 text-right align-middle">
+														<SignedTransactionAmount
+															amount={transaction.amount}
+															currency={userCurrency}
+															type={transaction.type as TransactionFlowType}
+															className="font-num whitespace-nowrap"
+														/>
+													</td>
+												</tr>
+											))
+										)}
+									</tbody>
+								</table>
 							</div>
 
-							{/* Spending by category */}
-							<div className="md-panel p-5 sm:p-6">
-								<div className="flex items-center justify-between">
+							{/* Spending by category — fixed-layout table for the name/amount
+							    line; the progress bar sits full-width below each row. */}
+							<div className="md-panel overflow-hidden p-5 sm:p-6">
+								<div className="flex items-center justify-between gap-3">
 									<p className="text-base font-bold text-foreground">
 										Spending by category
 									</p>
-									<span className="text-xs text-muted-foreground">
+									<span className="shrink-0 truncate text-xs text-muted-foreground">
 										Top:{" "}
 										{formatSensitiveText(
 											stats.topExpenseCategoryLabel,
@@ -566,28 +573,34 @@ export function DashboardPageContent({
 										)}
 									</span>
 								</div>
-								<ul className="mt-4 space-y-4">
+								<div className="mt-4 space-y-4">
 									{categorySpending.rows.length === 0 ? (
-										<li className="py-6 text-center text-sm text-muted-foreground">
+										<p className="py-6 text-center text-sm text-muted-foreground">
 											No spending in range.
-										</li>
+										</p>
 									) : (
 										categorySpending.rows.map((row) => (
-											<li key={row.id}>
-												<div className="flex items-center justify-between gap-3 text-sm">
-													<span className="min-w-0 flex-1 truncate font-medium text-foreground">
-														<SensitiveText text={row.name} />
-													</span>
-													<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
-														<SensitiveText
-															text={formatSensitiveCurrency(
-																row.amount,
-																userCurrency,
-																isPrivacyMode,
-															)}
-														/>
-													</span>
-												</div>
+											<div key={row.id}>
+												<table className="w-full table-fixed">
+													<tbody>
+														<tr>
+															<td className="truncate pr-3 align-middle text-sm font-medium text-foreground">
+																<SensitiveText text={row.name} />
+															</td>
+															<td className="w-[7rem] text-right align-middle">
+																<span className="font-num whitespace-nowrap font-extrabold tabular-nums text-foreground">
+																	<SensitiveText
+																		text={formatSensitiveCurrency(
+																			row.amount,
+																			userCurrency,
+																			isPrivacyMode,
+																		)}
+																	/>
+																</span>
+															</td>
+														</tr>
+													</tbody>
+												</table>
 												<div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-track">
 													<div
 														className="h-full rounded-full bg-primary"
@@ -596,10 +609,10 @@ export function DashboardPageContent({
 														}}
 													/>
 												</div>
-											</li>
+											</div>
 										))
 									)}
-								</ul>
+								</div>
 							</div>
 						</div>
 					</>

@@ -479,6 +479,7 @@ export function TransactionFormSheet({
 								<span className="text-sm font-medium">Category</span>
 								<Link
 									to="/categories"
+									onClick={() => onOpenChange(false)}
 									className="text-xs text-primary underline-offset-4 hover:underline"
 								>
 									Manage
@@ -541,6 +542,7 @@ export function TransactionFormSheet({
 							))}
 							<Link
 								to="/accounts"
+								onClick={() => onOpenChange(false)}
 								className="md-chip border-dashed"
 								data-active={false}
 							>
