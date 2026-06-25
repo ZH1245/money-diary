@@ -42,6 +42,7 @@ import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
 import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
+import { Route as ApiCronRunRecurringRouteImport } from './routes/api/cron/run-recurring'
 import { Route as ApiCategoriesIdRouteImport } from './routes/api/categories/$id'
 import { Route as ApiAuthSignInModerationRouteImport } from './routes/api/auth/sign-in-moderation'
 import { Route as ApiAuthSecurityProfileRouteImport } from './routes/api/auth/security-profile'
@@ -229,6 +230,11 @@ const ApiGoalsIdRoute = ApiGoalsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiGoalsRoute,
 } as any)
+const ApiCronRunRecurringRoute = ApiCronRunRecurringRouteImport.update({
+  id: '/api/cron/run-recurring',
+  path: '/api/cron/run-recurring',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCategoriesIdRoute = ApiCategoriesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/security-profile': typeof ApiAuthSecurityProfileRoute
   '/api/auth/sign-in-moderation': typeof ApiAuthSignInModerationRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
+  '/api/cron/run-recurring': typeof ApiCronRunRecurringRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
@@ -431,6 +438,7 @@ export interface FileRoutesByTo {
   '/api/auth/security-profile': typeof ApiAuthSecurityProfileRoute
   '/api/auth/sign-in-moderation': typeof ApiAuthSignInModerationRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
+  '/api/cron/run-recurring': typeof ApiCronRunRecurringRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
@@ -488,6 +496,7 @@ export interface FileRoutesById {
   '/api/auth/security-profile': typeof ApiAuthSecurityProfileRoute
   '/api/auth/sign-in-moderation': typeof ApiAuthSignInModerationRoute
   '/api/categories/$id': typeof ApiCategoriesIdRoute
+  '/api/cron/run-recurring': typeof ApiCronRunRecurringRoute
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
@@ -546,6 +555,7 @@ export interface FileRouteTypes {
     | '/api/auth/security-profile'
     | '/api/auth/sign-in-moderation'
     | '/api/categories/$id'
+    | '/api/cron/run-recurring'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -602,6 +612,7 @@ export interface FileRouteTypes {
     | '/api/auth/security-profile'
     | '/api/auth/sign-in-moderation'
     | '/api/categories/$id'
+    | '/api/cron/run-recurring'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -658,6 +669,7 @@ export interface FileRouteTypes {
     | '/api/auth/security-profile'
     | '/api/auth/sign-in-moderation'
     | '/api/categories/$id'
+    | '/api/cron/run-recurring'
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
@@ -714,6 +726,7 @@ export interface RootRouteChildren {
   ApiAuthModerationStatusRoute: typeof ApiAuthModerationStatusRoute
   ApiAuthSecurityProfileRoute: typeof ApiAuthSecurityProfileRoute
   ApiAuthSignInModerationRoute: typeof ApiAuthSignInModerationRoute
+  ApiCronRunRecurringRoute: typeof ApiCronRunRecurringRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
   ApiSettingsAiRoute: typeof ApiSettingsAiRouteWithChildren
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
@@ -953,6 +966,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/goals/$id'
       preLoaderRoute: typeof ApiGoalsIdRouteImport
       parentRoute: typeof ApiGoalsRoute
+    }
+    '/api/cron/run-recurring': {
+      id: '/api/cron/run-recurring'
+      path: '/api/cron/run-recurring'
+      fullPath: '/api/cron/run-recurring'
+      preLoaderRoute: typeof ApiCronRunRecurringRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/categories/$id': {
       id: '/api/categories/$id'
@@ -1273,6 +1293,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthModerationStatusRoute: ApiAuthModerationStatusRoute,
   ApiAuthSecurityProfileRoute: ApiAuthSecurityProfileRoute,
   ApiAuthSignInModerationRoute: ApiAuthSignInModerationRoute,
+  ApiCronRunRecurringRoute: ApiCronRunRecurringRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
   ApiSettingsAiRoute: ApiSettingsAiRouteWithChildren,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,

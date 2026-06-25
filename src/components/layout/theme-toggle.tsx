@@ -29,8 +29,15 @@ export function ThemeToggle() {
 	);
 }
 
+/** Display names for the two color palettes (internal values stay c/a). */
+const PALETTE_LABELS = {
+	c: "Calm",
+	a: "Aurora",
+} as const;
+
 /**
- * Segmented control to switch between the C (default) and A color palettes.
+ * Segmented control to switch between the Calm (default, green) and Aurora
+ * (indigo) color palettes.
  */
 export function ThemePaletteToggle({ className }: { className?: string }) {
 	const { palette, setPalette } = useTheme();
@@ -51,13 +58,13 @@ export function ThemePaletteToggle({ className }: { className?: string }) {
 						onClick={() => setPalette(value)}
 						aria-pressed={active}
 						className={cn(
-							"rounded-full px-3 py-1 text-[11px] font-bold uppercase transition-colors",
+							"rounded-full px-3 py-1 text-[11px] font-bold transition-colors",
 							active
 								? "bg-foreground text-canvas"
 								: "text-muted-foreground hover:text-foreground",
 						)}
 					>
-						{value}
+						{PALETTE_LABELS[value]}
 					</button>
 				);
 			})}

@@ -535,6 +535,9 @@ export function AdminGlobalAiSection() {
 							}
 							isRequired={false}
 							isDisabled={isLoading || isSubmitting}
+							hasStoredValue={Boolean(savedApiKeyMask)}
+							onRemoveStoredValue={handleRemoveApiKey}
+							isRemovePending={isRemovingKey}
 						/>
 					</>
 				) : providerId === "gemini" ? (
@@ -550,15 +553,9 @@ export function AdminGlobalAiSection() {
 							}
 							isRequired={!savedApiKeyMask}
 							isDisabled={isLoading || isSubmitting}
-						/>
-						<FormField
-							id="admin-gemini-model"
-							label="Model"
-							type="text"
-							value={model}
-							onChange={setModel}
-							placeholder="gemini-2.0-flash"
-							isDisabled={isLoading || isSubmitting}
+							hasStoredValue={Boolean(savedApiKeyMask)}
+							onRemoveStoredValue={handleRemoveApiKey}
+							isRemovePending={isRemovingKey}
 						/>
 						{urlProbe.message ? (
 							<p
@@ -572,6 +569,15 @@ export function AdminGlobalAiSection() {
 								{urlProbe.message}
 							</p>
 						) : null}
+						<FormField
+							id="admin-gemini-model"
+							label="Model"
+							type="text"
+							value={model}
+							onChange={setModel}
+							placeholder="gemini-2.0-flash"
+							isDisabled={isLoading || isSubmitting}
+						/>
 					</>
 				) : providerId === "openrouter" ? (
 					<>
@@ -586,7 +592,17 @@ export function AdminGlobalAiSection() {
 							}
 							isRequired={!savedApiKeyMask}
 							isDisabled={isLoading || isSubmitting}
+							hasStoredValue={Boolean(savedApiKeyMask)}
+							onRemoveStoredValue={handleRemoveApiKey}
+							isRemovePending={isRemovingKey}
 						/>
+						{urlProbe.message ? (
+							<p
+								className={`-mt-2 text-xs ${urlProbe.status === "ok" ? "text-emerald-700" : "text-amber-700"}`}
+							>
+								{urlProbe.message}
+							</p>
+						) : null}
 						<FormField
 							id="admin-openrouter-base-url"
 							label="Base URL"
@@ -612,13 +628,6 @@ export function AdminGlobalAiSection() {
 							placeholder={OPENROUTER_DEFAULT_MODEL}
 							isDisabled={isLoading || isSubmitting}
 						/>
-						{urlProbe.message ? (
-							<p
-								className={`-mt-2 text-xs ${urlProbe.status === "ok" ? "text-emerald-700" : "text-amber-700"}`}
-							>
-								{urlProbe.message}
-							</p>
-						) : null}
 					</>
 				) : (
 					selectedProvider.fields.map((field) => (
@@ -634,25 +643,6 @@ export function AdminGlobalAiSection() {
 						/>
 					))
 				)}
-
-				{savedApiKeyMask && isProviderEnabled ? (
-					<div className="space-y-2 rounded-md border border-border-faint bg-input-bg p-3">
-						<p className="text-xs text-muted-foreground">
-							Stored API key: {savedApiKeyMask}
-						</p>
-						<button
-							type="button"
-							onClick={() => void handleRemoveApiKey()}
-							disabled={isRemovingKey || isSubmitting || isLoading}
-							className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-60"
-						>
-							{isRemovingKey ? (
-								<Loader2 className="size-3.5 animate-spin" />
-							) : null}
-							Remove stored key
-						</button>
-					</div>
-				) : null}
 
 				{errorMessage ? <InlineError message={errorMessage} /> : null}
 

@@ -1,5 +1,8 @@
 {
   "framework": "tanstack-start",
+  "crons": [
+    { "path": "/api/cron/run-recurring", "schedule": "0 6 * * *" }
+  ],
   "headers": [
     {
       "source": "/sw.js",

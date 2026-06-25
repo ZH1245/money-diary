@@ -706,6 +706,9 @@ export function AiSettingsSection() {
 									}
 									isRequired={false}
 									isDisabled={isLoading || isSubmitting}
+									hasStoredValue={Boolean(savedApiKeyMask)}
+									onRemoveStoredValue={handleRemoveApiKey}
+									isRemovePending={isRemovingKey}
 								/>
 							</>
 						) : providerId === "gemini" ? (
@@ -721,15 +724,9 @@ export function AiSettingsSection() {
 									}
 									isRequired={!savedApiKeyMask}
 									isDisabled={isLoading || isSubmitting}
-								/>
-								<FormField
-									id="ai-gemini-model"
-									label="Model"
-									type="text"
-									value={model}
-									onChange={setModel}
-									placeholder="gemini-2.0-flash"
-									isDisabled={isLoading || isSubmitting}
+									hasStoredValue={Boolean(savedApiKeyMask)}
+									onRemoveStoredValue={handleRemoveApiKey}
+									isRemovePending={isRemovingKey}
 								/>
 								{urlProbe.message ? (
 									<p
@@ -752,6 +749,15 @@ export function AiSettingsSection() {
 											: null}
 									</p>
 								) : null}
+								<FormField
+									id="ai-gemini-model"
+									label="Model"
+									type="text"
+									value={model}
+									onChange={setModel}
+									placeholder="gemini-2.0-flash"
+									isDisabled={isLoading || isSubmitting}
+								/>
 							</>
 						) : providerId === "openrouter" ? (
 							<>
@@ -766,22 +772,9 @@ export function AiSettingsSection() {
 									}
 									isRequired={!savedApiKeyMask}
 									isDisabled={isLoading || isSubmitting}
-								/>
-								<FormField
-									id="ai-openrouter-base-url"
-									label="Base URL"
-									type="url"
-									value={baseUrl}
-									onChange={setBaseUrl}
-									placeholder={OPENROUTER_DEFAULT_BASE_URL}
-									isDisabled={isLoading || isSubmitting}
-									rightElement={
-										urlProbeIcon ? (
-											<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-												{urlProbeIcon}
-											</span>
-										) : undefined
-									}
+									hasStoredValue={Boolean(savedApiKeyMask)}
+									onRemoveStoredValue={handleRemoveApiKey}
+									isRemovePending={isRemovingKey}
 								/>
 								{urlProbe.message ? (
 									<p
@@ -799,6 +792,22 @@ export function AiSettingsSection() {
 											: null}
 									</p>
 								) : null}
+								<FormField
+									id="ai-openrouter-base-url"
+									label="Base URL"
+									type="url"
+									value={baseUrl}
+									onChange={setBaseUrl}
+									placeholder={OPENROUTER_DEFAULT_BASE_URL}
+									isDisabled={isLoading || isSubmitting}
+									rightElement={
+										urlProbeIcon ? (
+											<span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+												{urlProbeIcon}
+											</span>
+										) : undefined
+									}
+								/>
 								<FormField
 									id="ai-openrouter-model"
 									label="Model"
@@ -823,26 +832,6 @@ export function AiSettingsSection() {
 								/>
 							))
 						)}
-
-						{savedApiKeyMask && isProviderEnabled ? (
-							<div className="space-y-2 rounded-md border border-border-faint bg-input-bg p-3">
-								<p className="break-all text-xs text-muted-foreground">
-									Stored API key:{" "}
-									<span className="font-mono">{savedApiKeyMask}</span>
-								</p>
-								<button
-									type="button"
-									onClick={() => void handleRemoveApiKey()}
-									disabled={isRemovingKey || isSubmitting || isLoading}
-									className="inline-flex h-8 items-center gap-2 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/5 disabled:opacity-60"
-								>
-									{isRemovingKey ? (
-										<Loader2 className="size-3.5 animate-spin" />
-									) : null}
-									Remove stored key
-								</button>
-							</div>
-						) : null}
 
 						{isProviderEnabled ? (
 							<p className="text-xs text-muted-foreground">
