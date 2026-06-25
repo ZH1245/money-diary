@@ -36,7 +36,7 @@ export function AccountCardsRow({
 	if (accounts.length === 0) return null;
 
 	return (
-		<div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
+		<div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-1 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
 			{accounts.map((account, index) => {
 				const isActive = account.id === selectedAccountId;
 				const balance = balances[account.id] ?? 0;
@@ -48,7 +48,7 @@ export function AccountCardsRow({
 						onClick={() => onSelect(isActive ? null : account.id)}
 						aria-pressed={isActive}
 						className={cn(
-							"relative min-w-[15rem] shrink-0 overflow-hidden rounded-panel bg-gradient-to-br p-5 text-left text-white shadow-lg transition sm:min-w-0",
+							"relative min-w-[15rem] shrink-0 snap-start overflow-hidden rounded-panel bg-gradient-to-br p-5 text-left text-white shadow-lg transition sm:min-w-0",
 							CARD_GRADIENTS[index % CARD_GRADIENTS.length],
 							isActive
 								? "ring-2 ring-primary ring-offset-2 ring-offset-canvas"

@@ -35,6 +35,7 @@ import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { useTransactionsQuery } from "#/features/transactions/hooks/use-transactions";
 import { useWishlistQuery } from "#/features/wishlist/hooks/use-wishlist";
 import {
+	formatSensitiveCompactAmount,
 	formatSensitiveCurrency,
 	formatSensitiveText,
 	usePrivacyModeEnabled,
@@ -230,7 +231,7 @@ export function DashboardPageContent({
 	const budgetRemaining = MONTHLY_BUDGET_STUB.limit - MONTHLY_BUDGET_STUB.spent;
 
 	return (
-		<main className="p-4 sm:p-6 lg:p-8">
+		<main className="w-full max-w-full overflow-x-hidden p-4 sm:p-6 lg:p-8">
 			<section className="space-y-6">
 				{isStatsPending ? <DashboardLoadingSkeleton /> : null}
 				{statsError ? (
@@ -297,7 +298,7 @@ export function DashboardPageContent({
 										<InsightMiniCard
 											icon={<TrendingUp className="size-4 text-income" />}
 											label="Income"
-											value={formatSensitiveCurrency(
+											value={formatSensitiveCompactAmount(
 												stats.totalIncome,
 												userCurrency,
 												isPrivacyMode,
@@ -307,7 +308,7 @@ export function DashboardPageContent({
 										<InsightMiniCard
 											icon={<TrendingDown className="size-4 text-expense" />}
 											label="Spent"
-											value={formatSensitiveCurrency(
+											value={formatSensitiveCompactAmount(
 												stats.totalExpense,
 												userCurrency,
 												isPrivacyMode,
@@ -543,7 +544,7 @@ export function DashboardPageContent({
 													amount={transaction.amount}
 													currency={userCurrency}
 													type={transaction.type as TransactionFlowType}
-													className="font-num"
+													className="font-num shrink-0 text-right"
 												/>
 											</li>
 										))
@@ -573,11 +574,11 @@ export function DashboardPageContent({
 									) : (
 										categorySpending.rows.map((row) => (
 											<li key={row.id}>
-												<div className="flex items-center justify-between text-sm">
-													<span className="truncate font-medium text-foreground">
+												<div className="flex items-center justify-between gap-3 text-sm">
+													<span className="min-w-0 flex-1 truncate font-medium text-foreground">
 														<SensitiveText text={row.name} />
 													</span>
-													<span className="font-num font-extrabold tabular-nums text-foreground">
+													<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
 														<SensitiveText
 															text={formatSensitiveCurrency(
 																row.amount,

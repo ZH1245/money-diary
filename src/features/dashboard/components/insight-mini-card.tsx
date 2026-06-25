@@ -16,13 +16,13 @@ export function InsightMiniCard({
 }: InsightMiniCardProps) {
 	return (
 		<div className="md-stat min-w-0">
-			<div className="flex items-center gap-2 text-muted-foreground">
-				{icon}
-				<p className="truncate text-[0.65rem] font-medium uppercase tracking-wide sm:text-xs">
+			<div className="flex items-center gap-1.5 text-muted-foreground">
+				<span className="shrink-0">{icon}</span>
+				<p className="truncate text-[0.6rem] font-medium uppercase tracking-wide sm:text-xs">
 					{label}
 				</p>
 			</div>
-			<p className="mt-2 wrap-break-word font-num text-lg font-extrabold leading-tight tracking-tight tabular-nums text-foreground">
+			<p className="mt-1.5 break-words font-num text-base font-extrabold leading-tight tracking-tight tabular-nums text-foreground sm:mt-2 sm:text-lg">
 				{isSensitive ? <SensitiveText text={value} /> : value}
 			</p>
 		</div>

@@ -1,4 +1,5 @@
 import { Link, Navigate, useRouterState } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import {
 	BarChart3,
 	ChevronUp,
@@ -40,6 +41,12 @@ import {
 } from "#/components/ui/dropdown-menu";
 import { useAccountModerationGuard } from "#/features/auth/hooks/use-account-moderation-guard";
 import { useSecurityProfile } from "#/features/auth/hooks/use-security-profile";
+import { TransactionFormSheet } from "#/features/transactions/components/transaction-form-sheet";
+import {
+	openQuickAddTransaction,
+	quickAddTransactionStore,
+	setQuickAddTransactionOpen,
+} from "#/features/transactions/store/quick-add-transaction-store";
 import { useIsMobile } from "#/hooks/use-is-mobile";
 import { authClient } from "#/lib/auth-client";
 import { AUTH_ROLES } from "#/lib/auth-roles";
@@ -82,6 +89,10 @@ export function AuthenticatedAppShell({
 	const { data: profile, isLoading: isProfileLoading } = useSecurityProfile();
 	useAccountModerationGuard(user.role);
 	const isMobile = useIsMobile();
+	const quickAddOpen = useStore(
+		quickAddTransactionStore,
+		(state) => state.isOpen,
+	);
 	const [aiPanelOpen, setAiPanelOpen] = useState(false);
 	const [collapsed, setCollapsed] = useState(false);
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -222,6 +233,14 @@ export function AuthenticatedAppShell({
 		</DropdownMenu>
 	);
 
+	const quickAddSheet = (
+		<TransactionFormSheet
+			open={quickAddOpen}
+			onOpenChange={setQuickAddTransactionOpen}
+			userCurrency={user.currency ?? "USD"}
+		/>
+	);
+
 	// ---------- Mobile shell ----------
 	if (isMobile) {
 		return (
@@ -260,14 +279,15 @@ export function AuthenticatedAppShell({
 					</div>
 				</header>
 
-				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
-					<div className="flex-1">{children}</div>
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+					<div className="min-w-0 flex-1">{children}</div>
 					<SiteFooter showAuthLinks={false} />
 				</div>
 
 				<MobileBottomNav
 					pathname={pathname}
 					onMore={() => setMobileNavOpen(true)}
+					onAdd={() => openQuickAddTransaction()}
 				/>
 
 				{mobileNavOpen && (
@@ -280,6 +300,7 @@ export function AuthenticatedAppShell({
 				)}
 
 				<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
+				{quickAddSheet}
 			</div>
 		);
 	}
@@ -377,13 +398,14 @@ export function AuthenticatedAppShell({
 					</div>
 					<WorkspaceHeaderToolbar onOpenAiPanel={() => setAiPanelOpen(true)} />
 				</header>
-				<div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-					<div className="flex-1">{children}</div>
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+					<div className="min-w-0 flex-1">{children}</div>
 					<SiteFooter showAuthLinks={false} />
 				</div>
 			</div>
 
 			<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
+			{quickAddSheet}
 		</div>
 	);
 }
@@ -425,9 +447,11 @@ interface BottomTab {
 function MobileBottomNav({
 	pathname,
 	onMore,
+	onAdd,
 }: {
 	pathname: string;
 	onMore: () => void;
+	onAdd: () => void;
 }) {
 	const left: BottomTab[] = [
 		{ title: "Home", to: "/", icon: LayoutDashboard },
@@ -444,14 +468,15 @@ function MobileBottomNav({
 					active={isActivePath(pathname, tab.to)}
 				/>
 			))}
-			<Link
-				to="/transactions"
+			<button
+				type="button"
+				onClick={onAdd}
 				aria-label="Add transaction"
-				className="-translate-y-3.5 flex shrink-0 items-center justify-center rounded-[17px] bg-primary text-primary-foreground no-underline shadow-lg shadow-primary/30"
+				className="-translate-y-3.5 flex shrink-0 items-center justify-center rounded-[17px] bg-primary text-primary-foreground shadow-lg shadow-primary/30"
 				style={{ width: 52, height: 52 }}
 			>
 				<Plus className="size-6" strokeWidth={2.6} />
-			</Link>
+			</button>
 			{right.map((tab) => (
 				<BottomTabLink
 					key={tab.to}

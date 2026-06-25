@@ -311,6 +311,15 @@ code {
   padding: 12px 14px;
 }
 
+/* Horizontal snap scrollers (e.g. dashboard account cards) hide their scrollbar. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .num {
   font-family: var(--num-font);
   font-variant-numeric: tabular-nums;
