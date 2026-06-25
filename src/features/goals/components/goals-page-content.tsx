@@ -1,420 +1,572 @@
-import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
-import { ProgressBar } from '#/components/feedback/add-progress-control'
-import { StatCard } from '#/components/feedback/stat-card'
-import { TableRowActions } from '#/components/feedback/table-row-actions'
-import { PageEmptyState, PageErrorState, PageContentSkeleton } from '#/components/feedback/page-state'
-import { Button } from '#/components/ui/button'
-import { DatePickerField } from '#/components/ui/date-picker'
-import { Input } from '#/components/ui/input'
+import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
+import type { FormEvent } from "react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
+	PageContentSkeleton,
+	PageEmptyState,
+	PageErrorState,
+} from "#/components/feedback/page-state";
+import { SensitiveAmount } from "#/components/privacy/sensitive-amount";
+import { SensitiveText } from "#/components/privacy/sensitive-text";
+import { Button } from "#/components/ui/button";
+import { DatePickerField } from "#/components/ui/date-picker";
+import { Input } from "#/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '#/components/ui/sheet'
-import { useCreateGoalMutation, useDeleteGoalMutation, useGoalsQuery, useUpdateGoalMutation } from '#/features/goals/hooks/use-goals'
-import type { GoalDto } from '#/features/goals/types/goal'
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "#/components/ui/select";
 import {
-  buildGoalProgress,
-  buildGoalsPageStats,
-  buildLinkedSavingsByGoalId,
-} from '#/features/goals/utils/goal-progress'
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "#/components/ui/sheet";
 import {
-  formatGoalDate,
-  getDefaultGoalForm,
-  type GoalFormState,
-} from '#/features/goals/utils/goal-form'
-import { useSavingsQuery } from '#/features/savings/hooks/use-savings'
-import { SensitiveAmount } from '#/components/privacy/sensitive-amount'
-import { SensitiveText } from '#/components/privacy/sensitive-text'
-import { formatSensitiveCurrency, usePrivacyModeEnabled } from '#/lib/privacy/sensitive-format'
-import { toInputDate } from '#/lib/date-input'
-import type { FormEvent } from 'react'
-import { useCallback, useMemo, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CircleDollarSign, PiggyBank, Plus, Target, TrendingUp } from 'lucide-react'
-import { toast } from 'sonner'
+	useCreateGoalMutation,
+	useDeleteGoalMutation,
+	useGoalsQuery,
+	useUpdateGoalMutation,
+} from "#/features/goals/hooks/use-goals";
+import type { GoalDto } from "#/features/goals/types/goal";
+import {
+	formatGoalDate,
+	type GoalFormState,
+	getDefaultGoalForm,
+} from "#/features/goals/utils/goal-form";
+import {
+	buildGoalProgress,
+	buildGoalsPageStats,
+	buildLinkedSavingsByGoalId,
+} from "#/features/goals/utils/goal-progress";
+import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
+import { toInputDate } from "#/lib/date-input";
+import {
+	formatSensitiveCurrency,
+	usePrivacyModeEnabled,
+} from "#/lib/privacy/sensitive-format";
+import { cn } from "#/lib/utils";
 
 interface GoalsPageContentProps {
-  userCurrency: string
+	userCurrency: string;
 }
 
-/** Goals page: stats, progress table, and create/edit sheet. */
+/** Picks a stable emoji for a goal based on its title. */
+function goalEmoji(title: string): string {
+	const text = title.toLowerCase();
+	if (/hajj|umrah|makkah|mosque|pray/.test(text)) return "🕋";
+	if (/house|home|flat|apartment|mortgage/.test(text)) return "🏠";
+	if (/car|vehicle|bike/.test(text)) return "🚗";
+	if (/emergency|safety|rainy/.test(text)) return "🛟";
+	if (/travel|trip|holiday|vacation|flight/.test(text)) return "✈️";
+	if (/wedding|marriage/.test(text)) return "💍";
+	if (/edu|school|college|university|course|study/.test(text)) return "🎓";
+	if (/gift|present/.test(text)) return "🎁";
+	if (/retire|pension/.test(text)) return "🌅";
+	return "🎯";
+}
+
+/** Goals page: header stats, goal-card grid, and create/edit sheet. */
 export function GoalsPageContent({ userCurrency }: GoalsPageContentProps) {
-  const { data: goals = [], isPending, isError, error } = useGoalsQuery()
-  const { data: savings = [] } = useSavingsQuery()
-  const createGoalMutation = useCreateGoalMutation()
-  const updateGoalMutation = useUpdateGoalMutation()
-  const deleteGoalMutation = useDeleteGoalMutation()
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const [editingGoalId, setEditingGoalId] = useState<number | null>(null)
-  const [form, setForm] = useState<GoalFormState>(getDefaultGoalForm())
+	const { data: goals = [], isPending, isError, error } = useGoalsQuery();
+	const { data: savings = [] } = useSavingsQuery();
+	const createGoalMutation = useCreateGoalMutation();
+	const updateGoalMutation = useUpdateGoalMutation();
+	const deleteGoalMutation = useDeleteGoalMutation();
+	const [isSheetOpen, setIsSheetOpen] = useState(false);
+	const [editingGoalId, setEditingGoalId] = useState<number | null>(null);
+	const [form, setForm] = useState<GoalFormState>(getDefaultGoalForm());
 
-  const isEditing = editingGoalId !== null
-  const isSaving = createGoalMutation.isPending || updateGoalMutation.isPending
+	const isEditing = editingGoalId !== null;
+	const isSaving = createGoalMutation.isPending || updateGoalMutation.isPending;
 
-  const linkedSavingsByGoalId = useMemo(() => buildLinkedSavingsByGoalId(savings), [savings])
+	const linkedSavingsByGoalId = buildLinkedSavingsByGoalId(savings);
+	const pageStats = buildGoalsPageStats(goals, linkedSavingsByGoalId);
+	const isPrivacyMode = usePrivacyModeEnabled();
 
-  const pageStats = useMemo(
-    () => buildGoalsPageStats(goals, linkedSavingsByGoalId),
-    [goals, linkedSavingsByGoalId],
-  )
+	const handleDeleteGoal = useCallback(
+		async (id: number, goalTitle: string) => {
+			await toast.promise(deleteGoalMutation.mutateAsync(id), {
+				loading: "Deleting goal...",
+				success: `Deleted ${goalTitle}`,
+				error: (message) =>
+					message instanceof Error ? message.message : "Unable to delete goal",
+			});
+		},
+		[deleteGoalMutation],
+	);
 
-  const isPrivacyMode = usePrivacyModeEnabled()
+	const openCreateSheet = useCallback(() => {
+		setEditingGoalId(null);
+		setForm(getDefaultGoalForm());
+		setIsSheetOpen(true);
+	}, []);
 
-  const handleDeleteGoal = useCallback(
-    async (id: number, goalTitle: string) => {
-      await toast.promise(deleteGoalMutation.mutateAsync(id), {
-        loading: 'Deleting goal...',
-        success: `Deleted ${goalTitle}`,
-        error: (message) => (message instanceof Error ? message.message : 'Unable to delete goal'),
-      })
-    },
-    [deleteGoalMutation],
-  )
+	const openEditGoal = useCallback((goal: GoalDto) => {
+		setEditingGoalId(goal.id);
+		setForm({
+			title: goal.title,
+			targetAmount: goal.targetAmount,
+			currentAmount: goal.currentAmount,
+			savingsAmount: goal.savingsAmount,
+			status: goal.status,
+			targetDate: goal.targetDate ? toInputDate(goal.targetDate) : "",
+			note: goal.note ?? "",
+		});
+		setIsSheetOpen(true);
+	}, []);
 
-  const openCreateSheet = useCallback(() => {
-    setEditingGoalId(null)
-    setForm(getDefaultGoalForm())
-    setIsSheetOpen(true)
-  }, [])
+	function handleSheetOpenChange(open: boolean) {
+		setIsSheetOpen(open);
+		if (!open) {
+			setEditingGoalId(null);
+			setForm(getDefaultGoalForm());
+		}
+	}
 
-  const openEditGoal = useCallback((goal: GoalDto) => {
-    setEditingGoalId(goal.id)
-    setForm({
-      title: goal.title,
-      targetAmount: goal.targetAmount,
-      currentAmount: goal.currentAmount,
-      savingsAmount: goal.savingsAmount,
-      status: goal.status,
-      targetDate: goal.targetDate ? toInputDate(goal.targetDate) : '',
-      note: goal.note ?? '',
-    })
-    setIsSheetOpen(true)
-  }, [])
+	async function handleSaveGoal(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
 
-  function handleSheetOpenChange(open: boolean) {
-    setIsSheetOpen(open)
-    if (!open) {
-      setEditingGoalId(null)
-      setForm(getDefaultGoalForm())
-    }
-  }
+		if (!form.title.trim() || !form.targetAmount.trim()) {
+			toast.error("Title and target amount are required");
+			return;
+		}
 
-  const goalColumns = useMemo<ColumnDef<GoalDto>[]>(
-    () => [
-      {
-        accessorKey: 'title',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
-        cell: ({ row }) => <SensitiveText text={row.original.title} />,
-      },
-      {
-        accessorKey: 'status',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-        cell: ({ row }) => <span className="capitalize">{row.original.status}</span>,
-      },
-      {
-        accessorKey: 'targetDate',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Target date" />,
-        cell: ({ row }) => (row.original.targetDate ? formatGoalDate(row.original.targetDate) : '—'),
-        sortingFn: (first, second) => {
-          const firstDate = first.original.targetDate ? new Date(first.original.targetDate).getTime() : 0
-          const secondDate = second.original.targetDate ? new Date(second.original.targetDate).getTime() : 0
-          return firstDate - secondDate
-        },
-      },
-      {
-        id: 'stillNeeded',
-        accessorFn: (row) => buildGoalProgress(row, linkedSavingsByGoalId[row.id] ?? 0).stillNeeded,
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Still needed" />,
-        cell: ({ row }) => {
-          const breakdown = buildGoalProgress(row.original, linkedSavingsByGoalId[row.original.id] ?? 0)
-          if (breakdown.stillNeeded <= 0) {
-            return <span className="text-sm font-medium text-emerald-600">Reached</span>
-          }
-          return <SensitiveAmount amount={breakdown.stillNeeded} currency={userCurrency} className="text-sm font-medium" />
-        },
-      },
-      {
-        id: 'progress',
-        enableSorting: false,
-        header: () => 'Combined progress',
-        meta: { cellClassName: 'min-w-[16rem]' },
-        cell: ({ row }) => {
-          const goal = row.original
-          const breakdown = buildGoalProgress(goal, linkedSavingsByGoalId[goal.id] ?? 0)
-          return (
-            <div className="min-w-0 max-w-full wrap-break-word">
-              <p className="text-sm font-medium">
-                <SensitiveAmount amount={breakdown.totalAchieved} currency={userCurrency} /> /{' '}
-                <SensitiveAmount amount={breakdown.targetAmount} currency={userCurrency} />
-              </p>
-              <ProgressBar current={breakdown.totalAchieved} target={breakdown.targetAmount} />
-              <p className="mt-1 text-xs opacity-70">
-                {breakdown.progressAmount > 0 ? (
-                  <>
-                    <SensitiveAmount amount={breakdown.progressAmount} currency={userCurrency} /> logged
-                  </>
-                ) : (
-                  'No logged progress'
-                )}
-                {breakdown.savingsForGoal > 0 ? (
-                  <>
-                    {' · '}
-                    <SensitiveAmount amount={breakdown.savingsForGoal} currency={userCurrency} /> in savings
-                  </>
-                ) : null}
-              </p>
-            </div>
-          )
-        },
-      },
-      {
-        id: 'actions',
-        enableSorting: false,
-        enableGlobalFilter: false,
-        header: () => <div className="text-right">Actions</div>,
-        meta: { cellClassName: 'w-[6.5rem]' },
-        cell: ({ row }) => (
-          <TableRowActions
-            label={row.original.title}
-            onEdit={() => openEditGoal(row.original)}
-            onDelete={() => void handleDeleteGoal(row.original.id, row.original.title)}
-            isDeletePending={deleteGoalMutation.isPending}
-          />
-        ),
-      },
-    ],
-    [
-      deleteGoalMutation.isPending,
-      handleDeleteGoal,
-      linkedSavingsByGoalId,
-      openEditGoal,
-      userCurrency,
-      isPrivacyMode,
-    ],
-  )
+		if (isEditing && editingGoalId) {
+			await toast.promise(
+				updateGoalMutation.mutateAsync({
+					id: editingGoalId,
+					input: {
+						title: form.title.trim(),
+						targetAmount: form.targetAmount.trim(),
+						currentAmount: form.currentAmount.trim() || "0",
+						savingsAmount: form.savingsAmount.trim() || "0",
+						status: form.status,
+						targetDate: form.targetDate
+							? new Date(form.targetDate).toISOString()
+							: null,
+						note: form.note.trim() || null,
+					},
+				}),
+				{
+					loading: "Updating goal...",
+					success: "Goal updated",
+					error: (message) =>
+						message instanceof Error
+							? message.message
+							: "Unable to update goal",
+				},
+			);
+		} else {
+			await toast.promise(
+				createGoalMutation.mutateAsync({
+					title: form.title.trim(),
+					targetAmount: form.targetAmount.trim(),
+					status: form.status,
+					targetDate: form.targetDate
+						? new Date(form.targetDate).toISOString()
+						: undefined,
+				}),
+				{
+					loading: "Creating goal...",
+					success: "Goal created",
+					error: (message) =>
+						message instanceof Error
+							? message.message
+							: "Unable to create goal",
+				},
+			);
+		}
 
-  async function handleSaveGoal(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+		setEditingGoalId(null);
+		setForm(getDefaultGoalForm());
+		setIsSheetOpen(false);
+	}
 
-    if (!form.title.trim() || !form.targetAmount.trim()) {
-      toast.error('Title and target amount are required')
-      return
-    }
+	return (
+		<main className="p-6 md:p-8">
+			<div className="mx-auto max-w-5xl">
+				<header className="flex flex-wrap items-end justify-between gap-4">
+					<div>
+						<h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+							Goals
+						</h1>
+						<p className="mt-1 text-sm text-muted-foreground">
+							Track long-term targets. Progress combines logged amounts and
+							savings linked on the Savings page.
+						</p>
+					</div>
+					<Button className="shrink-0 gap-2" onClick={openCreateSheet}>
+						<Plus className="size-4" />
+						Add goal
+					</Button>
+				</header>
 
-    if (isEditing && editingGoalId) {
-      await toast.promise(
-        updateGoalMutation.mutateAsync({
-          id: editingGoalId,
-          input: {
-            title: form.title.trim(),
-            targetAmount: form.targetAmount.trim(),
-            currentAmount: form.currentAmount.trim() || '0',
-            savingsAmount: form.savingsAmount.trim() || '0',
-            status: form.status,
-            targetDate: form.targetDate ? new Date(form.targetDate).toISOString() : null,
-            note: form.note.trim() || null,
-          },
-        }),
-        {
-          loading: 'Updating goal...',
-          success: 'Goal updated',
-          error: (message) => (message instanceof Error ? message.message : 'Unable to update goal'),
-        },
-      )
-    } else {
-      await toast.promise(
-        createGoalMutation.mutateAsync({
-          title: form.title.trim(),
-          targetAmount: form.targetAmount.trim(),
-          status: form.status,
-          targetDate: form.targetDate ? new Date(form.targetDate).toISOString() : undefined,
-        }),
-        {
-          loading: 'Creating goal...',
-          success: 'Goal created',
-          error: (message) => (message instanceof Error ? message.message : 'Unable to create goal'),
-        },
-      )
-    }
+				{!isPending && !isError ? (
+					<div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+						<SummaryStat
+							label="Active goals"
+							value={String(pageStats.activeCount)}
+						/>
+						<SummaryStat
+							label="Combined saved"
+							value={formatSensitiveCurrency(
+								pageStats.totalAchieved,
+								userCurrency,
+								isPrivacyMode,
+							)}
+						/>
+						<SummaryStat
+							label="Still needed"
+							value={formatSensitiveCurrency(
+								pageStats.totalStillNeeded,
+								userCurrency,
+								isPrivacyMode,
+							)}
+						/>
+						<SummaryStat
+							label="Active target"
+							value={formatSensitiveCurrency(
+								pageStats.totalTarget,
+								userCurrency,
+								isPrivacyMode,
+							)}
+						/>
+					</div>
+				) : null}
 
-    setEditingGoalId(null)
-    setForm(getDefaultGoalForm())
-    setIsSheetOpen(false)
-  }
+				{isPending ? (
+					<div className="mt-6">
+						<PageContentSkeleton showStats statCount={4} tableColumns={4} />
+					</div>
+				) : null}
+				{isError ? (
+					<div className="mt-6">
+						<PageErrorState message={error.message} />
+					</div>
+				) : null}
 
-  return (
-    <main className="p-6 md:p-8">
-      <section className="island-shell rounded-2xl p-6">
-        <h1 className="display-title text-3xl">Goals</h1>
-        <div className="mt-2 flex items-center justify-between gap-4">
-          <p className="text-sm opacity-70">
-            Track long-term targets like Hajj or an emergency fund. Combined progress includes logged amounts,
-            savings already set aside for the goal, and savings entries linked on the Savings page.
-          </p>
-          <Button className="shrink-0 gap-2" onClick={openCreateSheet}>
-            <Plus className="size-4" />
-            Add goal
-          </Button>
-        </div>
+				{!isPending && !isError ? (
+					goals.length ? (
+						<div className="mt-6 grid gap-4 sm:grid-cols-2">
+							{goals.map((goal) => (
+								<GoalCard
+									key={goal.id}
+									goal={goal}
+									userCurrency={userCurrency}
+									linkedSavings={linkedSavingsByGoalId[goal.id] ?? 0}
+									onEdit={() => openEditGoal(goal)}
+									onDelete={() => void handleDeleteGoal(goal.id, goal.title)}
+									isDeletePending={deleteGoalMutation.isPending}
+								/>
+							))}
+						</div>
+					) : (
+						<div className="mt-6">
+							<PageEmptyState message="No goals added yet." />
+						</div>
+					)
+				) : null}
 
-        {!isPending && !isError ? (
-          <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
-            <StatCard
-              icon={<Target className="size-4 text-sky-600" />}
-              label="Active goals"
-              value={String(pageStats.activeCount)}
-            />
-            <StatCard
-              icon={<TrendingUp className="size-4 text-emerald-600" />}
-              label="Combined achieved"
-              value={formatSensitiveCurrency(pageStats.totalAchieved, userCurrency, isPrivacyMode)}
-              hint="Progress + savings for active goals"
-              isSensitive
-            />
-            <StatCard
-              icon={<CircleDollarSign className="size-4 text-amber-600" />}
-              label="Still needed"
-              value={formatSensitiveCurrency(pageStats.totalStillNeeded, userCurrency, isPrivacyMode)}
-              hint="Across active goals"
-              isSensitive
-            />
-            <StatCard
-              icon={<PiggyBank className="size-4 text-violet-600" />}
-              label="Active target"
-              value={formatSensitiveCurrency(pageStats.totalTarget, userCurrency, isPrivacyMode)}
-              isSensitive
-            />
-          </div>
-        ) : null}
+				<Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
+					<SheetContent className="w-full sm:max-w-md">
+						<SheetHeader>
+							<SheetTitle>{isEditing ? "Edit goal" : "Add goal"}</SheetTitle>
+							<SheetDescription>
+								{isEditing
+									? 'Update goal details. Set "In savings" for money already saved outside the ledger.'
+									: "Create a new financial goal with a target amount and optional deadline."}
+							</SheetDescription>
+						</SheetHeader>
+						<form className="grid gap-4 px-4" onSubmit={handleSaveGoal}>
+							<div className="grid gap-2">
+								<label htmlFor="goal-title" className="text-sm font-medium">
+									Title
+								</label>
+								<Input
+									id="goal-title"
+									value={form.title}
+									onChange={(event) =>
+										setForm((state) => ({
+											...state,
+											title: event.target.value,
+										}))
+									}
+									placeholder="e.g. Emergency fund"
+								/>
+							</div>
+							<div className="grid gap-2">
+								<label
+									htmlFor="goal-target-amount"
+									className="text-sm font-medium"
+								>
+									Target amount
+								</label>
+								<Input
+									id="goal-target-amount"
+									type="number"
+									value={form.targetAmount}
+									onChange={(event) =>
+										setForm((state) => ({
+											...state,
+											targetAmount: event.target.value,
+										}))
+									}
+									placeholder="0.00"
+								/>
+							</div>
+							{isEditing ? (
+								<div className="grid grid-cols-2 gap-3">
+									<div className="grid gap-2">
+										<label
+											htmlFor="goal-current-amount"
+											className="text-sm font-medium"
+										>
+											Logged progress
+										</label>
+										<Input
+											id="goal-current-amount"
+											type="number"
+											value={form.currentAmount}
+											onChange={(event) =>
+												setForm((state) => ({
+													...state,
+													currentAmount: event.target.value,
+												}))
+											}
+										/>
+									</div>
+									<div className="grid gap-2">
+										<label
+											htmlFor="goal-savings-amount"
+											className="text-sm font-medium"
+										>
+											In savings
+										</label>
+										<Input
+											id="goal-savings-amount"
+											type="number"
+											value={form.savingsAmount}
+											onChange={(event) =>
+												setForm((state) => ({
+													...state,
+													savingsAmount: event.target.value,
+												}))
+											}
+										/>
+									</div>
+								</div>
+							) : null}
+							<div className="grid grid-cols-2 gap-3">
+								<DatePickerField
+									id="goal-target-date"
+									label="Target date"
+									value={form.targetDate}
+									onChange={(targetDate) =>
+										setForm((state) => ({ ...state, targetDate }))
+									}
+									optional
+								/>
+								<div className="grid gap-2">
+									<label htmlFor="goal-status" className="text-sm font-medium">
+										Status
+									</label>
+									<Select
+										value={form.status}
+										onValueChange={(value) =>
+											setForm((state) => ({
+												...state,
+												status: value as GoalFormState["status"],
+											}))
+										}
+									>
+										<SelectTrigger id="goal-status" className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="active">Active</SelectItem>
+											<SelectItem value="paused">Paused</SelectItem>
+											<SelectItem value="completed">Completed</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							{isEditing ? (
+								<div className="grid gap-2">
+									<label htmlFor="goal-note" className="text-sm font-medium">
+										Note (optional)
+									</label>
+									<Input
+										id="goal-note"
+										value={form.note}
+										onChange={(event) =>
+											setForm((state) => ({
+												...state,
+												note: event.target.value,
+											}))
+										}
+										placeholder="Any details"
+									/>
+								</div>
+							) : null}
+							<SheetFooter className="px-0">
+								<Button type="submit" disabled={isSaving} className="w-full">
+									{isSaving
+										? "Saving..."
+										: isEditing
+											? "Save changes"
+											: "Add goal"}
+								</Button>
+							</SheetFooter>
+						</form>
+					</SheetContent>
+				</Sheet>
+			</div>
+		</main>
+	);
+}
 
-        {isPending ? (
-          <div className="mt-5">
-            <PageContentSkeleton showStats statCount={4} tableColumns={6} />
-          </div>
-        ) : null}
-        {isError ? <div className="mt-5"><PageErrorState message={error.message} /></div> : null}
+/** Compact labelled stat used in the page header row. */
+function SummaryStat({ label, value }: { label: string; value: string }) {
+	return (
+		<div className="rounded-panel border border-border bg-panel p-4">
+			<p className="text-xs font-medium text-muted-foreground">{label}</p>
+			<p className="mt-1 font-num text-lg font-extrabold tracking-tight tabular-nums text-foreground">
+				{value}
+			</p>
+		</div>
+	);
+}
 
-        {!isPending && !isError ? (
-          goals.length ? (
-            <div className="mt-5">
-              <DataTable
-                columns={goalColumns}
-                data={goals}
-                filterPlaceholder="Filter by title, status, or date..."
-                emptyMessage="No goals added yet."
-                showPrivacyToggle
-              />
-            </div>
-          ) : (
-            <div className="mt-5"><PageEmptyState message="No goals added yet." /></div>
-          )
-        ) : null}
+interface GoalCardProps {
+	goal: GoalDto;
+	userCurrency: string;
+	linkedSavings: number;
+	onEdit: () => void;
+	onDelete: () => void;
+	isDeletePending: boolean;
+}
 
-        <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
-          <SheetContent className="w-full sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>{isEditing ? 'Edit goal' : 'Add goal'}</SheetTitle>
-              <SheetDescription>
-                {isEditing
-                  ? 'Update goal details. Set "In savings" for money already saved outside the ledger.'
-                  : 'Create a new financial goal with a target amount and optional deadline.'}
-              </SheetDescription>
-            </SheetHeader>
-            <form className="grid gap-4 px-4" onSubmit={handleSaveGoal}>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Title</label>
-                <Input
-                  value={form.title}
-                  onChange={(event) => setForm((state) => ({ ...state, title: event.target.value }))}
-                  placeholder="e.g. Emergency fund"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Target amount</label>
-                <Input
-                  type="number"
-                  value={form.targetAmount}
-                  onChange={(event) => setForm((state) => ({ ...state, targetAmount: event.target.value }))}
-                  placeholder="0.00"
-                />
-              </div>
-              {isEditing ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Logged progress</label>
-                    <Input
-                      type="number"
-                      value={form.currentAmount}
-                      onChange={(event) => setForm((state) => ({ ...state, currentAmount: event.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">In savings</label>
-                    <Input
-                      type="number"
-                      value={form.savingsAmount}
-                      onChange={(event) => setForm((state) => ({ ...state, savingsAmount: event.target.value }))}
-                    />
-                  </div>
-                </div>
-              ) : null}
-              <div className="grid grid-cols-2 gap-3">
-                <DatePickerField
-                  id="goal-target-date"
-                  label="Target date"
-                  value={form.targetDate}
-                  onChange={(targetDate) => setForm((state) => ({ ...state, targetDate }))}
-                  optional
-                />
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select
-                    value={form.status}
-                    onValueChange={(value) =>
-                      setForm((state) => ({ ...state, status: value as GoalFormState['status'] }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="paused">Paused</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {isEditing ? (
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Note (optional)</label>
-                  <Input
-                    value={form.note}
-                    onChange={(event) => setForm((state) => ({ ...state, note: event.target.value }))}
-                    placeholder="Any details"
-                  />
-                </div>
-              ) : null}
-              <SheetFooter className="px-0">
-                <Button type="submit" disabled={isSaving} className="w-full">
-                  {isSaving ? 'Saving...' : isEditing ? 'Save changes' : 'Add goal'}
-                </Button>
-              </SheetFooter>
-            </form>
-          </SheetContent>
-        </Sheet>
-      </section>
-    </main>
-  )
+/** A single goal as a panel card with progress. */
+function GoalCard({
+	goal,
+	userCurrency,
+	linkedSavings,
+	onEdit,
+	onDelete,
+	isDeletePending,
+}: GoalCardProps) {
+	const breakdown = buildGoalProgress(goal, linkedSavings);
+	const percent =
+		breakdown.targetAmount > 0
+			? Math.min(
+					100,
+					Math.round((breakdown.totalAchieved / breakdown.targetAmount) * 100),
+				)
+			: 0;
+	const isComplete = breakdown.stillNeeded <= 0 && breakdown.targetAmount > 0;
+
+	return (
+		<article className="flex flex-col rounded-panel border border-border bg-panel p-[22px] shadow-sm">
+			<div className="flex items-start justify-between gap-3">
+				<div className="flex min-w-0 items-center gap-3">
+					<span
+						className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-soft-accent text-xl"
+						aria-hidden="true"
+					>
+						{goalEmoji(goal.title)}
+					</span>
+					<div className="min-w-0">
+						<h2 className="truncate font-semibold text-foreground">
+							<SensitiveText text={goal.title} />
+						</h2>
+						<p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+							{goal.targetDate ? (
+								<>
+									<CalendarDays className="size-3.5" />
+									{formatGoalDate(goal.targetDate)}
+								</>
+							) : (
+								<span className="capitalize">{goal.status}</span>
+							)}
+						</p>
+					</div>
+				</div>
+				<div className="flex shrink-0 items-center gap-1">
+					<button
+						type="button"
+						onClick={onEdit}
+						aria-label={`Edit ${goal.title}`}
+						className="rounded-md p-1.5 text-muted-foreground hover:bg-soft-accent hover:text-foreground"
+					>
+						<Pencil className="size-4" />
+					</button>
+					<button
+						type="button"
+						onClick={onDelete}
+						disabled={isDeletePending}
+						aria-label={`Delete ${goal.title}`}
+						className="rounded-md p-1.5 text-muted-foreground hover:bg-soft-accent hover:text-expense disabled:opacity-50"
+					>
+						<Trash2 className="size-4" />
+					</button>
+				</div>
+			</div>
+
+			<div className="mt-5 flex items-end justify-between gap-2">
+				<p className="font-num text-xl font-extrabold tracking-tight tabular-nums text-foreground">
+					<SensitiveAmount
+						amount={breakdown.totalAchieved}
+						currency={userCurrency}
+					/>
+				</p>
+				<p className="font-num text-sm tabular-nums text-muted-foreground">
+					/{" "}
+					<SensitiveAmount
+						amount={breakdown.targetAmount}
+						currency={userCurrency}
+					/>
+				</p>
+			</div>
+
+			<div className="mt-2 h-2 overflow-hidden rounded-full bg-track">
+				<div
+					className={cn(
+						"h-full rounded-full transition-all",
+						isComplete ? "bg-income" : "bg-primary",
+					)}
+					style={{ width: `${percent}%` }}
+				/>
+			</div>
+
+			<div className="mt-2 flex items-center justify-between text-xs">
+				<span
+					className={cn(
+						"font-num font-semibold tabular-nums",
+						isComplete ? "text-income" : "text-primary",
+					)}
+				>
+					{percent}%
+				</span>
+				<span className="text-muted-foreground">
+					{isComplete ? (
+						"Reached"
+					) : (
+						<>
+							<SensitiveAmount
+								amount={breakdown.stillNeeded}
+								currency={userCurrency}
+							/>{" "}
+							to go
+						</>
+					)}
+				</span>
+			</div>
+		</article>
+	);
 }

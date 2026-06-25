@@ -1,351 +1,417 @@
-import { PageEmptyState } from '#/components/feedback/page-state'
-import { InlineError } from '#/components/feedback/inline-error'
-import { DeleteRowButton } from '#/components/feedback/delete-row-button'
-import { DataTable, DataTableColumnHeader } from '#/components/data-table/data-table'
-import { Button } from '#/components/ui/button'
+import type { ColumnDef } from "@tanstack/react-table";
+import { Ban, Loader2, ShieldAlert, ShieldCheck, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '#/components/ui/sheet'
-import { Textarea } from '#/components/ui/textarea'
-import type { AdminUserRecord } from '#/features/admin/types/admin-user'
-import { AUTH_ROLES } from '#/lib/auth-roles'
-import { Ban, Loader2, ShieldAlert, ShieldCheck, Users } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { toast } from 'sonner'
+	DataTable,
+	DataTableColumnHeader,
+} from "#/components/data-table/data-table";
+import { DeleteRowButton } from "#/components/feedback/delete-row-button";
+import { InlineError } from "#/components/feedback/inline-error";
+import { PageEmptyState } from "#/components/feedback/page-state";
+import { Button } from "#/components/ui/button";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "#/components/ui/sheet";
+import { Textarea } from "#/components/ui/textarea";
+import type { AdminUserRecord } from "#/features/admin/types/admin-user";
+import { AUTH_ROLES } from "#/lib/auth-roles";
 
-type ModerationAction = 'restrict' | 'ban'
+type ModerationAction = "restrict" | "ban";
 
 interface ModerationSheetState {
-  user: AdminUserRecord
-  action: ModerationAction
+	user: AdminUserRecord;
+	action: ModerationAction;
 }
 
-function statusBadgeClass(status: AdminUserRecord['accountStatus']) {
-  if (status === 'banned') return 'border-red-300 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100'
-  if (status === 'restricted') return 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100'
-  return 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100'
+function statusBadgeClass(status: AdminUserRecord["accountStatus"]) {
+	if (status === "banned")
+		return "border-red-300 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100";
+	if (status === "restricted")
+		return "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100";
+	return "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100";
 }
 
 /** Admin table for viewing and moderating application users. */
 export function AdminUsersSection() {
-  const [users, setUsers] = useState<AdminUserRecord[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isActionPending, setIsActionPending] = useState(false)
-  const [moderationSheet, setModerationSheet] = useState<ModerationSheetState | null>(null)
-  const [moderationReason, setModerationReason] = useState('')
+	const [users, setUsers] = useState<AdminUserRecord[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [isActionPending, setIsActionPending] = useState(false);
+	const [moderationSheet, setModerationSheet] =
+		useState<ModerationSheetState | null>(null);
+	const [moderationReason, setModerationReason] = useState("");
 
-  const loadUsers = useCallback(async () => {
-    setIsLoading(true)
-    setErrorMessage(null)
-    try {
-      const response = await fetch('/api/admin/users', { method: 'GET' })
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: AdminUserRecord[]
-      } | null
+	const loadUsers = useCallback(async () => {
+		setIsLoading(true);
+		setErrorMessage(null);
+		try {
+			const response = await fetch("/api/admin/users", { method: "GET" });
+			const payload = (await response.json().catch(() => null)) as {
+				success?: boolean;
+				error?: string;
+				data?: AdminUserRecord[];
+			} | null;
 
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error ?? 'Unable to load users')
-      }
+			if (!response.ok || !payload?.success) {
+				throw new Error(payload?.error ?? "Unable to load users");
+			}
 
-      setUsers(payload.data ?? [])
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to load users')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+			setUsers(payload.data ?? []);
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error ? error.message : "Unable to load users",
+			);
+		} finally {
+			setIsLoading(false);
+		}
+	}, []);
 
-  useEffect(() => {
-    void loadUsers()
-  }, [loadUsers])
+	useEffect(() => {
+		void loadUsers();
+	}, [loadUsers]);
 
-  const handleModerationSubmit = useCallback(async () => {
-    if (!moderationSheet) return
+	const handleModerationSubmit = useCallback(async () => {
+		if (!moderationSheet) return;
 
-    setIsActionPending(true)
-    setErrorMessage(null)
-    try {
-      const response = await fetch(`/api/admin/users/${moderationSheet.user.id}`, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          action: moderationSheet.action,
-          reason: moderationReason.trim(),
-        }),
-      })
+		setIsActionPending(true);
+		setErrorMessage(null);
+		try {
+			const response = await fetch(
+				`/api/admin/users/${moderationSheet.user.id}`,
+				{
+					method: "PATCH",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						action: moderationSheet.action,
+						reason: moderationReason.trim(),
+					}),
+				},
+			);
 
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: AdminUserRecord
-      } | null
+			const payload = (await response.json().catch(() => null)) as {
+				success?: boolean;
+				error?: string;
+				data?: AdminUserRecord;
+			} | null;
 
-      if (!response.ok || !payload?.success || !payload.data) {
-        throw new Error(payload?.error ?? 'Unable to update user')
-      }
+			if (!response.ok || !payload?.success || !payload.data) {
+				throw new Error(payload?.error ?? "Unable to update user");
+			}
 
-      setUsers((previous) => previous.map((row) => (row.id === payload.data!.id ? payload.data! : row)))
-      setModerationSheet(null)
-      setModerationReason('')
-      toast.success(
-        moderationSheet.action === 'ban' ? 'User banned' : 'User restricted',
-      )
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to update user')
-    } finally {
-      setIsActionPending(false)
-    }
-  }, [moderationReason, moderationSheet])
+			setUsers((previous) =>
+				previous.map((row) =>
+					row.id === payload.data!.id ? payload.data! : row,
+				),
+			);
+			setModerationSheet(null);
+			setModerationReason("");
+			toast.success(
+				moderationSheet.action === "ban" ? "User banned" : "User restricted",
+			);
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error ? error.message : "Unable to update user",
+			);
+		} finally {
+			setIsActionPending(false);
+		}
+	}, [moderationReason, moderationSheet]);
 
-  const handleRestore = useCallback(async (target: AdminUserRecord) => {
-    setIsActionPending(true)
-    setErrorMessage(null)
-    try {
-      const response = await fetch(`/api/admin/users/${target.id}`, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'restore' }),
-      })
+	const handleRestore = useCallback(async (target: AdminUserRecord) => {
+		setIsActionPending(true);
+		setErrorMessage(null);
+		try {
+			const response = await fetch(`/api/admin/users/${target.id}`, {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ action: "restore" }),
+			});
 
-      const payload = (await response.json().catch(() => null)) as {
-        success?: boolean
-        error?: string
-        data?: AdminUserRecord
-      } | null
+			const payload = (await response.json().catch(() => null)) as {
+				success?: boolean;
+				error?: string;
+				data?: AdminUserRecord;
+			} | null;
 
-      if (!response.ok || !payload?.success || !payload.data) {
-        throw new Error(payload?.error ?? 'Unable to restore user')
-      }
+			if (!response.ok || !payload?.success || !payload.data) {
+				throw new Error(payload?.error ?? "Unable to restore user");
+			}
 
-      setUsers((previous) => previous.map((row) => (row.id === payload.data!.id ? payload.data! : row)))
-      toast.success('User restored')
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to restore user')
-    } finally {
-      setIsActionPending(false)
-    }
-  }, [])
+			setUsers((previous) =>
+				previous.map((row) =>
+					row.id === payload.data!.id ? payload.data! : row,
+				),
+			);
+			toast.success("User restored");
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error ? error.message : "Unable to restore user",
+			);
+		} finally {
+			setIsActionPending(false);
+		}
+	}, []);
 
-  const handleDelete = useCallback(async (target: AdminUserRecord) => {
-    setIsActionPending(true)
-    setErrorMessage(null)
-    try {
-      const response = await fetch(`/api/admin/users/${target.id}`, { method: 'DELETE' })
-      const payload = (await response.json().catch(() => null)) as { success?: boolean; error?: string } | null
+	const handleDelete = useCallback(async (target: AdminUserRecord) => {
+		setIsActionPending(true);
+		setErrorMessage(null);
+		try {
+			const response = await fetch(`/api/admin/users/${target.id}`, {
+				method: "DELETE",
+			});
+			const payload = (await response.json().catch(() => null)) as {
+				success?: boolean;
+				error?: string;
+			} | null;
 
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error ?? 'Unable to delete user')
-      }
+			if (!response.ok || !payload?.success) {
+				throw new Error(payload?.error ?? "Unable to delete user");
+			}
 
-      setUsers((previous) => previous.filter((row) => row.id !== target.id))
-      toast.success('User deleted')
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to delete user')
-    } finally {
-      setIsActionPending(false)
-    }
-  }, [])
+			setUsers((previous) => previous.filter((row) => row.id !== target.id));
+			toast.success("User deleted");
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error ? error.message : "Unable to delete user",
+			);
+		} finally {
+			setIsActionPending(false);
+		}
+	}, []);
 
-  const columns = useMemo<ColumnDef<AdminUserRecord>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-        cell: ({ row }) => (
-          <div>
-            <p className="font-medium">{row.original.name}</p>
-            <p className="text-xs opacity-70">{row.original.email}</p>
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'role',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
-        cell: ({ row }) => <span className="capitalize">{row.original.role}</span>,
-      },
-      {
-        accessorKey: 'accountStatus',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-        cell: ({ row }) => (
-          <span
-            className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(row.original.accountStatus)}`}
-          >
-            {row.original.accountStatus}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'moderationReason',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Reason" />,
-        cell: ({ row }) => (
-          <span className="line-clamp-2 text-xs opacity-80">
-            {row.original.moderationReason ?? '—'}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'createdAt',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Joined" />,
-        cell: ({ row }) => (
-          <span className="text-xs opacity-80">
-            {new Date(row.original.createdAt).toLocaleDateString()}
-          </span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: 'Actions',
-        cell: ({ row }) => {
-          const target = row.original
-          const isAdminUser = target.role === AUTH_ROLES.admin
+	const columns = useMemo<ColumnDef<AdminUserRecord>[]>(
+		() => [
+			{
+				accessorKey: "name",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title="Name" />
+				),
+				cell: ({ row }) => (
+					<div>
+						<p className="font-medium text-foreground">{row.original.name}</p>
+						<p className="text-xs text-muted-foreground">
+							{row.original.email}
+						</p>
+					</div>
+				),
+			},
+			{
+				accessorKey: "role",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title="Role" />
+				),
+				cell: ({ row }) => (
+					<span className="capitalize">{row.original.role}</span>
+				),
+			},
+			{
+				accessorKey: "accountStatus",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title="Status" />
+				),
+				cell: ({ row }) => (
+					<span
+						className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(row.original.accountStatus)}`}
+					>
+						{row.original.accountStatus}
+					</span>
+				),
+			},
+			{
+				accessorKey: "moderationReason",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title="Reason" />
+				),
+				cell: ({ row }) => (
+					<span className="line-clamp-2 text-xs text-muted-foreground">
+						{row.original.moderationReason ?? "—"}
+					</span>
+				),
+			},
+			{
+				accessorKey: "createdAt",
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title="Joined" />
+				),
+				cell: ({ row }) => (
+					<span className="text-xs text-muted-foreground">
+						{new Date(row.original.createdAt).toLocaleDateString()}
+					</span>
+				),
+			},
+			{
+				id: "actions",
+				header: "Actions",
+				cell: ({ row }) => {
+					const target = row.original;
+					const isAdminUser = target.role === AUTH_ROLES.admin;
 
-          if (isAdminUser) {
-            return <span className="text-xs opacity-60">Protected</span>
-          }
+					if (isAdminUser) {
+						return (
+							<span className="text-xs text-muted-foreground">Protected</span>
+						);
+					}
 
-          return (
-            <div className="flex flex-wrap items-center gap-1">
-              {target.accountStatus === 'active' ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    disabled={isActionPending}
-                    onClick={() => {
-                      setModerationReason('')
-                      setModerationSheet({ user: target, action: 'restrict' })
-                    }}
-                  >
-                    <ShieldAlert className="size-3.5" />
-                    Restrict
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs text-destructive hover:text-destructive"
-                    disabled={isActionPending}
-                    onClick={() => {
-                      setModerationReason('')
-                      setModerationSheet({ user: target, action: 'ban' })
-                    }}
-                  >
-                    <Ban className="size-3.5" />
-                    Ban
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs"
-                  disabled={isActionPending}
-                  onClick={() => void handleRestore(target)}
-                >
-                  <ShieldCheck className="size-3.5" />
-                  Restore
-                </Button>
-              )}
-              <DeleteRowButton
-                label={target.email}
-                isPending={isActionPending}
-                onConfirm={() => void handleDelete(target)}
-              />
-            </div>
-          )
-        },
-      },
-    ],
-    [handleDelete, handleRestore, isActionPending],
-  )
+					return (
+						<div className="flex flex-wrap items-center gap-1">
+							{target.accountStatus === "active" ? (
+								<>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="h-8 text-xs"
+										disabled={isActionPending}
+										onClick={() => {
+											setModerationReason("");
+											setModerationSheet({ user: target, action: "restrict" });
+										}}
+									>
+										<ShieldAlert className="size-3.5" />
+										Restrict
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="h-8 text-xs text-destructive hover:text-destructive"
+										disabled={isActionPending}
+										onClick={() => {
+											setModerationReason("");
+											setModerationSheet({ user: target, action: "ban" });
+										}}
+									>
+										<Ban className="size-3.5" />
+										Ban
+									</Button>
+								</>
+							) : (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-8 text-xs"
+									disabled={isActionPending}
+									onClick={() => void handleRestore(target)}
+								>
+									<ShieldCheck className="size-3.5" />
+									Restore
+								</Button>
+							)}
+							<DeleteRowButton
+								label={target.email}
+								isPending={isActionPending}
+								onConfirm={() => void handleDelete(target)}
+							/>
+						</div>
+					);
+				},
+			},
+		],
+		[handleDelete, handleRestore, isActionPending],
+	);
 
-  return (
-    <article className="feature-card rounded-xl border border-border p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Users className="size-4 text-primary" />
-            Users
-          </h2>
-          <p className="mt-1 text-xs opacity-70">
-            Review accounts, restrict access with a reason, ban sign-in, or permanently delete users.
-          </p>
-        </div>
-      </div>
+	return (
+		<article className="md-panel p-5 md:p-6">
+			<div className="flex flex-wrap items-start justify-between gap-3">
+				<div>
+					<h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+						<Users className="size-4 text-primary" />
+						Users
+					</h2>
+					<p className="mt-1 text-xs text-muted-foreground">
+						Review accounts, restrict access with a reason, ban sign-in, or
+						permanently delete users.
+					</p>
+				</div>
+			</div>
 
-      <div className="mt-4">
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm opacity-70">
-            <Loader2 className="size-4 animate-spin" />
-            Loading users...
-          </div>
-        ) : users.length === 0 ? (
-          <PageEmptyState message="No registered users yet." />
-        ) : (
-          <DataTable columns={columns} data={users} fillWidth maxBodyHeight={undefined} />
-        )}
-      </div>
+			<div className="mt-4">
+				{isLoading ? (
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<Loader2 className="size-4 animate-spin" />
+						Loading users...
+					</div>
+				) : users.length === 0 ? (
+					<PageEmptyState message="No registered users yet." />
+				) : (
+					<DataTable
+						columns={columns}
+						data={users}
+						fillWidth
+						maxBodyHeight={undefined}
+					/>
+				)}
+			</div>
 
-      {errorMessage ? <div className="mt-4"><InlineError message={errorMessage} /></div> : null}
+			{errorMessage ? (
+				<div className="mt-4">
+					<InlineError message={errorMessage} />
+				</div>
+			) : null}
 
-      <Sheet
-        open={moderationSheet != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setModerationSheet(null)
-            setModerationReason('')
-          }
-        }}
-      >
-        <SheetContent className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>
-              {moderationSheet?.action === 'ban' ? 'Ban user' : 'Restrict user'}
-            </SheetTitle>
-            <SheetDescription>
-              {moderationSheet?.user.email}. This revokes active sessions immediately.
-            </SheetDescription>
-          </SheetHeader>
+			<Sheet
+				open={moderationSheet != null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setModerationSheet(null);
+						setModerationReason("");
+					}
+				}}
+			>
+				<SheetContent className="sm:max-w-md">
+					<SheetHeader>
+						<SheetTitle>
+							{moderationSheet?.action === "ban" ? "Ban user" : "Restrict user"}
+						</SheetTitle>
+						<SheetDescription>
+							{moderationSheet?.user.email}. This revokes active sessions
+							immediately.
+						</SheetDescription>
+					</SheetHeader>
 
-          <div className="px-4 pb-2">
-            <label htmlFor="moderation-reason" className="mb-1 block text-sm font-medium">
-              Reason
-            </label>
-            <Textarea
-              id="moderation-reason"
-              value={moderationReason}
-              onChange={(event) => setModerationReason(event.target.value)}
-              placeholder="Explain why this account is being moderated"
-              rows={4}
-              disabled={isActionPending}
-            />
-          </div>
+					<div className="px-4 pb-2">
+						<label
+							htmlFor="moderation-reason"
+							className="mb-1 block text-sm font-medium"
+						>
+							Reason
+						</label>
+						<Textarea
+							id="moderation-reason"
+							value={moderationReason}
+							onChange={(event) => setModerationReason(event.target.value)}
+							placeholder="Explain why this account is being moderated"
+							rows={4}
+							disabled={isActionPending}
+						/>
+					</div>
 
-          <SheetFooter>
-            <Button
-              type="button"
-              variant={moderationSheet?.action === 'ban' ? 'destructive' : 'default'}
-              disabled={isActionPending || moderationReason.trim().length < 3}
-              onClick={() => void handleModerationSubmit()}
-            >
-              {isActionPending ? <Loader2 className="size-4 animate-spin" /> : null}
-              {moderationSheet?.action === 'ban' ? 'Confirm ban' : 'Confirm restriction'}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-    </article>
-  )
+					<SheetFooter>
+						<Button
+							type="button"
+							variant={
+								moderationSheet?.action === "ban" ? "destructive" : "default"
+							}
+							disabled={isActionPending || moderationReason.trim().length < 3}
+							onClick={() => void handleModerationSubmit()}
+						>
+							{isActionPending ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : null}
+							{moderationSheet?.action === "ban"
+								? "Confirm ban"
+								: "Confirm restriction"}
+						</Button>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
+		</article>
+	);
 }

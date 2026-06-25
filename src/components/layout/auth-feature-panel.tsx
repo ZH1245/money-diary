@@ -1,72 +1,94 @@
-import type { LucideIcon } from 'lucide-react'
+import type { LucideIcon } from "lucide-react";
+import { CircleDollarSign } from "lucide-react";
 
 interface AuthFeatureItem {
-  icon: LucideIcon
-  title: string
-  description: string
+	icon: LucideIcon;
+	title: string;
+	description: string;
 }
 
 interface AuthFeaturePanelProps {
-  kicker: string
-  title: string
-  description: string
-  features: AuthFeatureItem[]
-  tags?: string[]
-  gradientDirection?: 'br' | 'tr'
+	kicker: string;
+	title: string;
+	description: string;
+	features: AuthFeatureItem[];
+	tags?: string[];
 }
 
 /**
- * Renders the marketing side panel for sign-in and sign-up pages.
+ * Renders the brand side panel (gradient + logo + tagline + feature blurbs)
+ * for the auth routes. The gradient runs from the theme accent to a darker
+ * shade so it adapts across every palette/mode.
  */
 export function AuthFeaturePanel({
-  kicker,
-  title,
-  description,
-  features,
-  tags = [],
-  gradientDirection = 'br',
+	kicker,
+	title,
+	description,
+	features,
+	tags = [],
 }: AuthFeaturePanelProps) {
-  const gradientClass =
-    gradientDirection === 'tr'
-      ? 'bg-linear-to-tr from-(--hero-b) via-transparent to-(--hero-a)'
-      : 'bg-linear-to-br from-(--hero-a) via-transparent to-(--hero-b)'
+	return (
+		<div
+			className="relative flex h-full flex-col justify-between overflow-hidden p-10 text-primary-foreground xl:p-14"
+			style={{
+				background:
+					"linear-gradient(160deg, var(--accent), color-mix(in oklab, var(--accent) 55%, black))",
+			}}
+		>
+			{/* Soft glow accents */}
+			<div className="pointer-events-none absolute -left-24 top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+			<div className="pointer-events-none absolute -right-16 bottom-12 h-72 w-72 rounded-full bg-black/10 blur-3xl" />
 
-  return (
-    <>
-      <div className={`absolute inset-0 ${gradientClass}`} />
-      <div className="pointer-events-none absolute -left-28 top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-16 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-      <div className="relative flex h-full items-center p-10 xl:p-16 rise-in">
-        <div className="mx-auto w-full max-w-2xl rounded-3xl border border-border/50 bg-background/20 p-8 backdrop-blur-sm xl:p-10">
-          <p className="island-kicker">{kicker}</p>
-          <h2 className="display-title mt-3 text-3xl leading-tight tracking-[-0.02em] xl:text-4xl">
-            {title}
-          </h2>
-          <p className="mt-4 max-w-md text-sm leading-relaxed opacity-80">{description}</p>
+			<div className="relative rise-in flex items-center gap-2.5">
+				<span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/15 text-primary-foreground backdrop-blur-sm">
+					<CircleDollarSign className="size-5" />
+				</span>
+				<span className="text-base font-bold tracking-tight">Money Diary</span>
+			</div>
 
-          {tags.length ? (
-            <div className="mt-6 flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-border/60 bg-background/30 px-3 py-1 text-xs opacity-85">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
+			<div className="relative rise-in max-w-xl">
+				<p className="text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground/70">
+					{kicker}
+				</p>
+				<h2 className="display-title mt-4 text-3xl font-bold leading-tight tracking-[-0.02em] xl:text-4xl">
+					{title}
+				</h2>
+				<p className="mt-4 max-w-md text-sm leading-relaxed text-primary-foreground/80">
+					{description}
+				</p>
 
-          <ul className="mt-10 space-y-6 border-t border-border/50 pt-10">
-            {features.map((feature) => (
-              <li key={feature.title} className="flex gap-3">
-                <feature.icon className="mt-0.5 size-4 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">{feature.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed opacity-75">{feature.description}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </>
-  )
+				{tags.length ? (
+					<div className="mt-6 flex flex-wrap gap-2">
+						{tags.map((tag) => (
+							<span
+								key={tag}
+								className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-primary-foreground/90 backdrop-blur-sm"
+							>
+								{tag}
+							</span>
+						))}
+					</div>
+				) : null}
+			</div>
+
+			<ul className="relative rise-in grid max-w-xl gap-4 sm:grid-cols-1">
+				{features.map((feature) => (
+					<li
+						key={feature.title}
+						className="flex gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm"
+					>
+						<span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/15">
+							<feature.icon className="size-4" />
+						</span>
+						<div>
+							<p className="text-sm font-semibold">{feature.title}</p>
+							<p className="mt-1 text-xs leading-relaxed text-primary-foreground/75">
+								{feature.description}
+							</p>
+						</div>
+					</li>
+				))}
+			</ul>
+		</div>
+	);
 }
