@@ -321,6 +321,57 @@ export const recurringRules = pgTable(
 	}),
 );
 
+export const bans = pgTable(
+	"bans",
+	{
+		id: serial().primaryKey(),
+		// What this ban targets: an email address or an IP address.
+		targetType: text("target_type").notNull(),
+		email: text("email"),
+		ipAddress: text("ip_address"),
+		reason: text().notNull(),
+		createdBy: text("created_by").references(() => user.id, {
+			onDelete: "set null",
+		}),
+		// Null = permanent ban; otherwise the ban is ignored after this time.
+		expiresAt: timestamp("expires_at"),
+		isActive: boolean("is_active").notNull().default(true),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => ({
+		emailIdx: index("bans_email_idx").on(table.email),
+		ipAddressIdx: index("bans_ip_address_idx").on(table.ipAddress),
+		isActiveIdx: index("bans_is_active_idx").on(table.isActive),
+	}),
+);
+
+export const passwordResetTokens = pgTable(
+	"password_reset_tokens",
+	{
+		id: serial().primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		// Only the hash of the token is stored — the raw token lives in the link.
+		tokenHash: text("token_hash").notNull(),
+		expiresAt: timestamp("expires_at").notNull(),
+		usedAt: timestamp("used_at"),
+		createdBy: text("created_by").references(() => user.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => ({
+		userIdIdx: index("password_reset_tokens_user_id_idx").on(table.userId),
+		tokenHashIdx: index("password_reset_tokens_token_hash_idx").on(
+			table.tokenHash,
+		),
+		expiresAtIdx: index("password_reset_tokens_expires_at_idx").on(
+			table.expiresAt,
+		),
+	}),
+);
+
 export const rateLimitBuckets = pgTable(
 	"rate_limit_buckets",
 	{

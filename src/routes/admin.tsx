@@ -1,6 +1,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-shell";
+import { AdminBansSection } from "#/features/admin/components/admin-bans-section";
 import { AdminGlobalAiSection } from "#/features/admin/components/admin-global-ai-section";
 import { AdminGlobalCategoriesSection } from "#/features/admin/components/admin-global-categories-section";
 import { AdminUsersSection } from "#/features/admin/components/admin-users-section";
@@ -44,6 +45,13 @@ const ADMIN_NAV_GROUPS: SettingsNavGroup[] = [
 				title: "Users",
 				description:
 					"Review accounts, restrict access with a reason, ban sign-in, or permanently delete users.",
+			},
+			{
+				id: "bans",
+				label: "Bans",
+				title: "Bans",
+				description:
+					"Block sign-in by email or IP address with an optional expiry.",
 			},
 		],
 	},
@@ -91,6 +99,10 @@ function AdminPage() {
 
 						if (item.id === "categories") {
 							return <AdminGlobalCategoriesSection />;
+						}
+
+						if (item.id === "bans") {
+							return <AdminBansSection />;
 						}
 
 						return <AdminUsersSection />;

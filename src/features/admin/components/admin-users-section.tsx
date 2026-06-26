@@ -1,6 +1,9 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	Ban,
+	Check,
+	Copy,
+	KeyRound,
 	Loader2,
 	MoreHorizontal,
 	ShieldAlert,
@@ -18,12 +21,27 @@ import { InlineError } from "#/components/feedback/inline-error";
 import { PageEmptyState } from "#/components/feedback/page-state";
 import { Button } from "#/components/ui/button";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "#/components/ui/dialog";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "#/components/ui/select";
 import {
 	Sheet,
 	SheetContent,
@@ -33,14 +51,24 @@ import {
 	SheetTitle,
 } from "#/components/ui/sheet";
 import { Textarea } from "#/components/ui/textarea";
+import { useGenerateResetLinkMutation } from "#/features/admin/api/admin-reset-link-api";
 import type { AdminUserRecord } from "#/features/admin/types/admin-user";
 import { AUTH_ROLES } from "#/lib/auth-roles";
 
 type ModerationAction = "restrict" | "ban";
 
+/** Offset options for moderation expiry. "" means permanent. */
+type ExpiryOffset = "" | "1d" | "7d" | "30d";
+
 interface ModerationSheetState {
 	user: AdminUserRecord;
 	action: ModerationAction;
+}
+
+interface ResetLinkDialogState {
+	user: AdminUserRecord;
+	token: string;
+	expiresAt: string;
 }
 
 function statusBadgeClass(status: AdminUserRecord["accountStatus"]) {
@@ -51,15 +79,35 @@ function statusBadgeClass(status: AdminUserRecord["accountStatus"]) {
 	return "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100";
 }
 
+/** Converts an expiry offset string to a future ISO date string, or null for permanent. */
+function offsetToExpiresAt(offset: ExpiryOffset): string | null {
+	if (!offset) return null;
+	const ms = { "1d": 86_400_000, "7d": 7 * 86_400_000, "30d": 30 * 86_400_000 }[
+		offset
+	];
+	return new Date(Date.now() + ms).toISOString();
+}
+
 /** Admin table for viewing and moderating application users. */
 export function AdminUsersSection() {
 	const [users, setUsers] = useState<AdminUserRecord[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isActionPending, setIsActionPending] = useState(false);
+
+	// Moderation sheet state
 	const [moderationSheet, setModerationSheet] =
 		useState<ModerationSheetState | null>(null);
 	const [moderationReason, setModerationReason] = useState("");
+	const [expiryOffset, setExpiryOffset] = useState<ExpiryOffset>("");
+
+	// Reset link dialog state
+	const [resetLinkDialog, setResetLinkDialog] =
+		useState<ResetLinkDialogState | null>(null);
+	const [isCopied, setIsCopied] = useState(false);
+
+	const { mutate: generateResetLink, isPending: isResetLinkPending } =
+		useGenerateResetLinkMutation();
 
 	const loadUsers = useCallback(async () => {
 		setIsLoading(true);
@@ -96,6 +144,7 @@ export function AdminUsersSection() {
 		setIsActionPending(true);
 		setErrorMessage(null);
 		try {
+			const expiresAt = offsetToExpiresAt(expiryOffset);
 			const response = await fetch(
 				`/api/admin/users/${moderationSheet.user.id}`,
 				{
@@ -104,6 +153,7 @@ export function AdminUsersSection() {
 					body: JSON.stringify({
 						action: moderationSheet.action,
 						reason: moderationReason.trim(),
+						expiresAt,
 					}),
 				},
 			);
@@ -118,13 +168,13 @@ export function AdminUsersSection() {
 				throw new Error(payload?.error ?? "Unable to update user");
 			}
 
+			const updatedUser = payload.data;
 			setUsers((previous) =>
-				previous.map((row) =>
-					row.id === payload.data!.id ? payload.data! : row,
-				),
+				previous.map((row) => (row.id === updatedUser.id ? updatedUser : row)),
 			);
 			setModerationSheet(null);
 			setModerationReason("");
+			setExpiryOffset("");
 			toast.success(
 				moderationSheet.action === "ban" ? "User banned" : "User restricted",
 			);
@@ -135,7 +185,7 @@ export function AdminUsersSection() {
 		} finally {
 			setIsActionPending(false);
 		}
-	}, [moderationReason, moderationSheet]);
+	}, [expiryOffset, moderationReason, moderationSheet]);
 
 	const handleRestore = useCallback(async (target: AdminUserRecord) => {
 		setIsActionPending(true);
@@ -157,9 +207,10 @@ export function AdminUsersSection() {
 				throw new Error(payload?.error ?? "Unable to restore user");
 			}
 
+			const restoredUser = payload.data;
 			setUsers((previous) =>
 				previous.map((row) =>
-					row.id === payload.data!.id ? payload.data! : row,
+					row.id === restoredUser.id ? restoredUser : row,
 				),
 			);
 			toast.success("User restored");
@@ -199,6 +250,38 @@ export function AdminUsersSection() {
 		}
 	}, []);
 
+	const handleGenerateResetLink = useCallback(
+		async (target: AdminUserRecord) => {
+			const data = await generateResetLink(target.id);
+			if (data) {
+				setResetLinkDialog({
+					user: target,
+					token: data.token,
+					expiresAt: data.expiresAt,
+				});
+				setIsCopied(false);
+			} else {
+				toast.error("Unable to generate reset link");
+			}
+		},
+		[generateResetLink],
+	);
+
+	const resetLinkUrl = resetLinkDialog
+		? `${window.location.origin}/reset-password?token=${resetLinkDialog.token}`
+		: "";
+
+	const handleCopyLink = useCallback(async () => {
+		if (!resetLinkUrl) return;
+		try {
+			await navigator.clipboard.writeText(resetLinkUrl);
+			setIsCopied(true);
+			setTimeout(() => setIsCopied(false), 2000);
+		} catch {
+			toast.error("Unable to copy to clipboard");
+		}
+	}, [resetLinkUrl]);
+
 	const columns = useMemo<ColumnDef<AdminUserRecord>[]>(
 		() => [
 			{
@@ -229,13 +312,28 @@ export function AdminUsersSection() {
 				header: ({ column }) => (
 					<DataTableColumnHeader column={column} title="Status" />
 				),
-				cell: ({ row }) => (
-					<span
-						className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(row.original.accountStatus)}`}
-					>
-						{row.original.accountStatus}
-					</span>
-				),
+				cell: ({ row }) => {
+					const { accountStatus, moderationExpiresAt } = row.original;
+					return (
+						<div className="flex flex-col gap-0.5">
+							<span
+								className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(accountStatus)}`}
+							>
+								{accountStatus}
+							</span>
+							{moderationExpiresAt ? (
+								<span className="text-[10px] text-muted-foreground">
+									Until{" "}
+									{new Date(moderationExpiresAt).toLocaleDateString(undefined, {
+										month: "short",
+										day: "numeric",
+										year: "numeric",
+									})}
+								</span>
+							) : null}
+						</div>
+					);
+				},
 			},
 			{
 				accessorKey: "moderationReason",
@@ -274,6 +372,10 @@ export function AdminUsersSection() {
 						);
 					}
 
+					const isRestricted = target.accountStatus === "restricted";
+					const isBanned = target.accountStatus === "banned";
+					const isActive = target.accountStatus === "active";
+
 					return (
 						<div className="flex justify-end">
 							<DropdownMenu>
@@ -283,18 +385,19 @@ export function AdminUsersSection() {
 										variant="ghost"
 										size="icon"
 										className="size-8"
-										disabled={isActionPending}
+										disabled={isActionPending || isResetLinkPending}
 										aria-label={`Actions for ${target.email}`}
 									>
 										<MoreHorizontal className="size-4" />
 									</Button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end" className="w-44">
-									{target.accountStatus === "active" ? (
+								<DropdownMenuContent align="end" className="w-48">
+									{isActive ? (
 										<>
 											<DropdownMenuItem
 												onSelect={() => {
 													setModerationReason("");
+													setExpiryOffset("");
 													setModerationSheet({
 														user: target,
 														action: "restrict",
@@ -308,6 +411,7 @@ export function AdminUsersSection() {
 												className="text-destructive focus:text-destructive"
 												onSelect={() => {
 													setModerationReason("");
+													setExpiryOffset("");
 													setModerationSheet({ user: target, action: "ban" });
 												}}
 											>
@@ -315,14 +419,44 @@ export function AdminUsersSection() {
 												Ban
 											</DropdownMenuItem>
 										</>
-									) : (
+									) : null}
+									{isRestricted ? (
+										<>
+											<DropdownMenuItem
+												className="text-destructive focus:text-destructive"
+												onSelect={() => {
+													setModerationReason("");
+													setExpiryOffset("");
+													setModerationSheet({ user: target, action: "ban" });
+												}}
+											>
+												<Ban className="size-4" />
+												Escalate to ban
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onSelect={() => void handleRestore(target)}
+											>
+												<ShieldCheck className="size-4" />
+												Restore
+											</DropdownMenuItem>
+										</>
+									) : null}
+									{isBanned ? (
 										<DropdownMenuItem
 											onSelect={() => void handleRestore(target)}
 										>
 											<ShieldCheck className="size-4" />
 											Restore
 										</DropdownMenuItem>
-									)}
+									) : null}
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										onSelect={() => void handleGenerateResetLink(target)}
+										disabled={isResetLinkPending}
+									>
+										<KeyRound className="size-4" />
+										Generate reset link
+									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem
 										className="text-destructive focus:text-destructive"
@@ -342,7 +476,13 @@ export function AdminUsersSection() {
 				},
 			},
 		],
-		[handleDelete, handleRestore, isActionPending],
+		[
+			handleDelete,
+			handleGenerateResetLink,
+			handleRestore,
+			isActionPending,
+			isResetLinkPending,
+		],
 	);
 
 	return (
@@ -379,19 +519,25 @@ export function AdminUsersSection() {
 				</div>
 			) : null}
 
+			{/* Moderation sheet (restrict / ban) */}
 			<Sheet
 				open={moderationSheet != null}
 				onOpenChange={(open) => {
 					if (!open) {
 						setModerationSheet(null);
 						setModerationReason("");
+						setExpiryOffset("");
 					}
 				}}
 			>
 				<SheetContent className="sm:max-w-md">
 					<SheetHeader>
 						<SheetTitle>
-							{moderationSheet?.action === "ban" ? "Ban user" : "Restrict user"}
+							{moderationSheet?.action === "ban"
+								? moderationSheet.user.accountStatus === "restricted"
+									? "Escalate to ban"
+									: "Ban user"
+								: "Restrict user"}
 						</SheetTitle>
 						<SheetDescription>
 							{moderationSheet?.user.email}. This revokes active sessions
@@ -399,21 +545,49 @@ export function AdminUsersSection() {
 						</SheetDescription>
 					</SheetHeader>
 
-					<div className="px-4 pb-2">
-						<label
-							htmlFor="moderation-reason"
-							className="mb-1 block text-sm font-medium"
-						>
-							Reason
-						</label>
-						<Textarea
-							id="moderation-reason"
-							value={moderationReason}
-							onChange={(event) => setModerationReason(event.target.value)}
-							placeholder="Explain why this account is being moderated"
-							rows={4}
-							disabled={isActionPending}
-						/>
+					<div className="space-y-4 px-4 pb-2">
+						<div>
+							<label
+								htmlFor="moderation-reason"
+								className="mb-1 block text-sm font-medium"
+							>
+								Reason
+							</label>
+							<Textarea
+								id="moderation-reason"
+								value={moderationReason}
+								onChange={(event) => setModerationReason(event.target.value)}
+								placeholder="Explain why this account is being moderated"
+								rows={4}
+								disabled={isActionPending}
+							/>
+						</div>
+
+						<div>
+							<label
+								htmlFor="moderation-expiry"
+								className="mb-1 block text-sm font-medium"
+							>
+								Duration
+							</label>
+							<Select
+								value={expiryOffset}
+								onValueChange={(value) =>
+									setExpiryOffset(value as ExpiryOffset)
+								}
+								disabled={isActionPending}
+							>
+								<SelectTrigger id="moderation-expiry" className="w-full">
+									<SelectValue placeholder="Permanent" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="">Permanent</SelectItem>
+									<SelectItem value="1d">1 day</SelectItem>
+									<SelectItem value="7d">7 days</SelectItem>
+									<SelectItem value="30d">30 days</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
 
 					<SheetFooter>
@@ -429,12 +603,61 @@ export function AdminUsersSection() {
 								<Loader2 className="size-4 animate-spin" />
 							) : null}
 							{moderationSheet?.action === "ban"
-								? "Confirm ban"
+								? moderationSheet.user.accountStatus === "restricted"
+									? "Confirm escalation"
+									: "Confirm ban"
 								: "Confirm restriction"}
 						</Button>
 					</SheetFooter>
 				</SheetContent>
 			</Sheet>
+
+			{/* Reset link dialog */}
+			<Dialog
+				open={resetLinkDialog != null}
+				onOpenChange={(open) => {
+					if (!open) setResetLinkDialog(null);
+				}}
+			>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>Password reset link</DialogTitle>
+						<DialogDescription>
+							Share this link with{" "}
+							<span className="font-medium text-foreground">
+								{resetLinkDialog?.user.email}
+							</span>
+							. It expires{" "}
+							{resetLinkDialog
+								? new Date(resetLinkDialog.expiresAt).toLocaleString()
+								: ""}
+							.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="rounded-md border border-border bg-muted/40 p-3">
+						<p className="break-all font-mono text-xs text-foreground">
+							{resetLinkUrl}
+						</p>
+					</div>
+
+					<DialogFooter showCloseButton>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => void handleCopyLink()}
+							className="gap-2"
+						>
+							{isCopied ? (
+								<Check className="size-4 text-emerald-500" />
+							) : (
+								<Copy className="size-4" />
+							)}
+							{isCopied ? "Copied!" : "Copy link"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</article>
 	);
 }
