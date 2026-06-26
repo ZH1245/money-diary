@@ -362,11 +362,11 @@ export function PaymentAccountsPageContent({
 									account.isActive ? "" : "opacity-60",
 								)}
 							>
-								<div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/70">
-									<span className="truncate">
+								<div className="flex items-center justify-between gap-1 text-xs font-medium uppercase tracking-wide text-white/70">
+									<span className="min-w-0 truncate">
 										{formatPaymentAccountLabel(account)}
 									</span>
-									<span>
+									<span className="shrink-0 truncate">
 										{getInstitutionName(account.institutionSlug) ?? "Custom"}
 									</span>
 								</div>
@@ -408,6 +408,7 @@ export function PaymentAccountsPageContent({
 								data={accounts}
 								filterPlaceholder="Filter accounts..."
 								emptyMessage="No accounts added yet."
+								fillWidth
 							/>
 						</div>
 					) : (

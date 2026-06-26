@@ -317,7 +317,7 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
 						}}
 					>
 						<p className="text-sm font-medium opacity-90">Total saved</p>
-						<p className="mt-1 font-num text-4xl font-extrabold tracking-tight tabular-nums">
+						<p className="mt-1 truncate font-num text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums">
 							{formatSensitiveCurrency(
 								pageStats.totalSaved,
 								userCurrency,
@@ -572,7 +572,7 @@ function PotCard({
 				</div>
 			</div>
 
-			<p className="mt-5 font-num text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
+			<p className="mt-5 truncate font-num text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
 				<SensitiveAmount amount={pot.saved} currency={userCurrency} />
 			</p>
 

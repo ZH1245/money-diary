@@ -425,7 +425,7 @@ export function TransactionFormSheet({
 									}))
 								}
 								placeholder="0.00"
-								className="font-num w-44 bg-transparent text-center text-5xl font-extrabold tracking-tight tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+								className="font-num w-44 bg-transparent text-center text-3xl sm:text-5xl font-extrabold tracking-tight tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 							/>
 						</div>
 						{isCurrencyPickerOpen || isForeignCurrency ? (

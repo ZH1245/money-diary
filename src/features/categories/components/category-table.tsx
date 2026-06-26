@@ -88,6 +88,7 @@ export function CategoryTable({
 						data={categories}
 						filterPlaceholder="Filter by name, kind, or scope..."
 						emptyMessage={emptyMessage}
+						fillWidth
 					/>
 				</div>
 			) : (

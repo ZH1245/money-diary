@@ -598,7 +598,7 @@ export function AiTransactionPanel({
 				showCloseButton={false}
 				className={
 					isMobile
-						? "flex h-[88vh] w-full flex-col gap-0 rounded-t-[1.5rem] border-t border-border bg-panel p-0"
+						? "flex h-[80vh] w-full flex-col gap-0 rounded-t-[1.5rem] border-t border-border bg-panel p-0"
 						: "flex w-full flex-col gap-0 border-l border-border bg-panel p-0 sm:max-w-md"
 				}
 			>

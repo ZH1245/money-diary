@@ -22,7 +22,7 @@ export function InsightMiniCard({
 					{label}
 				</p>
 			</div>
-			<p className="mt-1.5 break-words font-num text-base font-extrabold leading-tight tracking-tight tabular-nums text-foreground sm:mt-2 sm:text-lg">
+			<p className="mt-1.5 truncate font-num text-base font-extrabold leading-tight tracking-tight tabular-nums text-foreground sm:mt-2 sm:text-lg">
 				{isSensitive ? <SensitiveText text={value} /> : value}
 			</p>
 		</div>

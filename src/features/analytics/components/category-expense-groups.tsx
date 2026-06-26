@@ -52,7 +52,7 @@ export function CategoryExpenseGroups({
 								<div className="min-w-0">
 									<SensitiveText
 										text={transaction.title}
-										className="font-medium text-foreground"
+										className="font-medium text-foreground truncate"
 									/>
 									<p className="text-xs text-muted-foreground">
 										{format(new Date(transaction.happenedAt), "MMM d, yyyy")}

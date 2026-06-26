@@ -519,7 +519,7 @@ function GoalCard({
 			</div>
 
 			<div className="mt-5 flex items-end justify-between gap-2">
-				<p className="font-num text-xl font-extrabold tracking-tight tabular-nums text-foreground">
+				<p className="min-w-0 truncate font-num text-xl font-extrabold tracking-tight tabular-nums text-foreground">
 					<SensitiveAmount
 						amount={breakdown.totalAchieved}
 						currency={userCurrency}
@@ -553,7 +553,7 @@ function GoalCard({
 				>
 					{percent}%
 				</span>
-				<span className="text-muted-foreground">
+				<span className="min-w-0 truncate text-muted-foreground">
 					{isComplete ? (
 						"Reached"
 					) : (

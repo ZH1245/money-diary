@@ -63,7 +63,7 @@ export function AccountCardsRow({
 									: account.accountType}
 							</span>
 						</div>
-						<p className="mt-6 font-num text-2xl font-extrabold tracking-tight tabular-nums">
+						<p className="mt-6 block truncate font-num text-xl font-extrabold tracking-tight tabular-nums">
 							{isPrivacyMode ? (
 								<SensitiveText
 									text={formatSensitiveCurrency(balance, currency, true)}

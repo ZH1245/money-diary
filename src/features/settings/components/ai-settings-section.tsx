@@ -701,7 +701,7 @@ export function AiSettingsSection() {
 									onChange={setApiKey}
 									placeholder={
 										savedApiKeyMask
-											? `Stored: ${savedApiKeyMask}`
+											? "Stored key"
 											: "Only needed for secured Ollama gateways"
 									}
 									isRequired={false}
@@ -719,9 +719,7 @@ export function AiSettingsSection() {
 									type="password"
 									value={apiKey}
 									onChange={setApiKey}
-									placeholder={
-										savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : "AIza..."
-									}
+									placeholder={savedApiKeyMask ? "Stored key" : "AIza..."}
 									isRequired={!savedApiKeyMask}
 									isDisabled={isLoading || isSubmitting}
 									hasStoredValue={Boolean(savedApiKeyMask)}
@@ -767,9 +765,7 @@ export function AiSettingsSection() {
 									type="password"
 									value={apiKey}
 									onChange={setApiKey}
-									placeholder={
-										savedApiKeyMask ? `Stored: ${savedApiKeyMask}` : "sk-or-..."
-									}
+									placeholder={savedApiKeyMask ? "Stored key" : "sk-or-..."}
 									isRequired={!savedApiKeyMask}
 									isDisabled={isLoading || isSubmitting}
 									hasStoredValue={Boolean(savedApiKeyMask)}
