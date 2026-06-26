@@ -83,55 +83,55 @@
 /* ---------- Palette C · dark ---------- */
 .dark,
 .dark[data-theme='c'] {
-  --canvas: #141714;
-  --panel: #1a1e1a;
-  --sidebar-bg: #1a1e1a;
+  --canvas: #181c18;
+  --panel: #20251f;
+  --sidebar-bg: #20251f;
   --fg: #eaf0ea;
-  --muted: #7d847d;
-  --border-color: #2a2f2a;
-  --border-faint: #23271f;
-  --accent: #3a9b6f;
+  --muted: #868d86;
+  --border-color: #2f352e;
+  --border-faint: #282d27;
+  --accent: #45b483;
   --accent-on: #0c130f;
-  --soft-accent: #23311f;
-  --income: #4fc18c;
-  --expense: #e07a6f;
-  --nav-active: #23311f;
-  --nav-active-fg: #4fc18c;
-  --nav-hover: #23271f;
-  --track: #2a2f2a;
-  --row-hover: #21261f;
-  --input-bg: #21261f;
-  --avatar-bg: #3a9b6f;
+  --soft-accent: #284029;
+  --income: #56cf97;
+  --expense: #ea8576;
+  --nav-active: #284029;
+  --nav-active-fg: #56cf97;
+  --nav-hover: #272d26;
+  --track: #313830;
+  --row-hover: #262c25;
+  --input-bg: #262c25;
+  --avatar-bg: #45b483;
   --avatar-fg: #0c130f;
-  --shell-bg: #0a0c0a;
-  --accent-rgb: 58, 155, 111;
+  --shell-bg: #101410;
+  --accent-rgb: 69, 180, 131;
   --panel-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* ---------- Palette A · dark ---------- */
 .dark[data-theme='a'] {
-  --canvas: #0e0e12;
-  --panel: #16161c;
-  --sidebar-bg: #16161c;
+  --canvas: #141419;
+  --panel: #1c1c24;
+  --sidebar-bg: #1c1c24;
   --fg: #f2f2f5;
-  --muted: #7a7a85;
-  --border-color: #26262e;
-  --border-faint: #1e1e25;
-  --accent: #6c63ff;
+  --muted: #8a8a95;
+  --border-color: #2c2c36;
+  --border-faint: #242430;
+  --accent: #8078ff;
   --accent-on: #ffffff;
-  --soft-accent: #23223a;
+  --soft-accent: #2a2942;
   --income: #34d680;
   --expense: #f06a5d;
-  --nav-active: #23223a;
-  --nav-active-fg: #9b94ff;
-  --nav-hover: #1e1e25;
-  --track: #26262e;
-  --row-hover: #1c1c23;
-  --input-bg: #1c1c23;
-  --avatar-bg: #6c63ff;
+  --nav-active: #2a2942;
+  --nav-active-fg: #a39cff;
+  --nav-hover: #242430;
+  --track: #2c2c36;
+  --row-hover: #222230;
+  --input-bg: #222230;
+  --avatar-bg: #8078ff;
   --avatar-fg: #ffffff;
-  --shell-bg: #070709;
-  --accent-rgb: 108, 99, 255;
+  --shell-bg: #0c0c10;
+  --accent-rgb: 128, 120, 255;
   --panel-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 

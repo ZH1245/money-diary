@@ -322,6 +322,7 @@ export function DashboardPageContent({
 												isPrivacyMode,
 											)}
 											isSensitive
+											tooltip="Total money received in the selected period"
 										/>
 										<InsightMiniCard
 											icon={<TrendingDown className="size-4 text-expense" />}
@@ -332,6 +333,7 @@ export function DashboardPageContent({
 												isPrivacyMode,
 											)}
 											isSensitive
+											tooltip="Total money spent in the selected period"
 										/>
 										<InsightMiniCard
 											icon={
@@ -339,6 +341,7 @@ export function DashboardPageContent({
 											}
 											label="Txns"
 											value={String(stats.transactionCount)}
+											tooltip="Number of transactions in the selected period"
 										/>
 									</div>
 								</div>

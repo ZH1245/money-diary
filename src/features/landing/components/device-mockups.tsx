@@ -72,9 +72,9 @@ const CHART = [
 
 export function DeviceMockups() {
 	return (
-		<div className="relative mx-auto w-full max-w-4xl">
+		<div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-6 sm:flex-row sm:items-end sm:gap-6">
 			{/* Desktop browser frame */}
-			<div className="relative z-10 w-full overflow-hidden rounded-panel border border-border bg-panel shadow-2xl sm:w-[90%]">
+			<div className="w-full overflow-hidden rounded-panel border border-border bg-panel shadow-2xl sm:min-w-0 sm:flex-1">
 				{/* Browser chrome bar */}
 				<div className="flex items-center gap-3 border-b border-border bg-canvas px-4 py-2.5">
 					<div className="flex shrink-0 items-center gap-1.5">
@@ -191,7 +191,7 @@ export function DeviceMockups() {
 			</div>
 
 			{/* Phone frame — overlaps the chart column on desktop, stacks below on mobile */}
-			<div className="relative z-20 mx-auto mt-5 w-[210px] sm:absolute sm:-bottom-10 sm:-right-2 sm:mt-0 sm:w-[180px] lg:-right-8 lg:w-[208px]">
+			<div className="mx-auto w-[210px] shrink-0 sm:mx-0 sm:w-[190px] lg:w-[215px]">
 				<div className="overflow-hidden rounded-[2.2rem] border-[5px] border-border bg-panel shadow-2xl ring-1 ring-black/10">
 					{/* Notch */}
 					<div className="relative flex justify-center bg-canvas pb-1 pt-2">
