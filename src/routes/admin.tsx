@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-shell";
 import { AdminGlobalAiSection } from "#/features/admin/components/admin-global-ai-section";
@@ -56,20 +56,15 @@ function AdminPage() {
 		return <SessionLoadingSkeleton />;
 	}
 
-	const role = (session?.user as { role?: string } | undefined)?.role;
-	if (!session?.user || role !== AUTH_ROLES.admin) {
-		return (
-			<main className="page-wrap py-6">
-				<section className="md-panel p-5 md:p-6">
-					<h1 className="text-2xl font-semibold tracking-tight text-foreground">
-						Forbidden
-					</h1>
-					<p className="mt-2 text-sm text-muted-foreground">
-						Admin access is required to manage global settings.
-					</p>
-				</section>
-			</main>
-		);
+	// Don't render an "access denied" page — that confirms the admin route exists.
+	// Unauthenticated users go to sign-in; signed-in non-admins are sent to their
+	// dashboard as if the route were just any other page.
+	if (!session?.user) {
+		return <Navigate to="/sign-in" />;
+	}
+	const role = (session.user as { role?: string }).role;
+	if (role !== AUTH_ROLES.admin) {
+		return <Navigate to="/" />;
 	}
 
 	return (
