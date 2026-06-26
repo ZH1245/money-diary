@@ -16,11 +16,11 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description }: FeatureCardProps) {
 	return (
-		<div className="rounded-panel border border-border bg-card p-5">
-			<div className="mb-3 inline-flex size-10 items-center justify-center rounded-lg bg-soft-accent text-primary">
+		<div className="group rounded-panel border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+			<div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-soft-accent text-primary transition-transform group-hover:scale-105">
 				{icon}
 			</div>
-			<h3 className="mb-1 text-sm font-semibold text-foreground">{title}</h3>
+			<h3 className="mb-1 text-base font-semibold text-foreground">{title}</h3>
 			<p className="text-sm leading-relaxed text-muted-foreground">
 				{description}
 			</p>

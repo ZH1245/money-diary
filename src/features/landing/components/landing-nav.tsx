@@ -24,10 +24,14 @@ export function LandingNav() {
 				<nav className="flex shrink-0 items-center gap-2">
 					<ThemeToggle />
 					<Button variant="ghost" size="sm" asChild>
-						<Link to="/sign-in">Sign in</Link>
+						<Link to="/sign-in" className="no-underline">
+							Sign in
+						</Link>
 					</Button>
 					<Button size="sm" asChild>
-						<Link to="/sign-up">Get started</Link>
+						<Link to="/sign-up" className="no-underline">
+							Get started
+						</Link>
 					</Button>
 				</nav>
 			</div>
