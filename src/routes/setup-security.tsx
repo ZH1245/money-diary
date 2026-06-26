@@ -38,7 +38,7 @@ function SetupSecurityPage() {
 	}
 
 	if (profile) {
-		return <Navigate to="/" />;
+		return <Navigate to="/dashboard" />;
 	}
 
 	return (

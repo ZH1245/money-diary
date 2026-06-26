@@ -64,7 +64,7 @@ function AdminPage() {
 	}
 	const role = (session.user as { role?: string }).role;
 	if (role !== AUTH_ROLES.admin) {
-		return <Navigate to="/" />;
+		return <Navigate to="/dashboard" />;
 	}
 
 	return (

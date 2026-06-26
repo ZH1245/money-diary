@@ -1,29 +1,22 @@
-import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
-import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
-import { DashboardPageContent } from '#/features/dashboard/components/dashboard-page-content'
-import { useAuthSession } from '#/lib/use-auth-session'
-import { DEFAULT_CURRENCY } from '#/lib/currency'
-import { toSessionUser } from '#/types/auth'
-import { Navigate, createFileRoute } from '@tanstack/react-router'
+import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
+import { LandingPage } from "#/features/landing/components/landing-page";
+import { useAuthSession } from "#/lib/use-auth-session";
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
-  const { data: session, isInitialPending } = useAuthSession()
+	const { data: session, isInitialPending } = useAuthSession();
 
-  if (isInitialPending) {
-    return <SessionLoadingSkeleton />
-  }
+	if (isInitialPending) {
+		return <SessionLoadingSkeleton />;
+	}
 
-  if (!session?.user) {
-    return <Navigate to="/sign-in" />
-  }
+	// Signed-in users skip the marketing page and go straight to the app.
+	if (session?.user) {
+		return <Navigate to="/dashboard" />;
+	}
 
-  const userCurrency = ((session.user as { currency?: string }).currency ?? DEFAULT_CURRENCY).toUpperCase()
-
-  return (
-    <AuthenticatedAppShell user={toSessionUser(session.user)}>
-      <DashboardPageContent userCurrency={userCurrency} />
-    </AuthenticatedAppShell>
-  )
+	// Public landing page — intentionally NOT behind the auth redirect.
+	return <LandingPage />;
 }

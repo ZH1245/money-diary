@@ -147,7 +147,7 @@ function SignInPage() {
 			return;
 		}
 
-		await navigate({ to: "/" });
+		await navigate({ to: "/dashboard" });
 	}
 
 	return (

@@ -14,5 +14,5 @@ export function AuthenticatedEntryRedirect() {
     return <Navigate to="/setup-security" />
   }
 
-  return <Navigate to="/" />
+  return <Navigate to="/dashboard" />
 }

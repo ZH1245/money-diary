@@ -112,7 +112,7 @@ export function AuthenticatedAppShell({
 		{
 			label: "Overview",
 			items: [
-				{ title: "Dashboard", to: "/", icon: LayoutDashboard },
+				{ title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
 				{ title: "Analytics", to: "/analytics", icon: BarChart3 },
 			],
 		},
@@ -247,7 +247,7 @@ export function AuthenticatedAppShell({
 			<div className="flex h-svh flex-col overflow-hidden bg-canvas text-foreground">
 				<header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
 					<Link
-						to="/"
+						to="/dashboard"
 						aria-label="Dashboard"
 						className="flex items-center no-underline"
 					>
@@ -457,7 +457,7 @@ function MobileBottomNav({
 	onAdd: () => void;
 }) {
 	const left: BottomTab[] = [
-		{ title: "Home", to: "/", icon: LayoutDashboard },
+		{ title: "Home", to: "/dashboard", icon: LayoutDashboard },
 		{ title: "Txns", to: "/transactions", icon: ReceiptText },
 	];
 	const right: BottomTab[] = [{ title: "Goals", to: "/goals", icon: Goal }];

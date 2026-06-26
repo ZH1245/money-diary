@@ -46,7 +46,7 @@ function ForgotPasswordPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	if (session?.user) {
-		return <Navigate to="/" />;
+		return <Navigate to="/dashboard" />;
 	}
 
 	async function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
