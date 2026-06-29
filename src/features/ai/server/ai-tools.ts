@@ -35,7 +35,7 @@ export const AI_TOOLS = [
     function: {
       name: 'create_transaction',
       description:
-        'Log a new income, expense, or self-transfer transaction. Default to expense when the user describes spending without specifying income, savings deposit, or self-transfer. Skips duplicates automatically (same title, amount, type, date) unless forceCreate is true. For bulk pastes, call query_user_data for the date range first. Do NOT use for bulk fixes — use update_transaction to correct existing rows.',
+        'Log a new income or expense transaction. Default to expense when the user describes spending without specifying income or a savings deposit. To move money between the user\'s own accounts, use create_transfer instead — do NOT log transfers here. Skips duplicates automatically (same title, amount, type, date) unless forceCreate is true. For bulk pastes, call query_user_data for the date range first. Do NOT use for bulk fixes — use update_transaction to correct existing rows.',
       parameters: {
         type: 'object',
         required: ['title', 'amount', 'type'],
@@ -45,20 +45,14 @@ export const AI_TOOLS = [
           currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD). Omit to use ledger currency.' },
           type: {
             type: 'string',
-            enum: ['expense', 'income', 'transfer'],
+            enum: ['expense', 'income'],
             description:
-              'expense = money spent or paid to someone else. income = money received. transfer = ONLY self-transfer between the user\'s own accounts (e.g. cash to bank). Never use transfer for payments to other people.',
+              'expense = money spent or paid to someone else. income = money received. For moving money between the user\'s own accounts, use create_transfer instead.',
           },
           date: { type: 'string', description: 'YYYY-MM-DD when the transaction happened. Omit to use today.' },
-          categoryId: { type: 'integer', description: 'Internal ref from context. Required for expense/transfer. Use -1 with categoryName if no match. Omit for income.' },
+          categoryId: { type: 'integer', description: 'Internal ref from context. Required for expense. Use -1 with categoryName if no match. Omit for income.' },
           categoryName: { type: 'string', description: 'Required when categoryId is -1' },
           paymentAccountId: { type: 'integer', description: 'Internal account ref from context, or omit' },
-          transferDirection: {
-            type: 'string',
-            enum: ['in', 'out'],
-            description:
-              'Required for transfer rows with paymentAccountId. in = money into that account (e.g. bank to Cash on hand). out = money leaving that account (e.g. Cash on hand to bank).',
-          },
           note: { type: 'string' },
           forceCreate: {
             type: 'boolean',
@@ -98,6 +92,85 @@ export const AI_TOOLS = [
             description: 'For transfer rows: in = money into paymentAccountId, out = money out of paymentAccountId',
           },
           note: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_transfer',
+      description:
+        'Move money between the user\'s OWN accounts (e.g. Meezan to NayaPay, cash to bank). Creates a balanced two-leg transfer. Resolve both account refs from the payment accounts in WORKSPACE CONTEXT. Use this instead of create_transaction for self-transfers; never use it for payments to other people.',
+      parameters: {
+        type: 'object',
+        required: ['fromPaymentAccountId', 'toPaymentAccountId', 'amount'],
+        properties: {
+          fromPaymentAccountId: { type: 'integer', description: 'Internal ref of the account money leaves (source)' },
+          toPaymentAccountId: { type: 'integer', description: 'Internal ref of the account money arrives in (destination). Must differ from the source.' },
+          amount: { type: 'number', description: 'Positive amount moved, in the stated currency' },
+          title: { type: 'string', description: 'Optional label, e.g. "Meezan to NayaPay". Defaults to a transfer label.' },
+          currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD). Omit to use ledger currency.' },
+          date: { type: 'string', description: 'YYYY-MM-DD when the transfer happened. Omit to use today.' },
+          note: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_recurring_rule',
+      description:
+        'Set up a recurring income or expense (subscriptions, bills, salary), e.g. "Netflix every month". The server auto-creates the transaction on each due date. Resolve account/category refs from WORKSPACE CONTEXT.',
+      parameters: {
+        type: 'object',
+        required: ['title', 'amount', 'type', 'cadence'],
+        properties: {
+          title: { type: 'string', description: 'Name of the bill or subscription, e.g. "Netflix"' },
+          amount: { type: 'number', description: 'Positive amount per occurrence, in the stated currency' },
+          currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD). Omit to use ledger currency.' },
+          type: {
+            type: 'string',
+            enum: ['income', 'expense'],
+            description: 'expense for bills/subscriptions, income for recurring money received (e.g. salary)',
+          },
+          cadence: {
+            type: 'string',
+            enum: ['weekly', 'monthly', 'yearly'],
+            description: 'How often it repeats',
+          },
+          startDate: { type: 'string', description: 'YYYY-MM-DD of the first occurrence. Omit to use today.' },
+          categoryId: { type: 'integer', description: 'Internal ref from context. Recommended for expense; use -1 with categoryName for a new category. Omit for income.' },
+          categoryName: { type: 'string', description: 'Required when categoryId is -1' },
+          paymentAccountId: { type: 'integer', description: 'Internal account ref from context, or omit' },
+          note: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_recurring_rule',
+      description:
+        'Update an existing recurring rule (change amount, cadence, account, pause/resume). Match the rule by its ref from WORKSPACE CONTEXT.',
+      parameters: {
+        type: 'object',
+        required: ['recurringRuleId'],
+        properties: {
+          recurringRuleId: { type: 'integer', description: 'Internal recurring rule ref from context' },
+          title: { type: 'string' },
+          amount: { type: 'number', description: 'Positive amount per occurrence, in the stated currency' },
+          currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD)' },
+          type: { type: 'string', enum: ['income', 'expense'] },
+          cadence: { type: 'string', enum: ['weekly', 'monthly', 'yearly'] },
+          nextRunDate: { type: 'string', description: 'YYYY-MM-DD of the next occurrence' },
+          categoryId: { type: 'integer', description: 'Internal ref from context, or -1 with categoryName for a new category' },
+          categoryName: { type: 'string', description: 'Required when categoryId is -1' },
+          paymentAccountId: { type: 'integer' },
+          note: { type: 'string' },
+          isActive: { type: 'boolean', description: 'false to pause the rule; true to resume' },
         },
       },
     },
@@ -326,6 +399,9 @@ export const GET_EXCHANGE_RATE_TOOL = {
 export type AiWriteToolAction =
   | 'create_transaction'
   | 'update_transaction'
+  | 'create_transfer'
+  | 'create_recurring_rule'
+  | 'update_recurring_rule'
   | 'create_saving'
   | 'create_payment_account'
   | 'update_payment_account'

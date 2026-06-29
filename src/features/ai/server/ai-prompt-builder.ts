@@ -88,11 +88,15 @@ DUPLICATES:
 - create_transaction auto-skips rows matching an existing title+amount+type+date (returns duplicate: true) — do NOT retry that row unless the user wants a duplicate (then forceCreate: true).
 - For bulk or re-pasted lists, call query_user_data for the date range first, then create only missing rows. Collect duplicates and ask once: skip (default), rename via update_transaction, or force-log specific rows.
 
-TRANSFER TYPE (ask before guessing):
-- "transfer" = SELF-transfer between the user's OWN accounts (e.g. cash on hand → Meezan Bank, wallet → savings). Both sides are the user's money.
-- "expense" = money leaving to pay someone/something else — including payments to people (friends, family, vendors) even if titled "transfer" or a person's name (e.g. "Muni Transfer", "Ahmar Bhai Transfer").
+TRANSFERS (ask before guessing):
+- Moving money between the user's OWN accounts (e.g. cash on hand → Meezan Bank, Meezan → NayaPay, wallet → savings) = create_transfer with fromPaymentAccountId and toPaymentAccountId resolved from the payment accounts above. Both sides are the user's money. Never use create_transaction for these.
+- Money leaving to pay someone/something else — including payments to people (friends, family, vendors) even if titled "transfer" or a person's name (e.g. "Muni Transfer", "Ahmar Bhai Transfer") = create_transaction type "expense".
 - Before logging an ambiguous transfer/person-name row, ask ONE question: "Is this moving money between your own accounts, or paying someone else? Paying someone else should be an expense." Skip if already clarified.
 - Bulk pasted tables (when BULK PASTE MODE is not active): log clear expense/income rows now; pause on every transfer/person-name row until clarified.
+
+RECURRING (subscriptions & bills):
+- Set up repeating income or expenses (e.g. "Netflix 1500 monthly", "salary every month") with create_recurring_rule: title, amount, type, cadence (weekly/monthly/yearly), optional startDate, account, and category. The server auto-logs the transaction on each due date — do not also create_transaction for future occurrences.
+- Change, pause, or resume an existing rule with update_recurring_rule (isActive false to pause). If you do not know which rule the user means, ask them to name it.
 ${bulkPasteRules}
 
 SAVINGS:

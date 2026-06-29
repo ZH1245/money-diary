@@ -1,11 +1,18 @@
 import { z } from 'zod'
 import {
+  createTransfer,
   createUserTransaction,
   findUserTransactionDuplicate,
   getUserTransactionById,
   isCategoryAccessibleByUser,
   updateUserTransaction,
 } from '#/features/transactions/server/transactions-repository'
+import {
+  createUserRecurringRule,
+  getUserRecurringRuleById,
+  updateUserRecurringRule,
+} from '#/features/recurring/server/recurring-repository'
+import { computeNextRun, type RecurringCadence } from '#/features/recurring/utils/recurring-schedule'
 import {
   getVisibleCategoriesForUser,
   createUserCategory,
@@ -72,6 +79,44 @@ const updateTransactionArgsSchema = z.object({
   paymentAccountId: z.number().int().positive().optional(),
   transferDirection: z.enum(['in', 'out']).optional(),
   note: z.string().optional(),
+})
+
+const createTransferArgsSchema = z.object({
+  fromPaymentAccountId: z.number().int().positive(),
+  toPaymentAccountId: z.number().int().positive(),
+  amount: z.number().positive(),
+  title: z.string().min(1).optional(),
+  currency: z.string().trim().length(3).optional(),
+  date: z.string().min(6).optional(),
+  note: z.string().optional(),
+})
+
+const createRecurringRuleArgsSchema = z.object({
+  title: z.string().min(1),
+  amount: z.number().positive(),
+  currency: z.string().trim().length(3).optional(),
+  type: z.enum(['income', 'expense']),
+  cadence: z.enum(['weekly', 'monthly', 'yearly']),
+  startDate: z.string().min(6).optional(),
+  categoryId: z.number().int().optional(),
+  categoryName: z.string().optional(),
+  paymentAccountId: z.number().int().positive().optional(),
+  note: z.string().optional(),
+})
+
+const updateRecurringRuleArgsSchema = z.object({
+  recurringRuleId: z.number().int().positive(),
+  title: z.string().min(1).optional(),
+  amount: z.number().positive().optional(),
+  currency: z.string().trim().length(3).optional(),
+  type: z.enum(['income', 'expense']).optional(),
+  cadence: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+  nextRunDate: z.string().min(6).optional(),
+  categoryId: z.number().int().optional(),
+  categoryName: z.string().optional(),
+  paymentAccountId: z.number().int().positive().optional(),
+  note: z.string().optional(),
+  isActive: z.boolean().optional(),
 })
 
 const createSavingArgsSchema = z.object({
@@ -448,6 +493,223 @@ export async function executeAiTool({
       action: 'update_transaction',
       success: true,
       message: `Transaction updated: "${row.title}" (${row.type})`,
+      entityId: row.id,
+    })
+  }
+
+  if (toolName === 'create_transfer') {
+    const args = createTransferArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'create_transfer', success: false, message: 'Invalid transfer arguments.' }
+    }
+
+    const { fromPaymentAccountId, toPaymentAccountId, amount, title, currency: rawCurrency, date, note } = args.data
+
+    if (fromPaymentAccountId === toPaymentAccountId) {
+      return { action: 'create_transfer', success: false, message: 'Source and destination accounts must be different.' }
+    }
+
+    const fromAccount = await getUserPaymentAccountById(context.userId, fromPaymentAccountId)
+    if (!fromAccount) {
+      return { action: 'create_transfer', success: false, message: 'Source account not accessible.' }
+    }
+    const toAccount = await getUserPaymentAccountById(context.userId, toPaymentAccountId)
+    if (!toAccount) {
+      return { action: 'create_transfer', success: false, message: 'Destination account not accessible.' }
+    }
+
+    const happenedAt = resolveToolDate(date, context.today)
+    if (!happenedAt) {
+      return { action: 'create_transfer', success: false, message: `Invalid date: ${date ?? context.today}` }
+    }
+
+    const amountResult = await resolveAiTransactionAmount({
+      amount,
+      currency: rawCurrency,
+      userCurrency: context.currency,
+    })
+    if (!amountResult.ok) {
+      return { action: 'create_transfer', success: false, message: amountResult.error }
+    }
+
+    const transferTitle = title?.trim() || `${fromAccount.name} to ${toAccount.name}`
+
+    const rows = await createTransfer({
+      userId: context.userId,
+      title: transferTitle,
+      amount: amountResult.data.normalizedAmount,
+      sourceAmount: amountResult.data.sourceAmount,
+      sourceCurrency: amountResult.data.sourceCurrency,
+      exchangeRate: amountResult.data.exchangeRate,
+      fromPaymentAccountId,
+      toPaymentAccountId,
+      note: note?.trim() || null,
+      happenedAt,
+    })
+
+    const isForeign =
+      amountResult.data.sourceAmount !== null &&
+      amountResult.data.sourceCurrency.toUpperCase() !== context.currency.toUpperCase()
+    const amountPart = isForeign
+      ? `${amountResult.data.sourceAmount} ${amountResult.data.sourceCurrency}`
+      : `${amountResult.data.normalizedAmount} ${context.currency}`
+
+    return buildWriteStepResult({
+      action: 'create_transfer',
+      success: true,
+      message: `Transfer recorded: ${amountPart} from ${fromAccount.name} to ${toAccount.name} on ${formatToolDate(happenedAt)}`,
+      entityId: rows[0]?.id,
+    })
+  }
+
+  if (toolName === 'create_recurring_rule') {
+    const args = createRecurringRuleArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'create_recurring_rule', success: false, message: 'Invalid recurring rule arguments.' }
+    }
+
+    const { title, amount, type, cadence, startDate, currency: rawCurrency, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, note } = args.data
+
+    const categoryResult = await resolveAiCategoryId({
+      userId: context.userId,
+      type,
+      rawCategoryId: rawCatId,
+      categoryName,
+    })
+    if (!categoryResult.ok) {
+      return { action: 'create_recurring_rule', success: false, message: categoryResult.error }
+    }
+
+    let paymentAccountId: number | null = null
+    if (rawAccId != null) {
+      const ok = await isPaymentAccountAccessibleByUser({ userId: context.userId, paymentAccountId: rawAccId })
+      if (!ok) return { action: 'create_recurring_rule', success: false, message: 'Account not accessible.' }
+      paymentAccountId = rawAccId
+    }
+
+    const startAt = resolveToolDate(startDate, context.today)
+    if (!startAt) {
+      return { action: 'create_recurring_rule', success: false, message: `Invalid date: ${startDate ?? context.today}` }
+    }
+
+    const amountResult = await resolveAiTransactionAmount({
+      amount,
+      currency: rawCurrency,
+      userCurrency: context.currency,
+    })
+    if (!amountResult.ok) {
+      return { action: 'create_recurring_rule', success: false, message: amountResult.error }
+    }
+
+    const nextRunAt = computeNextRun(startAt, cadence, new Date())
+
+    const row = await createUserRecurringRule({
+      userId: context.userId,
+      title: title.trim(),
+      amount: amountResult.data.normalizedAmount,
+      currency: context.currency,
+      type,
+      categoryId: categoryResult.categoryId,
+      paymentAccountId,
+      source: 'recurring',
+      note: note?.trim() || null,
+      cadence,
+      nextRunAt,
+    })
+
+    return buildWriteStepResult({
+      action: 'create_recurring_rule',
+      success: true,
+      message: `Recurring ${type} set up: "${row.title}" (${row.amount} ${context.currency}, ${cadence}, next on ${formatToolDate(nextRunAt)})`,
+      entityId: row.id,
+    })
+  }
+
+  if (toolName === 'update_recurring_rule') {
+    const args = updateRecurringRuleArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'update_recurring_rule', success: false, message: 'Invalid recurring rule update arguments.' }
+    }
+
+    const existing = await getUserRecurringRuleById(context.userId, args.data.recurringRuleId)
+    if (!existing) {
+      return { action: 'update_recurring_rule', success: false, message: 'Recurring rule not accessible.' }
+    }
+
+    const nextType = (args.data.type ?? existing.type) as 'income' | 'expense'
+
+    let categoryId: number | null | undefined
+    if (args.data.type !== undefined || args.data.categoryId !== undefined) {
+      const categoryResult = await resolveAiCategoryId({
+        userId: context.userId,
+        type: nextType,
+        rawCategoryId: args.data.categoryId,
+        categoryName: args.data.categoryName,
+      })
+      if (!categoryResult.ok) {
+        return { action: 'update_recurring_rule', success: false, message: categoryResult.error }
+      }
+      categoryId = categoryResult.categoryId
+    }
+
+    let paymentAccountId: number | undefined
+    if (args.data.paymentAccountId !== undefined) {
+      const ok = await isPaymentAccountAccessibleByUser({
+        userId: context.userId,
+        paymentAccountId: args.data.paymentAccountId,
+      })
+      if (!ok) return { action: 'update_recurring_rule', success: false, message: 'Account not accessible.' }
+      paymentAccountId = args.data.paymentAccountId
+    }
+
+    let amount: string | undefined
+    if (args.data.amount !== undefined || args.data.currency !== undefined) {
+      const amountResult = await resolveAiTransactionAmount({
+        amount: args.data.amount ?? Number(existing.amount),
+        currency: args.data.currency ?? existing.currency,
+        userCurrency: context.currency,
+      })
+      if (!amountResult.ok) {
+        return { action: 'update_recurring_rule', success: false, message: amountResult.error }
+      }
+      amount = amountResult.data.normalizedAmount
+    }
+
+    const cadence = (args.data.cadence ?? existing.cadence) as RecurringCadence
+    let nextRunAt: Date | undefined
+    if (args.data.nextRunDate !== undefined) {
+      const parsed = resolveToolDate(args.data.nextRunDate, context.today)
+      if (!parsed) {
+        return { action: 'update_recurring_rule', success: false, message: `Invalid date: ${args.data.nextRunDate}` }
+      }
+      nextRunAt = parsed
+    } else if (args.data.cadence !== undefined) {
+      nextRunAt = computeNextRun(existing.nextRunAt, cadence, new Date())
+    }
+
+    const row = await updateUserRecurringRule({
+      userId: context.userId,
+      ruleId: args.data.recurringRuleId,
+      ...(args.data.title !== undefined ? { title: args.data.title.trim() } : {}),
+      ...(amount !== undefined ? { amount } : {}),
+      ...(args.data.type !== undefined ? { type: args.data.type } : {}),
+      ...(categoryId !== undefined ? { categoryId } : {}),
+      ...(paymentAccountId !== undefined ? { paymentAccountId } : {}),
+      ...(args.data.cadence !== undefined ? { cadence } : {}),
+      ...(nextRunAt !== undefined ? { nextRunAt } : {}),
+      ...(args.data.note !== undefined ? { note: args.data.note.trim() || null } : {}),
+      ...(args.data.isActive !== undefined ? { isActive: args.data.isActive } : {}),
+    })
+
+    if (!row) {
+      return { action: 'update_recurring_rule', success: false, message: 'Recurring rule could not be updated.' }
+    }
+
+    const statusLabel = row.isActive ? 'active' : 'paused'
+    return buildWriteStepResult({
+      action: 'update_recurring_rule',
+      success: true,
+      message: `Recurring rule updated: "${row.title}" (${statusLabel}, next on ${formatToolDate(row.nextRunAt)})`,
       entityId: row.id,
     })
   }
@@ -905,6 +1167,41 @@ function buildWriteStepResult({
     entityId,
     navigateTo,
   }
+}
+
+/**
+ * Resolves a category id for income/expense tools: null for income, a new
+ * category for -1 + name, or a validated existing ref. Omitted ref keeps it null.
+ */
+async function resolveAiCategoryId({
+  userId,
+  type,
+  rawCategoryId,
+  categoryName,
+}: {
+  userId: string
+  type: 'income' | 'expense'
+  rawCategoryId: number | undefined
+  categoryName: string | undefined
+}): Promise<{ ok: true; categoryId: number | null } | { ok: false; error: string }> {
+  if (type === 'income' || rawCategoryId === undefined) {
+    return { ok: true, categoryId: null }
+  }
+  if (rawCategoryId === -1) {
+    if (!categoryName?.trim()) {
+      return { ok: false, error: 'Category name is required for new category.' }
+    }
+    const newCat = await createUserCategory({
+      userId,
+      name: categoryName.trim(),
+      slug: slugifyCategoryName(categoryName),
+      kind: 'other',
+    })
+    return { ok: true, categoryId: newCat.id }
+  }
+  const ok = await isCategoryAccessibleByUser({ userId, categoryId: rawCategoryId })
+  if (!ok) return { ok: false, error: 'Category not accessible.' }
+  return { ok: true, categoryId: rawCategoryId }
 }
 
 /**
