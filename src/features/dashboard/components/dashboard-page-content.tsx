@@ -2,12 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import {
 	ArrowRight,
+	Ban,
 	Receipt,
+	RotateCcw,
 	TrendingDown,
 	TrendingUp,
 	Wallet,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { DashboardLoadingSkeleton } from "#/components/feedback/page-state";
 import { SensitiveText } from "#/components/privacy/sensitive-text";
 import {
@@ -27,7 +30,10 @@ import {
 	buildPaymentAccountBalances,
 	findCashPaymentAccountId,
 } from "#/features/payment-accounts/utils/payment-account-balance";
-import { useRecurringRulesQuery } from "#/features/recurring/hooks/use-recurring";
+import {
+	useRecurringRulesQuery,
+	useUpdateRecurringMutation,
+} from "#/features/recurring/hooks/use-recurring";
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { useTransactionsQuery } from "#/features/transactions/hooks/use-transactions";
 import { useWishlistQuery } from "#/features/wishlist/hooks/use-wishlist";
@@ -222,22 +228,45 @@ export function DashboardPageContent({
 				: null;
 
 	const { data: recurringRules = [] } = useRecurringRulesQuery();
+	const updateRecurringMutation = useUpdateRecurringMutation();
+
+	const handleSetRecurringActive = (
+		id: number,
+		title: string,
+		isActive: boolean,
+	) => {
+		const promise = updateRecurringMutation.mutateAsync({
+			id,
+			input: { isActive },
+		});
+		toast.promise(promise, {
+			loading: isActive ? "Resuming…" : "Canceling…",
+			success: isActive
+				? `Resumed "${title}"`
+				: `Canceled "${title}" — it won't repeat`,
+			error: (error) =>
+				error instanceof Error ? error.message : "Could not update bill",
+		});
+	};
+
+	const toBill = (rule: (typeof recurringRules)[number]) => ({
+		id: rule.id,
+		name: rule.title,
+		badge: rule.title.slice(0, 2).toUpperCase(),
+		dueLabel: new Intl.DateTimeFormat(undefined, {
+			month: "short",
+			day: "numeric",
+		}).format(new Date(rule.nextRunAt)),
+		amount: Number(rule.amount),
+		cadence: rule.cadence,
+	});
+
 	const upcomingBills = useMemo(
-		() =>
-			recurringRules
-				.filter((rule) => rule.isActive)
-				.slice(0, 4)
-				.map((rule) => ({
-					id: String(rule.id),
-					name: rule.title,
-					badge: rule.title.slice(0, 2).toUpperCase(),
-					dueLabel: new Intl.DateTimeFormat(undefined, {
-						month: "short",
-						day: "numeric",
-					}).format(new Date(rule.nextRunAt)),
-					amount: Number(rule.amount),
-					cadence: rule.cadence,
-				})),
+		() => recurringRules.filter((rule) => rule.isActive).map(toBill),
+		[recurringRules],
+	);
+	const canceledBills = useMemo(
+		() => recurringRules.filter((rule) => !rule.isActive).map(toBill),
 		[recurringRules],
 	);
 
@@ -405,41 +434,110 @@ export function DashboardPageContent({
 										: "Set up a repeat"}
 								</span>
 							</div>
-							{upcomingBills.length === 0 ? (
+							{upcomingBills.length === 0 && canceledBills.length === 0 ? (
 								<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
 									No recurring items yet. Add a transaction and turn on “Repeat
 									this” to schedule bills and subscriptions.
 								</p>
 							) : (
-								<ul className="mt-4 space-y-1">
-									{upcomingBills.map((bill) => (
-										<li
-											key={bill.id}
-											className="md-row flex items-center gap-3 px-2 py-2.5"
-										>
-											<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
-												{bill.badge}
-											</span>
-											<div className="min-w-0 flex-1">
-												<p className="truncate text-sm font-medium text-foreground">
-													<SensitiveText text={bill.name} />
-												</p>
-												<p className="truncate text-xs capitalize text-muted-foreground">
-													{bill.cadence} · next {bill.dueLabel}
-												</p>
-											</div>
-											<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
-												<SensitiveText
-													text={formatSensitiveCurrency(
-														bill.amount,
-														userCurrency,
-														isPrivacyMode,
-													)}
-												/>
-											</span>
-										</li>
-									))}
-								</ul>
+								<>
+									{upcomingBills.length === 0 ? (
+										<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
+											All bills are canceled.
+										</p>
+									) : (
+										<ul className="mt-4 space-y-1">
+											{upcomingBills.map((bill) => (
+												<li
+													key={bill.id}
+													className="md-row flex items-center gap-3 px-2 py-2.5"
+												>
+													<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
+														{bill.badge}
+													</span>
+													<div className="min-w-0 flex-1">
+														<p className="truncate text-sm font-medium text-foreground">
+															<SensitiveText text={bill.name} />
+														</p>
+														<p className="truncate text-xs capitalize text-muted-foreground">
+															{bill.cadence} · next {bill.dueLabel}
+														</p>
+													</div>
+													<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
+														<SensitiveText
+															text={formatSensitiveCurrency(
+																bill.amount,
+																userCurrency,
+																isPrivacyMode,
+															)}
+														/>
+													</span>
+													<Button
+														variant="ghost"
+														size="sm"
+														className="shrink-0 text-muted-foreground hover:text-expense"
+														disabled={updateRecurringMutation.isPending}
+														onClick={() =>
+															handleSetRecurringActive(bill.id, bill.name, false)
+														}
+													>
+														<Ban className="size-4" />
+														Cancel
+													</Button>
+												</li>
+											))}
+										</ul>
+									)}
+
+									{canceledBills.length > 0 ? (
+										<div className="mt-4 border-t border-border-faint pt-3">
+											<p className="px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+												Canceled
+											</p>
+											<ul className="mt-1 space-y-1">
+												{canceledBills.map((bill) => (
+													<li
+														key={bill.id}
+														className="md-row flex items-center gap-3 px-2 py-2.5 opacity-70"
+													>
+														<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-track text-xs font-bold text-muted-foreground">
+															{bill.badge}
+														</span>
+														<div className="min-w-0 flex-1">
+															<p className="truncate text-sm font-medium text-foreground line-through">
+																<SensitiveText text={bill.name} />
+															</p>
+															<p className="truncate text-xs capitalize text-muted-foreground">
+																{bill.cadence} · canceled
+															</p>
+														</div>
+														<span className="shrink-0 font-num font-extrabold tabular-nums text-muted-foreground">
+															<SensitiveText
+																text={formatSensitiveCurrency(
+																	bill.amount,
+																	userCurrency,
+																	isPrivacyMode,
+																)}
+															/>
+														</span>
+														<Button
+															variant="ghost"
+															size="sm"
+															className="shrink-0 text-muted-foreground hover:text-income"
+															disabled={updateRecurringMutation.isPending}
+															onClick={() =>
+																handleSetRecurringActive(bill.id, bill.name, true)
+															}
+														>
+															<RotateCcw className="size-4" />
+															Resume
+														</Button>
+													</li>
+												))}
+											</ul>
+										</div>
+									) : null}
+								</>
 							)}
 						</div>
 

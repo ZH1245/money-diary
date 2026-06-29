@@ -10,6 +10,7 @@ import {
 import {
   createUserRecurringRule,
   getUserRecurringRuleById,
+  getUserRecurringRules,
   updateUserRecurringRule,
 } from '#/features/recurring/server/recurring-repository'
 import { computeNextRun, type RecurringCadence } from '#/features/recurring/utils/recurring-schedule'
@@ -1118,11 +1119,12 @@ export async function executeAiTool({
  * Loads user-scoped context lists for secure prompt injection.
  */
 export async function loadUserAiContext(userId: string) {
-  const [userCategories, userAccounts, userGoals, userWishlist] = await Promise.all([
+  const [userCategories, userAccounts, userGoals, userWishlist, userRecurring] = await Promise.all([
     getVisibleCategoriesForUser(userId),
     getUserPaymentAccounts(userId),
     getUserGoals(userId),
     getUserWishlistItems(userId),
+    getUserRecurringRules(userId),
   ])
 
   const sanitizeName = (s: string) => s.replace(/[\r\n]+/g, ' ').trim()
@@ -1139,6 +1141,9 @@ export async function loadUserAiContext(userId: string) {
     goalList: userGoals.map((goal) => `${sanitizeName(goal.title)} [ref ${goal.id}]`).join(', '),
     wishlistList: userWishlist
       .map((item) => `${sanitizeName(item.title)} [ref ${item.id}] (${item.status})`)
+      .join(', '),
+    recurringList: userRecurring
+      .map((rule) => `${sanitizeName(rule.title)} (${rule.cadence}, ${rule.isActive ? 'active' : 'canceled'}) [ref ${rule.id}]`)
       .join(', '),
     userGoals,
     userWishlist,

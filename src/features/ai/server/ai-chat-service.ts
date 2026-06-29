@@ -513,6 +513,7 @@ export async function runAiChat({
     accountList: userContext.accountList,
     goalList: userContext.goalList,
     wishlistList: userContext.wishlistList,
+    recurringList: userContext.recurringList,
     includeExchangeRateTool: isOllamaProvider,
     bulkPasteMode: bulkRuntime.isBulkPaste,
   })
