@@ -14,6 +14,8 @@ export const serverEnv = createEnv({
     ALLOWED_ORIGINS: z.string().optional(),
     APP_ALLOWED_HOSTS: z.string().optional(),
     NODE_ENV: z.enum(['development', 'production', 'test']).optional(),
+    RESEND_API_KEY: z.string().min(1).optional(),
+    RESEND_FROM: z.string().optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

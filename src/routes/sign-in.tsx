@@ -20,6 +20,9 @@ const signInSchema = z.object({
 	password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+const otpEmailSchema = z.string().email("Enter a valid email address");
+const otpCodeSchema = z.string().regex(/^\d{6}$/, "Enter the 6-digit code");
+
 function SignInPage() {
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
@@ -28,9 +31,95 @@ function SignInPage() {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [mode, setMode] = useState<"password" | "otp">("password");
+	const [otpCode, setOtpCode] = useState("");
+	const [otpSent, setOtpSent] = useState(false);
+	const [isSendingOtp, setIsSendingOtp] = useState(false);
 
 	if (session?.user) {
 		return <AuthenticatedEntryRedirect />;
+	}
+
+	async function handleSendOtp() {
+		setErrorMessage(null);
+		const parsedEmail = otpEmailSchema.safeParse(email);
+		if (!parsedEmail.success) {
+			setFieldErrors((previous) => ({
+				...previous,
+				email: parsedEmail.error.issues[0]?.message ?? "Invalid email",
+			}));
+			return;
+		}
+
+		setIsSendingOtp(true);
+		const requestPromise = authClient.emailOtp.sendVerificationOtp({
+			email,
+			type: "sign-in",
+		});
+		const sendPromise = requestPromise.then((result) => {
+			if (result.error)
+				throw new Error(result.error.message ?? "Unable to send code");
+			return result;
+		});
+
+		toast.promise(sendPromise, {
+			loading: "Sending code...",
+			success: "Code sent — check your email",
+			error: "Unable to send code",
+		});
+
+		const result = await requestPromise;
+
+		setIsSendingOtp(false);
+
+		if (result.error) {
+			setErrorMessage(result.error.message ?? "Unable to send code");
+			return;
+		}
+
+		setOtpSent(true);
+	}
+
+	async function handleVerifyOtp(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		setErrorMessage(null);
+
+		const parsedCode = otpCodeSchema.safeParse(otpCode);
+		if (!parsedCode.success) {
+			setFieldErrors((previous) => ({
+				...previous,
+				otp: parsedCode.error.issues[0]?.message ?? "Invalid code",
+			}));
+			return;
+		}
+
+		setIsSubmitting(true);
+		const requestPromise = authClient.signIn.emailOtp({
+			email,
+			otp: otpCode,
+		});
+		const verifyPromise = requestPromise.then((result) => {
+			if (result.error)
+				throw new Error(result.error.message ?? "Unable to sign in");
+			return result;
+		});
+
+		toast.promise(verifyPromise, {
+			loading: "Signing in...",
+			success: "Signed in successfully",
+			error: "Unable to sign in",
+		});
+
+		const result = await requestPromise;
+
+		setIsSubmitting(false);
+
+		if (result.error) {
+			setErrorMessage(result.error.message ?? "Unable to sign in");
+			return;
+		}
+
+		await navigate({ to: "/dashboard" });
 	}
 
 	function getFieldError(field: "email" | "password", value: string): string {
@@ -192,55 +281,175 @@ function SignInPage() {
 						Access your account to continue.
 					</p>
 
-					<form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
-						<FormField
-							id="email"
-							label="Email"
-							type="email"
-							value={email}
-							onChange={handleEmailChange}
-							placeholder="you@example.com"
-							error={fieldErrors.email}
-							isDisabled={isSubmitting}
-						/>
-						<FormField
-							id="password"
-							label="Password"
-							type="password"
-							value={password}
-							onChange={handlePasswordChange}
-							placeholder="At least 8 characters"
-							error={fieldErrors.password}
-							isDisabled={isSubmitting}
-							autoComplete="current-password"
-						/>
-
-						<p className="text-right text-sm">
-							<Link
-								to="/forgot-password"
-								className="font-medium text-primary underline-offset-4 hover:underline"
-							>
-								Forgot password?
-							</Link>
-						</p>
-
-						{errorMessage ? <InlineError message={errorMessage} /> : null}
-
+					<div className="mt-5 grid grid-cols-2 gap-1 rounded-md border border-border bg-muted/40 p-1">
 						<button
-							type="submit"
-							disabled={isSubmitting}
-							className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+							type="button"
+							onClick={() => {
+								setMode("password");
+								setErrorMessage(null);
+							}}
+							className={`h-8 rounded text-xs font-medium transition-colors ${
+								mode === "password"
+									? "bg-panel text-foreground shadow-sm"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
 						>
-							{isSubmitting ? (
+							Password
+						</button>
+						<button
+							type="button"
+							onClick={() => {
+								setMode("otp");
+								setErrorMessage(null);
+							}}
+							className={`h-8 rounded text-xs font-medium transition-colors ${
+								mode === "otp"
+									? "bg-panel text-foreground shadow-sm"
+									: "text-muted-foreground hover:text-foreground"
+							}`}
+						>
+							Email code
+						</button>
+					</div>
+
+					{mode === "password" ? (
+						<form
+							className="mt-4 space-y-4"
+							onSubmit={handleSubmit}
+							noValidate
+						>
+							<FormField
+								id="email"
+								label="Email"
+								type="email"
+								value={email}
+								onChange={handleEmailChange}
+								placeholder="you@example.com"
+								error={fieldErrors.email}
+								isDisabled={isSubmitting}
+							/>
+							<FormField
+								id="password"
+								label="Password"
+								type="password"
+								value={password}
+								onChange={handlePasswordChange}
+								placeholder="At least 8 characters"
+								error={fieldErrors.password}
+								isDisabled={isSubmitting}
+								autoComplete="current-password"
+							/>
+
+							<p className="text-right text-sm">
+								<Link
+									to="/forgot-password"
+									className="font-medium text-primary underline-offset-4 hover:underline"
+								>
+									Forgot password?
+								</Link>
+							</p>
+
+							{errorMessage ? <InlineError message={errorMessage} /> : null}
+
+							<button
+								type="submit"
+								disabled={isSubmitting}
+								className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+							>
+								{isSubmitting ? (
+									<>
+										<Loader2 className="h-4 w-4 animate-spin" />
+										Signing in...
+									</>
+								) : (
+									"Sign in"
+								)}
+							</button>
+						</form>
+					) : (
+						<form
+							className="mt-4 space-y-4"
+							onSubmit={handleVerifyOtp}
+							noValidate
+						>
+							<FormField
+								id="email"
+								label="Email"
+								type="email"
+								value={email}
+								onChange={(nextValue) => {
+									handleEmailChange(nextValue);
+									setOtpSent(false);
+								}}
+								placeholder="you@example.com"
+								error={fieldErrors.email}
+								isDisabled={isSubmitting || isSendingOtp}
+							/>
+
+							{otpSent ? (
+								<FormField
+									id="otp"
+									label="6-digit code"
+									type="text"
+									value={otpCode}
+									onChange={(nextValue) => {
+										setOtpCode(nextValue);
+										setErrorMessage(null);
+										setFieldErrors((previous) => ({ ...previous, otp: "" }));
+									}}
+									placeholder="123456"
+									error={fieldErrors.otp}
+									isDisabled={isSubmitting}
+									autoComplete="one-time-code"
+								/>
+							) : null}
+
+							{errorMessage ? <InlineError message={errorMessage} /> : null}
+
+							{otpSent ? (
 								<>
-									<Loader2 className="h-4 w-4 animate-spin" />
-									Signing in...
+									<button
+										type="submit"
+										disabled={isSubmitting}
+										className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+									>
+										{isSubmitting ? (
+											<>
+												<Loader2 className="h-4 w-4 animate-spin" />
+												Signing in...
+											</>
+										) : (
+											"Verify and sign in"
+										)}
+									</button>
+									<button
+										type="button"
+										onClick={handleSendOtp}
+										disabled={isSendingOtp}
+										className="w-full text-center text-sm font-medium text-primary underline-offset-4 hover:underline disabled:opacity-60"
+									>
+										{isSendingOtp ? "Sending..." : "Resend code"}
+									</button>
 								</>
 							) : (
-								"Sign in"
+								<button
+									type="button"
+									onClick={handleSendOtp}
+									disabled={isSendingOtp}
+									className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+								>
+									{isSendingOtp ? (
+										<>
+											<Loader2 className="h-4 w-4 animate-spin" />
+											Sending...
+										</>
+									) : (
+										"Send code"
+									)}
+								</button>
 							)}
-						</button>
-					</form>
+						</form>
+					)}
 
 					<p className="mt-6 text-center text-sm text-muted-foreground">
 						New here?{" "}
