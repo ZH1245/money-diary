@@ -1,10 +1,4 @@
-import {
-	type ReactNode,
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { type ReactNode, useState } from "react";
 import { cn } from "#/lib/utils";
 
 export interface SettingsNavGroup {
@@ -30,7 +24,7 @@ interface SettingsPageLayoutProps {
 }
 
 /**
- * Settings shell with section nav and a sticky title that tracks scroll position.
+ * Settings shell with section nav; clicking a section swaps content in place (tabs).
  */
 export function SettingsPageLayout({
 	groups,
@@ -41,76 +35,8 @@ export function SettingsPageLayout({
 }: SettingsPageLayoutProps) {
 	const items = groups.flatMap((group) => group.items);
 	const [activeId, setActiveId] = useState(items[0]?.id ?? "");
-	const sectionRefs = useRef(new Map<string, HTMLElement>());
-	const isJumpScrollingRef = useRef(false);
 
 	const activeItem = items.find((item) => item.id === activeId) ?? items[0];
-
-	const registerSection = useCallback(
-		(id: string, node: HTMLElement | null) => {
-			if (node) {
-				sectionRefs.current.set(id, node);
-				return;
-			}
-			sectionRefs.current.delete(id);
-		},
-		[],
-	);
-
-	useEffect(() => {
-		const sections = items
-			.map((item) => sectionRefs.current.get(item.id))
-			.filter((node): node is HTMLElement => Boolean(node));
-
-		if (sections.length === 0) {
-			return;
-		}
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (isJumpScrollingRef.current) {
-					return;
-				}
-
-				const visible = entries
-					.filter((entry) => entry.isIntersecting)
-					.sort(
-						(left, right) => right.intersectionRatio - left.intersectionRatio,
-					);
-
-				const topMatch = visible[0];
-				if (topMatch?.target.id) {
-					setActiveId(topMatch.target.id);
-				}
-			},
-			{
-				root: null,
-				rootMargin: "-120px 0px -55% 0px",
-				threshold: [0, 0.15, 0.35, 0.55, 0.75, 1],
-			},
-		);
-
-		for (const section of sections) {
-			observer.observe(section);
-		}
-
-		return () => observer.disconnect();
-	}, [items]);
-
-	function handleNavClick(item: SettingsNavItem) {
-		const section = sectionRefs.current.get(item.id);
-		if (!section) {
-			setActiveId(item.id);
-			return;
-		}
-
-		setActiveId(item.id);
-		isJumpScrollingRef.current = true;
-		section.scrollIntoView({ behavior: "smooth", block: "start" });
-		window.setTimeout(() => {
-			isJumpScrollingRef.current = false;
-		}, 500);
-	}
 
 	return (
 		<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
@@ -132,7 +58,7 @@ export function SettingsPageLayout({
 											<li key={item.id}>
 												<button
 													type="button"
-													onClick={() => handleNavClick(item)}
+													onClick={() => setActiveId(item.id)}
 													aria-current={isActive ? "true" : undefined}
 													className={cn(
 														"w-full rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors lg:whitespace-normal",
@@ -173,18 +99,12 @@ export function SettingsPageLayout({
 					) : null}
 				</header>
 
-				<div className="space-y-8 pt-6">
-					{items.map((item) => (
-						<section
-							key={item.id}
-							id={item.id}
-							ref={(node) => registerSection(item.id, node)}
-							className="scroll-mt-32"
-							aria-label={item.title}
-						>
-							{children(item)}
+				<div className="pt-6">
+					{activeItem ? (
+						<section id={activeItem.id} aria-label={activeItem.title}>
+							{children(activeItem)}
 						</section>
-					))}
+					) : null}
 				</div>
 			</div>
 		</div>
