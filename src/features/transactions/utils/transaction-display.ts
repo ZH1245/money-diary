@@ -3,9 +3,9 @@ import type { PaymentAccountDto } from '#/features/payment-accounts/types/paymen
 import { formatPaymentAccountLabel } from '#/features/payment-accounts/utils/account-label'
 import type { TransactionDto } from '#/features/transactions/types/transaction'
 import {
-  formatTransferSource,
   isTransferSourceToken,
-  parseTransferDirection,
+  TRANSFER_SOURCE_IN,
+  TRANSFER_SOURCE_OUT,
 } from '#/features/transactions/utils/transfer-direction'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 
@@ -17,7 +17,8 @@ export interface TransactionFormState {
   type: 'income' | 'expense' | 'transfer'
   categoryId: string
   paymentAccountId: string
-  transferDirection: 'in' | 'out'
+  fromPaymentAccountId: string
+  toPaymentAccountId: string
   source: string
   note: string
   happenedAt: string
@@ -36,6 +37,9 @@ export interface TransactionTableRow {
   paymentAccountId: number | null
   accountLabel: string
   source: string
+  transferGroupId: string | null
+  /** For a transfer leg: "From → To" label across both accounts. */
+  transferRouteLabel: string | null
   note: string
   happenedAt: string
   happenedAtLabel: string
@@ -53,7 +57,8 @@ export function getDefaultTransactionForm(userCurrency: string): TransactionForm
     type: 'expense',
     categoryId: '',
     paymentAccountId: 'none',
-    transferDirection: 'out',
+    fromPaymentAccountId: 'none',
+    toPaymentAccountId: 'none',
     source: '',
     note: '',
     happenedAt: format(new Date(), 'yyyy-MM-dd'),
@@ -139,6 +144,11 @@ export function buildTransactionTableRows(
     return accumulator
   }, {})
 
+  const accountLabelFor = (paymentAccountId: number | null): string =>
+    paymentAccountId ? formatPaymentAccountLabel(accountsById[paymentAccountId]) : ''
+
+  const transferRoutesByGroup = buildTransferRoutesByGroup(transactions, accountLabelFor)
+
   return transactions.map((transaction) => ({
     id: transaction.id,
     title: transaction.title,
@@ -150,16 +160,50 @@ export function buildTransactionTableRows(
     categoryId: transaction.categoryId,
     categoryLabel: getTransactionCategoryLabel(transaction.type, transaction.categoryId, categories),
     paymentAccountId: transaction.paymentAccountId,
-    accountLabel: transaction.paymentAccountId
-      ? formatPaymentAccountLabel(accountsById[transaction.paymentAccountId])
-      : '',
+    accountLabel: accountLabelFor(transaction.paymentAccountId),
     source: transaction.source ?? '',
+    transferGroupId: transaction.transferGroupId,
+    transferRouteLabel: transaction.transferGroupId
+      ? (transferRoutesByGroup[transaction.transferGroupId] ?? null)
+      : null,
     note: transaction.note ?? '',
     happenedAt: transaction.happenedAt,
     happenedAtLabel: new Intl.DateTimeFormat(undefined, {
       dateStyle: 'medium',
     }).format(new Date(transaction.happenedAt)),
   }))
+}
+
+/**
+ * Builds a "From → To" label per transfer group from its two legs.
+ */
+function buildTransferRoutesByGroup(
+  transactions: TransactionDto[],
+  accountLabelFor: (paymentAccountId: number | null) => string,
+): Record<string, string> {
+  const fromByGroup: Record<string, string> = {}
+  const toByGroup: Record<string, string> = {}
+
+  for (const transaction of transactions) {
+    if (!transaction.transferGroupId) {
+      continue
+    }
+
+    if (transaction.source === TRANSFER_SOURCE_OUT) {
+      fromByGroup[transaction.transferGroupId] = accountLabelFor(transaction.paymentAccountId)
+    } else if (transaction.source === TRANSFER_SOURCE_IN) {
+      toByGroup[transaction.transferGroupId] = accountLabelFor(transaction.paymentAccountId)
+    }
+  }
+
+  const routes: Record<string, string> = {}
+  for (const groupId of new Set([...Object.keys(fromByGroup), ...Object.keys(toByGroup)])) {
+    const from = fromByGroup[groupId] || '?'
+    const to = toByGroup[groupId] || '?'
+    routes[groupId] = `${from} → ${to}`
+  }
+
+  return routes
 }
 
 /**
@@ -178,24 +222,13 @@ export function getTransactionPaymentAccountLabel(type: TransactionFormState['ty
 }
 
 /**
- * Builds the API source field from form state, encoding transfer direction when needed.
+ * Builds the API source field from form state for non-transfer entries.
  */
 export function resolveTransactionSourceForSave(form: TransactionFormState): string | undefined {
-  if (form.type === 'transfer') {
-    return formatTransferSource(form.transferDirection)
-  }
-
   const trimmedSource = form.source.trim()
   if (!trimmedSource || isTransferSourceToken(trimmedSource)) {
     return undefined
   }
 
   return trimmedSource
-}
-
-/**
- * Hydrates transfer direction from a stored transaction source value.
- */
-export function getTransferDirectionFromTransactionSource(source: string | null | undefined): 'in' | 'out' {
-  return parseTransferDirection(source)
 }

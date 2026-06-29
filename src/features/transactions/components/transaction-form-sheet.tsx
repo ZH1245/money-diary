@@ -33,22 +33,23 @@ import {
 } from "#/features/recurring/utils/recurring-schedule";
 import {
 	useCreateTransactionMutation,
+	useCreateTransferMutation,
 	useDeleteTransactionMutation,
+	useTransactionsQuery,
 	useUpdateTransactionMutation,
+	useUpdateTransferMutation,
 } from "#/features/transactions/hooks/use-transactions";
-import {
-	requiresTransactionCategory,
-	resolveTransactionCategoryId,
-} from "#/features/transactions/utils/transaction-category";
+import { resolveTransactionCategoryId } from "#/features/transactions/utils/transaction-category";
+import type { TransactionDto } from "#/features/transactions/types/transaction";
 import type {
 	TransactionFormState,
 	TransactionTableRow,
 } from "#/features/transactions/utils/transaction-display";
+import { TRANSFER_SOURCE_OUT } from "#/features/transactions/utils/transfer-direction";
 import {
 	formatTransactionCurrency,
 	getDefaultTransactionForm,
 	getTransactionPaymentAccountLabel,
-	getTransferDirectionFromTransactionSource,
 	resolveTransactionSourceForSave,
 } from "#/features/transactions/utils/transaction-display";
 import { SUPPORTED_CURRENCIES } from "#/lib/currency";
@@ -82,12 +83,32 @@ function getCurrencySymbol(currency: string): string {
 	}
 }
 
+/**
+ * Resolves the from/to account ids for a transfer leg by pairing it with its
+ * sibling leg (matched on transferGroupId). The OUT leg holds the from account,
+ * the IN leg holds the to account.
+ */
+function resolveTransferAccounts(
+	row: TransactionTableRow,
+	sibling: TransactionDto | null,
+): { fromPaymentAccountId: string; toPaymentAccountId: string } {
+	const isOutLeg = row.source === TRANSFER_SOURCE_OUT;
+	const fromAccountId = isOutLeg ? row.paymentAccountId : (sibling?.paymentAccountId ?? null);
+	const toAccountId = isOutLeg ? (sibling?.paymentAccountId ?? null) : row.paymentAccountId;
+	return {
+		fromPaymentAccountId: fromAccountId ? String(fromAccountId) : "none",
+		toPaymentAccountId: toAccountId ? String(toAccountId) : "none",
+	};
+}
+
 /** Prefills the form state from an existing row when editing. */
 function buildEditFormState(
 	row: TransactionTableRow,
 	userCurrency: string,
+	sibling: TransactionDto | null,
 ): TransactionFormState {
 	const isForeign = row.sourceCurrency.toUpperCase() !== userCurrency;
+	const transferAccounts = resolveTransferAccounts(row, sibling);
 	return {
 		title: row.title,
 		amount: isForeign && row.sourceAmount ? row.sourceAmount : row.amount,
@@ -98,7 +119,8 @@ function buildEditFormState(
 		paymentAccountId: row.paymentAccountId
 			? String(row.paymentAccountId)
 			: "none",
-		transferDirection: getTransferDirectionFromTransactionSource(row.source),
+		fromPaymentAccountId: transferAccounts.fromPaymentAccountId,
+		toPaymentAccountId: transferAccounts.toPaymentAccountId,
 		source: row.source,
 		note: row.note,
 		happenedAt: toInputDate(row.happenedAt),
@@ -127,8 +149,11 @@ export function TransactionFormSheet({
 }: TransactionFormSheetProps) {
 	const { data: categories = [] } = useCategoriesQuery();
 	const { data: paymentAccounts = [] } = usePaymentAccountsQuery();
+	const { data: allTransactions = [] } = useTransactionsQuery();
 	const createTransactionMutation = useCreateTransactionMutation();
 	const updateTransactionMutation = useUpdateTransactionMutation();
+	const createTransferMutation = useCreateTransferMutation();
+	const updateTransferMutation = useUpdateTransferMutation();
 	const deleteTransactionMutation = useDeleteTransactionMutation();
 	const createRecurringMutation = useCreateRecurringMutation();
 
@@ -147,7 +172,15 @@ export function TransactionFormSheet({
 	useEffect(() => {
 		if (!open) return;
 		if (editingRow) {
-			setCreateForm(buildEditFormState(editingRow, userCurrency));
+			const sibling =
+				editingRow.transferGroupId != null
+					? (allTransactions.find(
+							(transaction) =>
+								transaction.transferGroupId === editingRow.transferGroupId &&
+								transaction.id !== editingRow.id,
+						) ?? null)
+					: null;
+			setCreateForm(buildEditFormState(editingRow, userCurrency, sibling));
 			setIsCurrencyPickerOpen(
 				editingRow.sourceCurrency.toUpperCase() !== userCurrency,
 			);
@@ -157,7 +190,7 @@ export function TransactionFormSheet({
 		}
 		setIsRecurring(false);
 		setCadence("monthly");
-	}, [open, editingRow, userCurrency]);
+	}, [open, editingRow, userCurrency, allTransactions]);
 
 	const isForeignCurrency = createForm.currency !== userCurrency;
 	const convertedAmountPreview = useMemo(() => {
@@ -199,10 +232,23 @@ export function TransactionFormSheet({
 		],
 		[paymentAccounts],
 	);
+	const transferAccountOptions = useMemo(
+		() =>
+			paymentAccounts
+				.filter((account) => account.isActive)
+				.map((account) => ({
+					value: String(account.id),
+					label: formatPaymentAccountLabel(account),
+				})),
+		[paymentAccounts],
+	);
 
 	const isSaving =
-		createTransactionMutation.isPending || updateTransactionMutation.isPending;
-	const showCategoryField = requiresTransactionCategory(createForm.type);
+		createTransactionMutation.isPending ||
+		updateTransactionMutation.isPending ||
+		createTransferMutation.isPending ||
+		updateTransferMutation.isPending;
+	const showCategoryField = createForm.type === "expense";
 
 	async function handleCurrencyChange(currency: string) {
 		if (currency === userCurrency) {
@@ -240,14 +286,68 @@ export function TransactionFormSheet({
 		});
 	}
 
+	async function handleSaveTransfer() {
+		if (
+			createForm.fromPaymentAccountId === "none" ||
+			createForm.toPaymentAccountId === "none"
+		) {
+			toast.error("Choose both a source and destination account");
+			return;
+		}
+
+		if (createForm.fromPaymentAccountId === createForm.toPaymentAccountId) {
+			toast.error("Transfer accounts must differ");
+			return;
+		}
+
+		const transferInput = {
+			title: createForm.title.trim(),
+			amount: createForm.amount.trim(),
+			currency: createForm.currency,
+			exchangeRate: isForeignCurrency
+				? createForm.exchangeRate.trim()
+				: undefined,
+			fromPaymentAccountId: Number(createForm.fromPaymentAccountId),
+			toPaymentAccountId: Number(createForm.toPaymentAccountId),
+			note: createForm.note.trim() || null,
+			happenedAt: toIsoDateAtNoon(createForm.happenedAt),
+		};
+
+		if (isEditing && editingTransactionId) {
+			const updatePromise = updateTransferMutation.mutateAsync({
+				id: editingTransactionId,
+				input: transferInput,
+			});
+
+			await toast.promise(updatePromise, {
+				loading: "Updating transfer...",
+				success: "Transfer updated",
+				error: (message) =>
+					message instanceof Error
+						? message.message
+						: "Unable to update transfer",
+			});
+		} else {
+			const createPromise = createTransferMutation.mutateAsync(transferInput);
+
+			await toast.promise(createPromise, {
+				loading: "Creating transfer...",
+				success: "Transfer created",
+				error: (message) =>
+					message instanceof Error
+						? message.message
+						: "Unable to create transfer",
+			});
+		}
+
+		onOpenChange(false);
+	}
+
 	async function handleSaveTransaction(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 
-		if (
-			requiresTransactionCategory(createForm.type) &&
-			!createForm.categoryId
-		) {
-			toast.error("Choose a category for expense and transfer entries");
+		if (createForm.type === "expense" && !createForm.categoryId) {
+			toast.error("Choose a category for expense entries");
 			return;
 		}
 
@@ -263,6 +363,11 @@ export function TransactionFormSheet({
 
 		if (isForeignCurrency && !createForm.exchangeRate.trim()) {
 			toast.error("Exchange rate is required for foreign currency entries");
+			return;
+		}
+
+		if (createForm.type === "transfer") {
+			await handleSaveTransfer();
 			return;
 		}
 
@@ -560,65 +665,96 @@ export function TransactionFormSheet({
 						</p>
 					) : null}
 
-					<div className="grid gap-2">
-						<span className="text-sm font-medium">
-							{getTransactionPaymentAccountLabel(createForm.type)}
-						</span>
-						<div className="flex flex-wrap gap-2">
-							{accountChipOptions.map((option) => (
-								<button
-									key={option.value}
-									type="button"
-									className="md-chip"
-									data-active={createForm.paymentAccountId === option.value}
-									aria-pressed={createForm.paymentAccountId === option.value}
-									onClick={() =>
+					{createForm.type === "transfer" ? (
+						<div className="grid gap-4">
+							<div className="grid gap-2">
+								<span className="text-sm font-medium">From account</span>
+								<Select
+									value={createForm.fromPaymentAccountId}
+									onValueChange={(value) =>
 										setCreateForm((state) => ({
 											...state,
-											paymentAccountId: option.value,
+											fromPaymentAccountId: value,
 										}))
 									}
 								>
-									{option.label}
-								</button>
-							))}
+									<SelectTrigger className="w-full bg-input-bg">
+										<SelectValue placeholder="Select source account" />
+									</SelectTrigger>
+									<SelectContent>
+										{transferAccountOptions.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<span className="text-sm font-medium">To account</span>
+								<Select
+									value={createForm.toPaymentAccountId}
+									onValueChange={(value) =>
+										setCreateForm((state) => ({
+											...state,
+											toPaymentAccountId: value,
+										}))
+									}
+								>
+									<SelectTrigger className="w-full bg-input-bg">
+										<SelectValue placeholder="Select destination account" />
+									</SelectTrigger>
+									<SelectContent>
+										{transferAccountOptions.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 							<Link
 								to="/accounts"
 								onClick={() => onOpenChange(false)}
-								className="md-chip border-dashed"
-								data-active={false}
+								className="text-xs text-primary underline-offset-4 hover:underline"
 							>
-								Manage
+								Manage accounts
 							</Link>
 						</div>
-					</div>
-
-					{createForm.type === "transfer" ? (
+					) : (
 						<div className="grid gap-2">
-							<span className="text-sm font-medium">Transfer direction</span>
-							<Select
-								value={createForm.transferDirection}
-								onValueChange={(value) =>
-									setCreateForm((state) => ({
-										...state,
-										transferDirection: value as "in" | "out",
-									}))
-								}
-							>
-								<SelectTrigger className="w-full bg-input-bg">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="in">Money into this account</SelectItem>
-									<SelectItem value="out">Money out of this account</SelectItem>
-								</SelectContent>
-							</Select>
-							<p className="text-xs text-muted-foreground">
-								Example: bank to Cash on hand → choose Cash on hand and
-								&quot;Money into this account&quot;.
-							</p>
+							<span className="text-sm font-medium">
+								{getTransactionPaymentAccountLabel(createForm.type)}
+							</span>
+							<div className="flex flex-wrap gap-2">
+								{accountChipOptions.map((option) => (
+									<button
+										key={option.value}
+										type="button"
+										className="md-chip"
+										data-active={createForm.paymentAccountId === option.value}
+										aria-pressed={createForm.paymentAccountId === option.value}
+										onClick={() =>
+											setCreateForm((state) => ({
+												...state,
+												paymentAccountId: option.value,
+											}))
+										}
+									>
+										{option.label}
+									</button>
+								))}
+								<Link
+									to="/accounts"
+									onClick={() => onOpenChange(false)}
+									className="md-chip border-dashed"
+									data-active={false}
+								>
+									Manage
+								</Link>
+							</div>
 						</div>
-					) : null}
+					)}
 
 					<DatePickerField
 						id="transaction-date"

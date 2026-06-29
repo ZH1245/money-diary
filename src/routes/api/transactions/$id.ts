@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  deleteTransfer,
   deleteUserTransaction,
   getUserTransactionById,
   isCategoryAccessibleByUser,
+  updateTransfer,
   updateUserTransaction,
 } from '#/features/transactions/server/transactions-repository'
 import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/server/payment-accounts-repository'
@@ -19,7 +21,10 @@ import {
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
-import { updateTransactionSchema } from '#/features/transactions/schemas/transaction'
+import {
+  updateTransactionSchema,
+  updateTransferSchema,
+} from '#/features/transactions/schemas/transaction'
 
 export const Route = createFileRoute('/api/transactions/$id')({
   server: {
@@ -44,17 +49,21 @@ export const Route = createFileRoute('/api/transactions/$id')({
         const bodyUserIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
         if (bodyUserIdRejected) return bodyUserIdRejected
 
+        const existing = await getUserTransactionById(userContext.id, transactionId)
+        if (!existing) {
+          return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
+        }
+
+        if (isTransferBody(body) && existing.transferGroupId) {
+          return updateTransferHandler(userContext, existing.transferGroupId, body)
+        }
+
         const parsed = updateTransactionSchema.safeParse(body)
         if (!parsed.success) {
           return Response.json(
             { success: false, error: 'Invalid transaction payload', details: parsed.error.flatten() },
             { status: 400 },
           )
-        }
-
-        const existing = await getUserTransactionById(userContext.id, transactionId)
-        if (!existing) {
-          return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
         }
 
         const nextType = (parsed.data.type ?? existing.type) as 'income' | 'expense' | 'transfer'
@@ -157,6 +166,16 @@ export const Route = createFileRoute('/api/transactions/$id')({
           return Response.json({ success: false, error: 'Invalid transaction id' }, { status: 400 })
         }
 
+        const existing = await getUserTransactionById(userContext.id, transactionId)
+        if (!existing) {
+          return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
+        }
+
+        if (existing.transferGroupId) {
+          const deletedLegs = await deleteTransfer(userContext.id, existing.transferGroupId)
+          return Response.json({ success: true, data: deletedLegs[0] ?? { id: transactionId } })
+        }
+
         const deleted = await deleteUserTransaction(userContext.id, transactionId)
         if (!deleted) {
           return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
@@ -168,3 +187,69 @@ export const Route = createFileRoute('/api/transactions/$id')({
     },
   },
 })
+
+/**
+ * Identifies a transfer payload by its from/to account fields.
+ */
+function isTransferBody(body: unknown): boolean {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'fromPaymentAccountId' in body &&
+    'toPaymentAccountId' in body
+  )
+}
+
+/**
+ * Validates and applies an update to both legs of an existing transfer.
+ */
+async function updateTransferHandler(
+  userContext: { id: string; currency: string },
+  transferGroupId: string,
+  body: unknown,
+): Promise<Response> {
+  const parsed = updateTransferSchema.safeParse(body)
+  if (!parsed.success) {
+    return Response.json(
+      { success: false, error: 'Invalid transfer payload', details: parsed.error.flatten() },
+      { status: 400 },
+    )
+  }
+
+  const amountResult = normalizeTransactionAmount({
+    amount: parsed.data.amount ?? '0',
+    currency: parsed.data.currency ?? userContext.currency,
+    userCurrency: userContext.currency,
+    exchangeRate: parsed.data.exchangeRate,
+  })
+
+  if (!amountResult.ok) {
+    return Response.json({ success: false, error: amountResult.error }, { status: 400 })
+  }
+
+  for (const accountId of [parsed.data.fromPaymentAccountId, parsed.data.toPaymentAccountId]) {
+    const canUseAccount = await isPaymentAccountAccessibleByUser({
+      userId: userContext.id,
+      paymentAccountId: accountId,
+    })
+    if (!canUseAccount) {
+      return Response.json({ success: false, error: 'Payment account not found' }, { status: 404 })
+    }
+  }
+
+  const rows = await updateTransfer({
+    userId: userContext.id,
+    transferGroupId,
+    title: parsed.data.title?.trim() ?? '',
+    amount: amountResult.data.normalizedAmount,
+    sourceAmount: amountResult.data.sourceAmount,
+    sourceCurrency: amountResult.data.sourceCurrency,
+    exchangeRate: amountResult.data.exchangeRate,
+    fromPaymentAccountId: parsed.data.fromPaymentAccountId,
+    toPaymentAccountId: parsed.data.toPaymentAccountId,
+    note: parsed.data.note ?? null,
+    happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
+  })
+
+  return Response.json({ success: true, data: rows[0] })
+}

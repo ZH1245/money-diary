@@ -1,10 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  createTransfer,
   createUserTransaction,
   getUserTransactions,
   isCategoryAccessibleByUser,
 } from '#/features/transactions/server/transactions-repository'
-import { createTransactionSchema } from '#/features/transactions/schemas/transaction'
+import {
+  createTransactionSchema,
+  createTransferSchema,
+} from '#/features/transactions/schemas/transaction'
 import { isPaymentAccountAccessibleByUser } from '#/features/payment-accounts/server/payment-accounts-repository'
 import {
   buildOptionsResponse,
@@ -44,6 +48,10 @@ export const Route = createFileRoute('/api/transactions')({
 
         const userIdRejected = rejectClientSuppliedUserId(request, body as Record<string, unknown>)
         if (userIdRejected) return userIdRejected
+
+        if (isTransferBody(body)) {
+          return createTransferHandler(userContext, body)
+        }
 
         const parsed = createTransactionSchema.safeParse(body)
 
@@ -130,4 +138,68 @@ function parsePositiveNumber(value: string): number | null {
   if (!Number.isFinite(parsedValue)) return null
   if (parsedValue <= 0) return null
   return parsedValue
+}
+
+/**
+ * Identifies a transfer payload by its from/to account fields.
+ */
+function isTransferBody(body: unknown): boolean {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'fromPaymentAccountId' in body &&
+    'toPaymentAccountId' in body
+  )
+}
+
+/**
+ * Validates and persists a two-leg transfer.
+ */
+async function createTransferHandler(
+  userContext: { id: string; currency: string },
+  body: unknown,
+): Promise<Response> {
+  const parsed = createTransferSchema.safeParse(body)
+  if (!parsed.success) {
+    return Response.json(
+      { success: false, error: 'Invalid transfer payload', details: parsed.error.flatten() },
+      { status: 400 },
+    )
+  }
+
+  const amountResult = normalizeTransactionAmount({
+    amount: parsed.data.amount,
+    currency: parsed.data.currency ?? userContext.currency,
+    userCurrency: userContext.currency,
+    exchangeRate: parsed.data.exchangeRate,
+  })
+
+  if (!amountResult.ok) {
+    return Response.json({ success: false, error: amountResult.error }, { status: 400 })
+  }
+
+  for (const accountId of [parsed.data.fromPaymentAccountId, parsed.data.toPaymentAccountId]) {
+    const canUseAccount = await isPaymentAccountAccessibleByUser({
+      userId: userContext.id,
+      paymentAccountId: accountId,
+    })
+    if (!canUseAccount) {
+      return Response.json({ success: false, error: 'Payment account not found' }, { status: 404 })
+    }
+  }
+
+  const rows = await createTransfer({
+    userId: userContext.id,
+    title: parsed.data.title,
+    amount: amountResult.data.normalizedAmount,
+    sourceAmount: amountResult.data.sourceAmount,
+    sourceCurrency: amountResult.data.sourceCurrency,
+    exchangeRate: amountResult.data.exchangeRate,
+    fromPaymentAccountId: parsed.data.fromPaymentAccountId,
+    toPaymentAccountId: parsed.data.toPaymentAccountId,
+    note: parsed.data.note ?? null,
+    happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
+  })
+
+  return Response.json({ success: true, data: rows[0] }, { status: 201 })
 }

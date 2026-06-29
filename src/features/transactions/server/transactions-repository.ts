@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { and, desc, eq, gte, isNull, lte, or } from 'drizzle-orm'
 import { endOfDay, startOfDay } from 'date-fns'
 import { db } from '#/db/index'
@@ -6,6 +7,10 @@ import {
   findTransactionDuplicate,
   type TransactionDuplicateCandidate,
 } from '#/features/transactions/utils/transaction-duplicate'
+import {
+  TRANSFER_SOURCE_IN,
+  TRANSFER_SOURCE_OUT,
+} from '#/features/transactions/utils/transfer-direction'
 
 interface CreateUserTransactionParams {
   userId: string
@@ -186,4 +191,132 @@ export async function deleteUserTransaction(userId: string, transactionId: numbe
     .returning({ id: transactions.id })
 
   return row ?? null
+}
+
+interface CreateTransferParams {
+  userId: string
+  title: string
+  amount: string
+  sourceAmount: string | null
+  sourceCurrency: string
+  exchangeRate: string
+  fromPaymentAccountId: number
+  toPaymentAccountId: number
+  note: string | null
+  happenedAt: Date
+}
+
+/**
+ * Creates a transfer as two linked legs (debit on the source account, credit on
+ * the destination account) sharing one transferGroupId, in a single transaction.
+ */
+export async function createTransfer(params: CreateTransferParams) {
+  const transferGroupId = randomUUID()
+  const shared = {
+    userId: params.userId,
+    title: params.title,
+    amount: params.amount,
+    sourceAmount: params.sourceAmount,
+    sourceCurrency: params.sourceCurrency,
+    exchangeRate: params.exchangeRate,
+    type: 'transfer' as const,
+    categoryId: null,
+    note: params.note,
+    transferGroupId,
+    happenedAt: params.happenedAt,
+  }
+
+  const rows = await db
+    .insert(transactions)
+    .values([
+      {
+        ...shared,
+        paymentAccountId: params.fromPaymentAccountId,
+        source: TRANSFER_SOURCE_OUT,
+      },
+      {
+        ...shared,
+        paymentAccountId: params.toPaymentAccountId,
+        source: TRANSFER_SOURCE_IN,
+      },
+    ])
+    .returning()
+
+  return rows
+}
+
+interface UpdateTransferParams {
+  userId: string
+  transferGroupId: string
+  title: string
+  amount: string
+  sourceAmount: string | null
+  sourceCurrency: string
+  exchangeRate: string
+  fromPaymentAccountId: number
+  toPaymentAccountId: number
+  note: string | null
+  happenedAt: Date
+}
+
+/**
+ * Updates both legs of a transfer atomically, reassigning each leg to its account.
+ */
+export async function updateTransfer(params: UpdateTransferParams) {
+  return db.transaction(async (tx) => {
+    const shared = {
+      title: params.title,
+      amount: params.amount,
+      sourceAmount: params.sourceAmount,
+      sourceCurrency: params.sourceCurrency,
+      exchangeRate: params.exchangeRate,
+      note: params.note,
+      happenedAt: params.happenedAt,
+      updatedAt: new Date(),
+    }
+
+    await tx
+      .update(transactions)
+      .set({ ...shared, paymentAccountId: params.fromPaymentAccountId })
+      .where(
+        and(
+          eq(transactions.userId, params.userId),
+          eq(transactions.transferGroupId, params.transferGroupId),
+          eq(transactions.source, TRANSFER_SOURCE_OUT),
+        ),
+      )
+
+    await tx
+      .update(transactions)
+      .set({ ...shared, paymentAccountId: params.toPaymentAccountId })
+      .where(
+        and(
+          eq(transactions.userId, params.userId),
+          eq(transactions.transferGroupId, params.transferGroupId),
+          eq(transactions.source, TRANSFER_SOURCE_IN),
+        ),
+      )
+
+    return tx
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, params.userId),
+          eq(transactions.transferGroupId, params.transferGroupId),
+        ),
+      )
+  })
+}
+
+/**
+ * Deletes both legs of a transfer for a user.
+ */
+export async function deleteTransfer(userId: string, transferGroupId: string) {
+  return db
+    .delete(transactions)
+    .where(
+      and(eq(transactions.userId, userId), eq(transactions.transferGroupId, transferGroupId)),
+    )
+    .returning({ id: transactions.id })
 }

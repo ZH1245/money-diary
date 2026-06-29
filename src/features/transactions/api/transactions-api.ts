@@ -1,5 +1,10 @@
 import type { ApiListResponse } from '#/types/api'
-import type { CreateTransactionInput, TransactionDto, UpdateTransactionInput } from '../types/transaction'
+import type {
+  CreateTransactionInput,
+  TransactionDto,
+  TransferInput,
+  UpdateTransactionInput,
+} from '../types/transaction'
 
 /**
  * Loads transactions for the active user context.
@@ -52,6 +57,48 @@ export async function updateTransaction(id: number, input: UpdateTransactionInpu
 
   if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Unable to update transaction')
+  }
+
+  return json.data
+}
+
+/**
+ * Creates a two-leg transfer between payment accounts.
+ */
+export async function createTransfer(input: TransferInput): Promise<TransactionDto> {
+  const response = await fetch('/api/transactions', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+
+  const json = (await response.json()) as { success: boolean; data: TransactionDto; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to create transfer')
+  }
+
+  return json.data
+}
+
+/**
+ * Updates both legs of an existing transfer.
+ */
+export async function updateTransfer(id: number, input: TransferInput): Promise<TransactionDto> {
+  const response = await fetch(`/api/transactions/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+
+  const json = (await response.json()) as { success: boolean; data: TransactionDto; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to update transfer')
   }
 
   return json.data

@@ -90,6 +90,7 @@ export const transactions = pgTable(
 			},
 		),
 		source: text(),
+		transferGroupId: text("transfer_group_id"),
 		note: text(),
 		happenedAt: timestamp("happened_at").defaultNow().notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -97,6 +98,9 @@ export const transactions = pgTable(
 	},
 	(table) => ({
 		happenedAtIdx: index("transactions_happened_at_idx").on(table.happenedAt),
+		transferGroupIdIdx: index("transactions_transfer_group_id_idx").on(
+			table.transferGroupId,
+		),
 		createdAtIdx: index("transactions_created_at_idx").on(table.createdAt),
 		userIdIdx: index("transactions_user_id_idx").on(table.userId),
 		sourceCurrencyIdx: index("transactions_source_currency_idx").on(

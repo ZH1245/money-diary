@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createTransaction, deleteTransaction, getTransactions, updateTransaction } from '../api/transactions-api'
-import type { UpdateTransactionInput } from '../types/transaction'
+import {
+  createTransaction,
+  createTransfer,
+  deleteTransaction,
+  getTransactions,
+  updateTransaction,
+  updateTransfer,
+} from '../api/transactions-api'
+import type { TransferInput, UpdateTransactionInput } from '../types/transaction'
 import { queryKeys } from '#/features/query-keys'
 
 /**
@@ -37,6 +44,38 @@ export function useUpdateTransactionMutation() {
 
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: UpdateTransactionInput }) => updateTransaction(id, input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions.all,
+      })
+    },
+  })
+}
+
+/**
+ * React Query mutation hook for creating a two-leg transfer.
+ */
+export function useCreateTransferMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createTransfer,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions.all,
+      })
+    },
+  })
+}
+
+/**
+ * React Query mutation hook for updating both legs of a transfer.
+ */
+export function useUpdateTransferMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: TransferInput }) => updateTransfer(id, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.transactions.all,

@@ -54,6 +54,10 @@ import {
 	buildTransactionTotals,
 } from "#/features/transactions/utils/transaction-display";
 import {
+	TRANSFER_SOURCE_IN,
+	TRANSFER_SOURCE_OUT,
+} from "#/features/transactions/utils/transfer-direction";
+import {
 	formatSensitiveCompactAmount,
 	formatSensitiveCurrency,
 	PRIVACY_MASK_CLASS,
@@ -187,10 +191,12 @@ function TransactionAmountCell({
 	amount,
 	currency,
 	type,
+	source,
 }: {
 	amount: string;
 	currency: string;
 	type: TransactionFlowType;
+	source: string;
 }) {
 	const isPrivacyMode = usePrivacyModeEnabled();
 	const formatted = formatSensitiveCurrency(amount, currency, isPrivacyMode);
@@ -205,7 +211,14 @@ function TransactionAmountCell({
 		);
 	}
 
-	const sign = type === "income" ? "+" : type === "expense" ? "−" : "";
+	const transferSign =
+		source === TRANSFER_SOURCE_IN
+			? "+"
+			: source === TRANSFER_SOURCE_OUT
+				? "−"
+				: "";
+	const sign =
+		type === "income" ? "+" : type === "expense" ? "−" : transferSign;
 	const tone =
 		type === "income"
 			? "text-income"
@@ -301,7 +314,10 @@ export function TransactionsPageContent({
 					<DataTableColumnHeader column={column} title="Category" />
 				),
 				cell: ({ row }) => {
-					if (row.original.type === "income") {
+					if (
+						row.original.type === "income" ||
+						row.original.type === "transfer"
+					) {
 						return <span className="text-sm text-muted-foreground">—</span>;
 					}
 					return (
@@ -333,7 +349,9 @@ export function TransactionsPageContent({
 				),
 				cell: ({ row }) => (
 					<span className="text-sm text-muted-foreground">
-						{row.original.accountLabel || "—"}
+						{row.original.transferRouteLabel ||
+							row.original.accountLabel ||
+							"—"}
 					</span>
 				),
 			},
@@ -348,6 +366,7 @@ export function TransactionsPageContent({
 						amount={row.original.amount}
 						currency={userCurrency}
 						type={row.original.type}
+						source={row.original.source}
 					/>
 				),
 			},

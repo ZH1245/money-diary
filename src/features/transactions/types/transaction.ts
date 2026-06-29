@@ -12,6 +12,7 @@ export interface TransactionDto {
   categoryId: number | null
   paymentAccountId: number | null
   source: string | null
+  transferGroupId: string | null
   note: string | null
   happenedAt: string
 }
@@ -44,6 +45,20 @@ export interface UpdateTransactionInput {
   categoryId?: number | null
   paymentAccountId?: number | null
   source?: string | null
+  note?: string | null
+  happenedAt?: string
+}
+
+/**
+ * Payload accepted by the create/update transfer API (two-leg).
+ */
+export interface TransferInput {
+  title: string
+  amount: string
+  currency?: string
+  exchangeRate?: string
+  fromPaymentAccountId: number
+  toPaymentAccountId: number
   note?: string | null
   happenedAt?: string
 }
