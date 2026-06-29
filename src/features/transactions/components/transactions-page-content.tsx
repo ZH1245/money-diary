@@ -74,6 +74,11 @@ interface TransactionsPageContentProps {
 
 type TransactionFlowType = TransactionTableRow["type"];
 
+const TRANSACTION_TABLE_SECONDARY_TEXT =
+	"text-sm text-foreground/78 dark:text-foreground/90";
+const TRANSACTION_TABLE_NOTE_TEXT =
+	"text-xs text-foreground/70 dark:text-foreground/85";
+
 const TRANSACTION_TYPE_FILTERS: {
 	value: "all" | TransactionFlowType;
 	label: string;
@@ -179,7 +184,7 @@ function TransactionNameCell({ row }: { row: TransactionTableRow }) {
 				{row.note ? (
 					<SensitiveText
 						text={row.note}
-						className="block truncate text-xs text-muted-foreground"
+						className={cn("block truncate", TRANSACTION_TABLE_NOTE_TEXT)}
 					/>
 				) : null}
 			</div>
@@ -222,12 +227,15 @@ function TransactionAmountCell({
 				: "";
 	const sign =
 		type === "income" ? "+" : type === "expense" ? "−" : transferSign;
-	const tone =
-		type === "income"
+	const isNegativeAmount =
+		type === "expense" ||
+		(type === "transfer" && source === TRANSFER_SOURCE_OUT);
+	const tone = isNegativeAmount
+		? "text-expense"
+		: type === "income" ||
+				(type === "transfer" && source === TRANSFER_SOURCE_IN)
 			? "text-income"
-			: type === "expense"
-				? "text-foreground"
-				: "text-muted-foreground";
+			: "text-foreground/78 dark:text-foreground/90";
 
 	return (
 		<span className={cn("font-num tabular-nums font-bold", tone)}>
@@ -369,10 +377,12 @@ export function TransactionsPageContent({
 						row.original.type === "income" ||
 						row.original.type === "transfer"
 					) {
-						return <span className="text-sm text-muted-foreground">—</span>;
+						return (
+							<span className={TRANSACTION_TABLE_SECONDARY_TEXT}>—</span>
+						);
 					}
 					return (
-						<span className="md-chip inline-flex bg-soft-accent text-nav-active-fg border-transparent">
+						<span className="inline-flex rounded-full border border-border/70 bg-soft-accent px-2.5 py-0.5 text-xs font-semibold text-foreground/85 dark:text-foreground/92">
 							<SensitiveText text={row.original.categoryLabel} />
 						</span>
 					);
@@ -384,7 +394,7 @@ export function TransactionsPageContent({
 					<DataTableColumnHeader column={column} title="Date" />
 				),
 				cell: ({ row }) => (
-					<span className="text-sm text-muted-foreground">
+					<span className={TRANSACTION_TABLE_SECONDARY_TEXT}>
 						{row.original.happenedAtLabel}
 					</span>
 				),
@@ -399,7 +409,7 @@ export function TransactionsPageContent({
 					<DataTableColumnHeader column={column} title="Account" />
 				),
 				cell: ({ row }) => (
-					<span className="text-sm text-muted-foreground">
+					<span className={TRANSACTION_TABLE_SECONDARY_TEXT}>
 						{row.original.transferRouteLabel ||
 							row.original.accountLabel ||
 							"—"}
