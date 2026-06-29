@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { SearchableSelect } from "#/components/forms/searchable-select";
 import { Button } from "#/components/ui/button";
 import { DatePickerField } from "#/components/ui/date-picker";
 import { Input } from "#/components/ui/input";
@@ -666,25 +667,16 @@ export function TransactionFormSheet({
 								</Link>
 							</div>
 							{categoryOptions.length > 0 ? (
-								<div className="flex flex-wrap gap-2">
-									{categoryOptions.map((option) => (
-										<button
-											key={option.value}
-											type="button"
-											className="md-chip"
-											data-active={createForm.categoryId === option.value}
-											aria-pressed={createForm.categoryId === option.value}
-											onClick={() =>
-												setCreateForm((state) => ({
-													...state,
-													categoryId: option.value,
-												}))
-											}
-										>
-											{option.label}
-										</button>
-									))}
-								</div>
+								<SearchableSelect
+									value={createForm.categoryId}
+									onValueChange={(value) =>
+										setCreateForm((state) => ({ ...state, categoryId: value }))
+									}
+									options={categoryOptions}
+									placeholder="Select category"
+									searchPlaceholder="Search categories..."
+									emptyMessage="No categories found."
+								/>
 							) : (
 								<p className="text-xs text-muted-foreground">
 									No categories yet.
