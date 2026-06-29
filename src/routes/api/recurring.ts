@@ -118,6 +118,7 @@ export const Route = createFileRoute("/api/recurring")({
 					paymentAccountId: parsed.data.paymentAccountId ?? null,
 					source: parsed.data.source ?? "recurring",
 					note: parsed.data.note ?? null,
+					sourceTransactionId: parsed.data.sourceTransactionId ?? null,
 					cadence: parsed.data.cadence,
 					nextRunAt,
 				});

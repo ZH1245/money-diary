@@ -197,6 +197,13 @@
       "when": 1782886000000,
       "tag": "0028_transfer_group",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1782887000000,
+      "tag": "0029_recurring_source_transaction",
+      "breakpoints": true
     }
   ]
 }

@@ -19,7 +19,6 @@ import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { AccountCardsRow } from "#/features/dashboard/components/account-cards-row";
 import { InsightMiniCard } from "#/features/dashboard/components/insight-mini-card";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
-import { MONTHLY_BUDGET_STUB } from "#/features/dashboard/types/planning-stub";
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
 import { buildDashboardStats } from "#/features/dashboard/utils/dashboard-stats";
 import { useGoalsQuery } from "#/features/goals/hooks/use-goals";
@@ -222,12 +221,6 @@ export function DashboardPageContent({
 				? goalsError
 				: null;
 
-	const budgetUsedPercent = Math.min(
-		100,
-		Math.round((MONTHLY_BUDGET_STUB.spent / MONTHLY_BUDGET_STUB.limit) * 100),
-	);
-	const budgetRemaining = MONTHLY_BUDGET_STUB.limit - MONTHLY_BUDGET_STUB.spent;
-
 	const { data: recurringRules = [] } = useRecurringRulesQuery();
 	const upcomingBills = useMemo(
 		() =>
@@ -400,121 +393,54 @@ export function DashboardPageContent({
 							</div>
 						</div>
 
-						{/* 3) Two-up: Monthly budget + Upcoming bills */}
-						<div className="grid gap-4 lg:grid-cols-2">
-							{/* Monthly budget — TODO(api): placeholder figures until a budgets
-							    feature exists; flagged with a SOON badge. */}
-							<div className="md-panel p-5 sm:p-6">
-								<div className="flex items-center justify-between">
-									<div>
-										<p className="flex items-center gap-2 text-base font-bold text-foreground">
-											Monthly budget
-											<span className="rounded-full bg-soft-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-												Soon
-											</span>
-										</p>
-										<p className="text-xs text-muted-foreground">
-											{MONTHLY_BUDGET_STUB.periodLabel} · sample data
-										</p>
-									</div>
-									<span
-										className="md-chip"
-										data-active={budgetUsedPercent >= 90 ? "true" : undefined}
-									>
-										{budgetUsedPercent}% used
-									</span>
-								</div>
-								<div className="mt-5 flex items-baseline gap-2">
-									<span className="font-num text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
-										<SensitiveText
-											text={formatSensitiveCurrency(
-												MONTHLY_BUDGET_STUB.spent,
-												userCurrency,
-												isPrivacyMode,
-											)}
-										/>
-									</span>
-									<span className="text-sm text-muted-foreground">
-										/{" "}
-										{formatSensitiveCurrency(
-											MONTHLY_BUDGET_STUB.limit,
-											userCurrency,
-											isPrivacyMode,
-										)}
-									</span>
-								</div>
-								<div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-track">
-									<div
-										className={cn(
-											"h-full rounded-full",
-											budgetUsedPercent >= 90 ? "bg-expense" : "bg-primary",
-										)}
-										style={{ width: `${budgetUsedPercent}%` }}
-									/>
-								</div>
-								<p className="mt-3 text-sm text-muted-foreground">
-									<span className="font-num font-extrabold tabular-nums text-foreground">
-										<SensitiveText
-											text={formatSensitiveCurrency(
-												budgetRemaining,
-												userCurrency,
-												isPrivacyMode,
-											)}
-										/>
-									</span>{" "}
-									remaining this month
+						{/* 3) Upcoming bills — real recurring rules, soonest first. */}
+						<div className="md-panel p-5 sm:p-6">
+							<div className="flex items-center justify-between gap-2">
+								<p className="text-base font-bold text-foreground">
+									Upcoming bills
 								</p>
+								<span className="shrink-0 text-xs text-muted-foreground">
+									{upcomingBills.length
+										? `${upcomingBills.length} scheduled`
+										: "Set up a repeat"}
+								</span>
 							</div>
-
-							{/* Upcoming bills — real recurring rules, soonest first. */}
-							<div className="md-panel p-5 sm:p-6">
-								<div className="flex items-center justify-between gap-2">
-									<p className="text-base font-bold text-foreground">
-										Upcoming bills
-									</p>
-									<span className="shrink-0 text-xs text-muted-foreground">
-										{upcomingBills.length
-											? `${upcomingBills.length} scheduled`
-											: "Set up a repeat"}
-									</span>
-								</div>
-								{upcomingBills.length === 0 ? (
-									<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
-										No recurring items yet. Add a transaction and turn on
-										“Repeat this” to schedule bills and subscriptions.
-									</p>
-								) : (
-									<ul className="mt-4 space-y-1">
-										{upcomingBills.map((bill) => (
-											<li
-												key={bill.id}
-												className="md-row flex items-center gap-3 px-2 py-2.5"
-											>
-												<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
-													{bill.badge}
-												</span>
-												<div className="min-w-0 flex-1">
-													<p className="truncate text-sm font-medium text-foreground">
-														<SensitiveText text={bill.name} />
-													</p>
-													<p className="truncate text-xs capitalize text-muted-foreground">
-														{bill.cadence} · next {bill.dueLabel}
-													</p>
-												</div>
-												<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
-													<SensitiveText
-														text={formatSensitiveCurrency(
-															bill.amount,
-															userCurrency,
-															isPrivacyMode,
-														)}
-													/>
-												</span>
-											</li>
-										))}
-									</ul>
-								)}
-							</div>
+							{upcomingBills.length === 0 ? (
+								<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
+									No recurring items yet. Add a transaction and turn on “Repeat
+									this” to schedule bills and subscriptions.
+								</p>
+							) : (
+								<ul className="mt-4 space-y-1">
+									{upcomingBills.map((bill) => (
+										<li
+											key={bill.id}
+											className="md-row flex items-center gap-3 px-2 py-2.5"
+										>
+											<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
+												{bill.badge}
+											</span>
+											<div className="min-w-0 flex-1">
+												<p className="truncate text-sm font-medium text-foreground">
+													<SensitiveText text={bill.name} />
+												</p>
+												<p className="truncate text-xs capitalize text-muted-foreground">
+													{bill.cadence} · next {bill.dueLabel}
+												</p>
+											</div>
+											<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
+												<SensitiveText
+													text={formatSensitiveCurrency(
+														bill.amount,
+														userCurrency,
+														isPrivacyMode,
+													)}
+												/>
+											</span>
+										</li>
+									))}
+								</ul>
+							)}
 						</div>
 
 						{/* 4) Two-up: Recent activity + Spending by category */}

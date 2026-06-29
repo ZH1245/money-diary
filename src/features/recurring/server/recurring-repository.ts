@@ -18,6 +18,7 @@ interface CreateRecurringRuleParams {
 	paymentAccountId: number | null;
 	source: string | null;
 	note: string | null;
+	sourceTransactionId?: number | null;
 	cadence: RecurringCadence;
 	nextRunAt: Date;
 }
@@ -76,6 +77,7 @@ export async function createUserRecurringRule(
 			paymentAccountId: params.paymentAccountId,
 			source: params.source,
 			note: params.note,
+			sourceTransactionId: params.sourceTransactionId ?? null,
 			cadence: params.cadence,
 			nextRunAt: params.nextRunAt,
 		})

@@ -307,6 +307,13 @@ export const recurringRules = pgTable(
 		),
 		source: text(),
 		note: text(),
+		// Originating transaction: when the user deletes it, the rule is purged.
+		sourceTransactionId: integer("source_transaction_id").references(
+			() => transactions.id,
+			{
+				onDelete: "cascade",
+			},
+		),
 		// Schedule.
 		cadence: text().notNull().default("monthly"),
 		nextRunAt: timestamp("next_run_at").notNull(),
@@ -322,6 +329,9 @@ export const recurringRules = pgTable(
 		paymentAccountIdIdx: index("recurring_rules_payment_account_id_idx").on(
 			table.paymentAccountId,
 		),
+		sourceTransactionIdIdx: index(
+			"recurring_rules_source_transaction_id_idx",
+		).on(table.sourceTransactionId),
 	}),
 );
 

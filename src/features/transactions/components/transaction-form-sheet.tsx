@@ -415,18 +415,19 @@ export function TransactionFormSheet({
 		} else {
 			const createPromise = createTransactionMutation.mutateAsync(payload);
 
-			await toast.promise(createPromise, {
+			const createdTransaction = await toast.promise(createPromise, {
 				loading: "Creating transaction...",
 				success: "Transaction created",
 				error: (message) =>
 					message instanceof Error
 						? message.message
 						: "Unable to create transaction",
-			});
+			}).unwrap();
 
 			if (isRecurring) {
 				// The transaction above covers this occurrence; the rule schedules the
-				// next one for the cron to materialize automatically.
+				// next one for the cron to materialize automatically. Linking the rule
+				// to its source transaction lets it be purged when that txn is deleted.
 				const nextRunAt = advanceRecurringDate(new Date(happenedAt), cadence);
 				const recurringPromise = createRecurringMutation.mutateAsync({
 					title: createForm.title.trim(),
@@ -441,6 +442,7 @@ export function TransactionFormSheet({
 							? null
 							: Number(createForm.paymentAccountId),
 					note: createForm.note.trim() || null,
+					sourceTransactionId: createdTransaction.id,
 					cadence,
 					nextRunAt: nextRunAt.toISOString(),
 				});

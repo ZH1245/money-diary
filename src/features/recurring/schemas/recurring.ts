@@ -12,6 +12,7 @@ export const createRecurringSchema = z.object({
 	paymentAccountId: z.number().int().positive().nullable().optional(),
 	source: z.string().trim().max(100).nullable().optional(),
 	note: z.string().trim().max(500).nullable().optional(),
+	sourceTransactionId: z.number().int().positive().nullable().optional(),
 	cadence: cadenceSchema.default("monthly"),
 	nextRunAt: z.string().datetime().optional(),
 });

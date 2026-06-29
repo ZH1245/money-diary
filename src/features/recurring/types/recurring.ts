@@ -12,6 +12,7 @@ export interface RecurringRuleDto {
 	paymentAccountId: number | null;
 	source: string | null;
 	note: string | null;
+	sourceTransactionId: number | null;
 	cadence: string;
 	nextRunAt: string;
 	lastRunAt: string | null;
@@ -29,6 +30,7 @@ export interface CreateRecurringInput {
 	paymentAccountId?: number | null;
 	source?: string | null;
 	note?: string | null;
+	sourceTransactionId?: number | null;
 	cadence: RecurringCadence;
 	/** ISO date of the first future occurrence. Defaults server-side to now + one cadence. */
 	nextRunAt?: string;
