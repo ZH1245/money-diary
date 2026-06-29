@@ -1,16 +1,8 @@
 import { SensitiveText } from "#/components/privacy/sensitive-text";
+import { getInstitutionGradient } from "#/features/payment-accounts/constants/institution-theme";
 import type { PaymentAccountDto } from "#/features/payment-accounts/types/payment-account";
 import { formatSensitiveCurrency } from "#/lib/privacy/sensitive-format";
 import { cn } from "#/lib/utils";
-
-/** Gradient stops per palette card slot — matches the redesign spec mock. */
-const CARD_GRADIENTS = [
-	"from-[#1f6b4a] to-[#15402f]",
-	"from-[#4f46e5] to-[#2e2a8c]",
-	"from-[#b0473d] to-[#6f2a24]",
-	"from-[#3a9b6f] to-[#1f6b4a]",
-	"from-[#6c63ff] to-[#3a3499]",
-] as const;
 
 interface AccountCardsRowProps {
 	accounts: PaymentAccountDto[];
@@ -49,7 +41,7 @@ export function AccountCardsRow({
 						aria-pressed={isActive}
 						className={cn(
 							"relative min-w-[15rem] shrink-0 snap-start overflow-hidden rounded-panel bg-gradient-to-br p-5 text-left text-white shadow-lg transition sm:min-w-0",
-							CARD_GRADIENTS[index % CARD_GRADIENTS.length],
+							getInstitutionGradient(account.institutionSlug, index),
 							isActive
 								? "ring-2 ring-primary ring-offset-2 ring-offset-canvas"
 								: "opacity-95 hover:opacity-100",

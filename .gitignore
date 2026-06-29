@@ -14,3 +14,6 @@ __unconfig*
 todos.json
 .pnpm-store
 .pnpm
+
+# Local-only audit notes + prod data snapshots — contain user financial PII, never commit
+docs/audit/

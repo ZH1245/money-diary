@@ -55,20 +55,12 @@ import {
 	formatPaymentAccountLabel,
 	formatPaymentAccountType,
 } from "#/features/payment-accounts/utils/account-label";
+import { getInstitutionGradient } from "#/features/payment-accounts/constants/institution-theme";
 import { buildPaymentAccountBalances } from "#/features/payment-accounts/utils/payment-account-balance";
 import { canDeletePaymentAccount } from "#/features/payment-accounts/utils/protected-account";
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { useTransactionsQuery } from "#/features/transactions/hooks/use-transactions";
 import { cn } from "#/lib/utils";
-
-/** Gradient stops per palette card slot — mirrors the dashboard account cards. */
-const ACCOUNT_CARD_GRADIENTS = [
-	"from-[#1f6b4a] to-[#15402f]",
-	"from-[#4f46e5] to-[#2e2a8c]",
-	"from-[#b0473d] to-[#6f2a24]",
-	"from-[#3a9b6f] to-[#1f6b4a]",
-	"from-[#6c63ff] to-[#3a3499]",
-] as const;
 
 /** Cards & accounts page: table and create/edit sheet. */
 export function PaymentAccountsPageContent({
@@ -358,7 +350,7 @@ export function PaymentAccountsPageContent({
 								key={account.id}
 								className={cn(
 									"relative min-w-[14rem] shrink-0 overflow-hidden rounded-panel bg-gradient-to-br p-5 text-left text-white shadow-lg sm:min-w-0",
-									ACCOUNT_CARD_GRADIENTS[index % ACCOUNT_CARD_GRADIENTS.length],
+									getInstitutionGradient(account.institutionSlug, index),
 									account.isActive ? "" : "opacity-60",
 								)}
 							>
