@@ -11,8 +11,10 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import type { FormEvent, KeyboardEvent, ReactNode } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { toolbarIconButtonClass } from "#/components/layout/toolbar-control-styles";
 import { Button } from "#/components/ui/button";
@@ -118,40 +120,27 @@ const EXAMPLES = [
 ];
 
 /**
- * Renders inline markdown: **bold**, then returns text segments as React nodes.
- */
-function renderInline(text: string): ReactNode {
-	const parts = text.split(/(\*\*[^*]+\*\*)/);
-	return parts.map((part, i) =>
-		part.startsWith("**") && part.endsWith("**") ? (
-			<strong key={i}>{part.slice(2, -2)}</strong>
-		) : (
-			part
-		),
-	);
-}
-
-/**
- * Renders AI assistant text with basic markdown: numbered lists and **bold**.
+ * Renders AI assistant text as full Markdown (GFM) scoped to the chat bubble.
+ * Raw HTML is intentionally not rendered (no rehype-raw).
  */
 function AiMessageText({ text }: { text: string }) {
-	const blocks = text.split(/\n{2,}/);
 	return (
-		<div className="space-y-1.5">
-			{blocks.map((block, i) => {
-				const lines = block.split("\n").filter(Boolean);
-				const listLines = lines.filter((l) => /^\d+\.\s+/.test(l));
-				if (listLines.length > 0 && listLines.length === lines.length) {
-					return (
-						<ol key={i} className="list-decimal space-y-1 pl-4">
-							{listLines.map((line, j) => (
-								<li key={j}>{renderInline(line.replace(/^\d+\.\s+/, ""))}</li>
-							))}
-						</ol>
-					);
-				}
-				return <p key={i}>{renderInline(block)}</p>;
-			})}
+		<div className="prose prose-sm max-w-none text-current prose-headings:my-1 prose-headings:text-current prose-p:my-1 prose-p:text-current prose-li:my-0 prose-ul:my-1 prose-ul:list-disc prose-ul:pl-4 prose-ol:my-1 prose-ol:list-decimal prose-ol:pl-4 prose-strong:text-current prose-blockquote:my-1 prose-blockquote:border-current/30 prose-blockquote:text-current/80 prose-hr:my-2 prose-code:rounded prose-code:bg-current/10 prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none prose-pre:my-1.5 prose-pre:max-w-full prose-pre:overflow-x-auto prose-pre:rounded-lg prose-pre:p-2 prose-pre:text-xs prose-a:font-medium prose-a:text-current prose-a:underline prose-a:underline-offset-2">
+			<Markdown
+				remarkPlugins={[remarkGfm]}
+				components={{
+					a: ({ node: _node, ...props }) => (
+						<a {...props} target="_blank" rel="noreferrer" />
+					),
+					table: ({ node: _node, ...props }) => (
+						<div className="max-w-full overflow-x-auto">
+							<table {...props} />
+						</div>
+					),
+				}}
+			>
+				{text}
+			</Markdown>
 		</div>
 	);
 }

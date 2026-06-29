@@ -116,7 +116,7 @@ export async function callGeminiChat({
   systemPrompt,
   messages,
   tools,
-  maxOutputTokens = 4096,
+  maxOutputTokens = 8192,
 }: {
   baseUrl?: string
   model: string
@@ -222,7 +222,7 @@ async function fetchGeminiGenerateContent({
   systemPrompt,
   messages,
   tools,
-  maxOutputTokens = 4096,
+  maxOutputTokens = 8192,
 }: {
   baseUrl?: string
   model: string

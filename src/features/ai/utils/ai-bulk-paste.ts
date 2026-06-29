@@ -10,7 +10,7 @@ export const AI_TOOL_CHAIN_STEPS_DEFAULT = 5
 export const AI_TOOL_CHAIN_STEPS_BULK_MIN = 8
 export const AI_TOOL_CHAIN_STEPS_BULK_MAX = 20
 
-export const AI_OPENROUTER_OUTPUT_BULK_MAX = 4096
+export const AI_OPENROUTER_OUTPUT_BULK_MAX = 8192
 export const AI_OLLAMA_PREDICT_DEFAULT = 4096
 export const AI_OLLAMA_PREDICT_BULK_MAX = 8192
 
@@ -79,9 +79,10 @@ export function resolveBulkChatRuntimeLimits(content: string): BulkChatRuntimeLi
     AI_TOOL_CHAIN_STEPS_BULK_MAX,
     Math.max(AI_TOOL_CHAIN_STEPS_BULK_MIN, Math.ceil(estimatedRows / 4)),
   )
+  // ~200 tokens per tool call JSON; floor at 2048 so small pastes still have headroom.
   const maxOutputTokens = Math.min(
     AI_OPENROUTER_OUTPUT_BULK_MAX,
-    Math.max(2048, estimatedRows * 100),
+    Math.max(2048, estimatedRows * 200),
   )
 
   return {
