@@ -204,6 +204,13 @@
       "when": 1782887000000,
       "tag": "0029_recurring_source_transaction",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1782888000000,
+      "tag": "0030_tickets",
+      "breakpoints": true
     }
   ]
 }

@@ -31,6 +31,7 @@ import { Route as AccountSuspendedRouteImport } from './routes/account-suspended
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWishlistRouteImport } from './routes/api/wishlist'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
+import { Route as ApiTicketsRouteImport } from './routes/api/tickets'
 import { Route as ApiSavingsRouteImport } from './routes/api/savings'
 import { Route as ApiRecurringRouteImport } from './routes/api/recurring'
 import { Route as ApiPaymentAccountsRouteImport } from './routes/api/payment-accounts'
@@ -58,6 +59,7 @@ import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transactio
 import { Route as ApiAiConversationsRouteImport } from './routes/api/ai/conversations'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
+import { Route as ApiAdminTicketsRouteImport } from './routes/api/admin/tickets'
 import { Route as ApiAdminGlobalAiRouteImport } from './routes/api/admin/global-ai'
 import { Route as ApiAdminCategoriesRouteImport } from './routes/api/admin/categories'
 import { Route as ApiAdminBansRouteImport } from './routes/api/admin/bans'
@@ -67,6 +69,7 @@ import { Route as ApiAuthRecoveryResetRouteImport } from './routes/api/auth/reco
 import { Route as ApiAuthRecoveryChallengeRouteImport } from './routes/api/auth/recovery/challenge'
 import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/api/ai/conversations/$conversationId'
 import { Route as ApiAdminUsersIdRouteImport } from './routes/api/admin/users/$id'
+import { Route as ApiAdminTicketsIdRouteImport } from './routes/api/admin/tickets/$id'
 import { Route as ApiAdminGlobalAiTestRouteImport } from './routes/api/admin/global-ai/test'
 import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/global-ai/key'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
@@ -181,6 +184,11 @@ const ApiWishlistRoute = ApiWishlistRouteImport.update({
 const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
   id: '/api/transactions',
   path: '/api/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTicketsRoute = ApiTicketsRouteImport.update({
+  id: '/api/tickets',
+  path: '/api/tickets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSavingsRoute = ApiSavingsRouteImport.update({
@@ -319,6 +327,11 @@ const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
   path: '/api/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminTicketsRoute = ApiAdminTicketsRouteImport.update({
+  id: '/api/admin/tickets',
+  path: '/api/admin/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminGlobalAiRoute = ApiAdminGlobalAiRouteImport.update({
   id: '/api/admin/global-ai',
   path: '/api/admin/global-ai',
@@ -365,6 +378,11 @@ const ApiAdminUsersIdRoute = ApiAdminUsersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiAdminUsersRoute,
+} as any)
+const ApiAdminTicketsIdRoute = ApiAdminTicketsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminTicketsRoute,
 } as any)
 const ApiAdminGlobalAiTestRoute = ApiAdminGlobalAiTestRouteImport.update({
   id: '/test',
@@ -420,11 +438,13 @@ export interface FileRoutesByFullPath {
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
+  '/api/tickets': typeof ApiTicketsRoute
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/bans': typeof ApiAdminBansRouteWithChildren
   '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
   '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/tickets': typeof ApiAdminTicketsRouteWithChildren
   '/api/admin/users': typeof ApiAdminUsersRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
@@ -450,6 +470,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
+  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
@@ -485,11 +506,13 @@ export interface FileRoutesByTo {
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
+  '/api/tickets': typeof ApiTicketsRoute
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/bans': typeof ApiAdminBansRouteWithChildren
   '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
   '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/tickets': typeof ApiAdminTicketsRouteWithChildren
   '/api/admin/users': typeof ApiAdminUsersRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
@@ -515,6 +538,7 @@ export interface FileRoutesByTo {
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
+  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
@@ -551,11 +575,13 @@ export interface FileRoutesById {
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
+  '/api/tickets': typeof ApiTicketsRoute
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/bans': typeof ApiAdminBansRouteWithChildren
   '/api/admin/categories': typeof ApiAdminCategoriesRouteWithChildren
   '/api/admin/global-ai': typeof ApiAdminGlobalAiRouteWithChildren
+  '/api/admin/tickets': typeof ApiAdminTicketsRouteWithChildren
   '/api/admin/users': typeof ApiAdminUsersRouteWithChildren
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
@@ -581,6 +607,7 @@ export interface FileRoutesById {
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
+  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
@@ -618,11 +645,13 @@ export interface FileRouteTypes {
     | '/api/payment-accounts'
     | '/api/recurring'
     | '/api/savings'
+    | '/api/tickets'
     | '/api/transactions'
     | '/api/wishlist'
     | '/api/admin/bans'
     | '/api/admin/categories'
     | '/api/admin/global-ai'
+    | '/api/admin/tickets'
     | '/api/admin/users'
     | '/api/ai/chat'
     | '/api/ai/conversations'
@@ -648,6 +677,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
     | '/api/admin/global-ai/test'
+    | '/api/admin/tickets/$id'
     | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
@@ -683,11 +713,13 @@ export interface FileRouteTypes {
     | '/api/payment-accounts'
     | '/api/recurring'
     | '/api/savings'
+    | '/api/tickets'
     | '/api/transactions'
     | '/api/wishlist'
     | '/api/admin/bans'
     | '/api/admin/categories'
     | '/api/admin/global-ai'
+    | '/api/admin/tickets'
     | '/api/admin/users'
     | '/api/ai/chat'
     | '/api/ai/conversations'
@@ -713,6 +745,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
     | '/api/admin/global-ai/test'
+    | '/api/admin/tickets/$id'
     | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
@@ -748,11 +781,13 @@ export interface FileRouteTypes {
     | '/api/payment-accounts'
     | '/api/recurring'
     | '/api/savings'
+    | '/api/tickets'
     | '/api/transactions'
     | '/api/wishlist'
     | '/api/admin/bans'
     | '/api/admin/categories'
     | '/api/admin/global-ai'
+    | '/api/admin/tickets'
     | '/api/admin/users'
     | '/api/ai/chat'
     | '/api/ai/conversations'
@@ -778,6 +813,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
     | '/api/admin/global-ai/test'
+    | '/api/admin/tickets/$id'
     | '/api/admin/users/$id'
     | '/api/ai/conversations/$conversationId'
     | '/api/auth/recovery/challenge'
@@ -814,11 +850,13 @@ export interface RootRouteChildren {
   ApiPaymentAccountsRoute: typeof ApiPaymentAccountsRouteWithChildren
   ApiRecurringRoute: typeof ApiRecurringRouteWithChildren
   ApiSavingsRoute: typeof ApiSavingsRouteWithChildren
+  ApiTicketsRoute: typeof ApiTicketsRoute
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   ApiWishlistRoute: typeof ApiWishlistRouteWithChildren
   ApiAdminBansRoute: typeof ApiAdminBansRouteWithChildren
   ApiAdminCategoriesRoute: typeof ApiAdminCategoriesRouteWithChildren
   ApiAdminGlobalAiRoute: typeof ApiAdminGlobalAiRouteWithChildren
+  ApiAdminTicketsRoute: typeof ApiAdminTicketsRouteWithChildren
   ApiAdminUsersRoute: typeof ApiAdminUsersRouteWithChildren
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiAiConversationsRoute: typeof ApiAiConversationsRouteWithChildren
@@ -991,6 +1029,13 @@ declare module '@tanstack/react-router' {
       path: '/api/transactions'
       fullPath: '/api/transactions'
       preLoaderRoute: typeof ApiTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tickets': {
+      id: '/api/tickets'
+      path: '/api/tickets'
+      fullPath: '/api/tickets'
+      preLoaderRoute: typeof ApiTicketsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/savings': {
@@ -1182,6 +1227,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/tickets': {
+      id: '/api/admin/tickets'
+      path: '/api/admin/tickets'
+      fullPath: '/api/admin/tickets'
+      preLoaderRoute: typeof ApiAdminTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/global-ai': {
       id: '/api/admin/global-ai'
       path: '/api/admin/global-ai'
@@ -1244,6 +1296,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/users/$id'
       preLoaderRoute: typeof ApiAdminUsersIdRouteImport
       parentRoute: typeof ApiAdminUsersRoute
+    }
+    '/api/admin/tickets/$id': {
+      id: '/api/admin/tickets/$id'
+      path: '/$id'
+      fullPath: '/api/admin/tickets/$id'
+      preLoaderRoute: typeof ApiAdminTicketsIdRouteImport
+      parentRoute: typeof ApiAdminTicketsRoute
     }
     '/api/admin/global-ai/test': {
       id: '/api/admin/global-ai/test'
@@ -1402,6 +1461,18 @@ const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
 const ApiAdminGlobalAiRouteWithChildren =
   ApiAdminGlobalAiRoute._addFileChildren(ApiAdminGlobalAiRouteChildren)
 
+interface ApiAdminTicketsRouteChildren {
+  ApiAdminTicketsIdRoute: typeof ApiAdminTicketsIdRoute
+}
+
+const ApiAdminTicketsRouteChildren: ApiAdminTicketsRouteChildren = {
+  ApiAdminTicketsIdRoute: ApiAdminTicketsIdRoute,
+}
+
+const ApiAdminTicketsRouteWithChildren = ApiAdminTicketsRoute._addFileChildren(
+  ApiAdminTicketsRouteChildren,
+)
+
 interface ApiAdminUsersIdRouteChildren {
   ApiAdminUsersIdResetLinkRoute: typeof ApiAdminUsersIdResetLinkRoute
 }
@@ -1478,11 +1549,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPaymentAccountsRoute: ApiPaymentAccountsRouteWithChildren,
   ApiRecurringRoute: ApiRecurringRouteWithChildren,
   ApiSavingsRoute: ApiSavingsRouteWithChildren,
+  ApiTicketsRoute: ApiTicketsRoute,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   ApiWishlistRoute: ApiWishlistRouteWithChildren,
   ApiAdminBansRoute: ApiAdminBansRouteWithChildren,
   ApiAdminCategoriesRoute: ApiAdminCategoriesRouteWithChildren,
   ApiAdminGlobalAiRoute: ApiAdminGlobalAiRouteWithChildren,
+  ApiAdminTicketsRoute: ApiAdminTicketsRouteWithChildren,
   ApiAdminUsersRoute: ApiAdminUsersRouteWithChildren,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiAiConversationsRoute: ApiAiConversationsRouteWithChildren,

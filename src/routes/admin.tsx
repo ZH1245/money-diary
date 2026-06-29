@@ -5,6 +5,7 @@ import { AdminBansSection } from "#/features/admin/components/admin-bans-section
 import { AdminGlobalAiSection } from "#/features/admin/components/admin-global-ai-section";
 import { AdminGlobalCategoriesSection } from "#/features/admin/components/admin-global-categories-section";
 import { AdminUsersSection } from "#/features/admin/components/admin-users-section";
+import { AdminTicketsSection } from "#/features/feedback/components/admin-tickets-section";
 import {
 	type SettingsNavGroup,
 	SettingsPageLayout,
@@ -52,6 +53,13 @@ const ADMIN_NAV_GROUPS: SettingsNavGroup[] = [
 				title: "Bans",
 				description:
 					"Block sign-in by email or IP address with an optional expiry.",
+			},
+			{
+				id: "tickets",
+				label: "Tickets",
+				title: "Tickets",
+				description:
+					"Bug reports, feature requests, and support messages from users.",
 			},
 		],
 	},
@@ -103,6 +111,10 @@ function AdminPage() {
 
 						if (item.id === "bans") {
 							return <AdminBansSection />;
+						}
+
+						if (item.id === "tickets") {
+							return <AdminTicketsSection />;
 						}
 
 						return <AdminUsersSection />;

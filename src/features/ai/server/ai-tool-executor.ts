@@ -32,6 +32,7 @@ import type { PaymentAccountType } from '#/features/payment-accounts/types/payme
 import { createUserSaving } from '#/features/savings/server/savings-repository'
 import { DEFAULT_SAVING_TITLE, DEFAULT_SAVING_WITHDRAWAL_TITLE } from '#/features/savings/schemas/saving'
 import { createUserGoal, deleteUserGoal, getUserGoalById, getUserGoals, updateUserGoal } from '#/features/goals/server/goals-repository'
+import { createTicket } from '#/features/feedback/server/tickets-repository'
 import {
   createUserWishlistItem,
   deleteUserWishlistItem,
@@ -197,6 +198,12 @@ const updateGoalArgsSchema = z.object({
 
 const deleteGoalArgsSchema = z.object({
   goalId: z.number().int().positive(),
+})
+
+const createTicketArgsSchema = z.object({
+  type: z.enum(['bug', 'feature', 'support']),
+  subject: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(2000),
 })
 
 const queryUserDataArgsSchema = z.object({
@@ -1044,6 +1051,27 @@ export async function executeAiTool({
       success: true,
       message: `Goal removed: "${goal.title}"`,
       entityId: deleted.id,
+    })
+  }
+
+  if (toolName === 'create_ticket') {
+    const args = createTicketArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'create_ticket', success: false, message: 'Invalid ticket arguments.' }
+    }
+
+    const row = await createTicket({
+      userId: context.userId,
+      type: args.data.type,
+      subject: args.data.subject,
+      body: args.data.body,
+    })
+
+    return buildWriteStepResult({
+      action: 'create_ticket',
+      success: true,
+      message: `Ticket filed: "${row.subject}" (${row.type})`,
+      entityId: row.id,
     })
   }
 

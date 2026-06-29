@@ -374,6 +374,27 @@ export const AI_TOOLS = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'create_ticket',
+      description:
+        'File a feedback or support ticket on the user\'s behalf when they report a bug, request a feature, or ask for help with the app itself (not their finances). Confirm the gist with the user before filing.',
+      parameters: {
+        type: 'object',
+        required: ['type', 'subject', 'body'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['bug', 'feature', 'support'],
+            description: 'bug for something broken, feature for a request, support for help',
+          },
+          subject: { type: 'string', description: 'Short summary of the issue or request' },
+          body: { type: 'string', description: 'Full description of what the user reported' },
+        },
+      },
+    },
+  },
 ] as const
 
 /**
@@ -411,6 +432,7 @@ export type AiWriteToolAction =
   | 'delete_wishlist_item'
   | 'update_goal'
   | 'delete_goal'
+  | 'create_ticket'
 
 export type AiToolAction = AiWriteToolAction | 'get_exchange_rate' | 'query_user_data'
 

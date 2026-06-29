@@ -9,6 +9,7 @@ import { SearchableSelect } from "#/components/forms/searchable-select";
 import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-shell";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { ChangePasswordSection } from "#/features/auth/components/change-password-section";
+import { FeedbackFormSection } from "#/features/feedback/components/feedback-form-section";
 import { AiSettingsSection } from "#/features/settings/components/ai-settings-section";
 import {
 	type SettingsNavGroup,
@@ -52,6 +53,18 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
 				title: "AI provider",
 				description:
 					"Choose the app AI service or bring your own provider credentials.",
+			},
+		],
+	},
+	{
+		label: "Support",
+		items: [
+			{
+				id: "feedback",
+				label: "Feedback",
+				title: "Feedback & support",
+				description:
+					"Report a bug, request a feature, or ask for help.",
 			},
 		],
 	},
@@ -242,6 +255,10 @@ function SettingsPage() {
 
 						if (item.id === "ai") {
 							return <AiSettingsSection />;
+						}
+
+						if (item.id === "feedback") {
+							return <FeedbackFormSection />;
 						}
 
 						return <LegalLinksSection />;
