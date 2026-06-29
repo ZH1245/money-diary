@@ -25,7 +25,10 @@ import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { getExchangeRate } from "#/features/exchange-rates/api/exchange-rate-api";
 import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
 import { formatPaymentAccountLabel } from "#/features/payment-accounts/utils/account-label";
-import { useCreateRecurringMutation } from "#/features/recurring/hooks/use-recurring";
+import {
+	useCreateRecurringMutation,
+	useRecurringRulesQuery,
+} from "#/features/recurring/hooks/use-recurring";
 import {
 	advanceRecurringDate,
 	RECURRING_CADENCES,
@@ -156,6 +159,7 @@ export function TransactionFormSheet({
 	const updateTransferMutation = useUpdateTransferMutation();
 	const deleteTransactionMutation = useDeleteTransactionMutation();
 	const createRecurringMutation = useCreateRecurringMutation();
+	const { data: recurringRules = [] } = useRecurringRulesQuery();
 
 	const [createForm, setCreateForm] = useState<TransactionFormState>(() =>
 		getDefaultTransactionForm(userCurrency),
@@ -168,19 +172,34 @@ export function TransactionFormSheet({
 	const editingTransactionId = editingRow?.id ?? null;
 	const isEditing = editingTransactionId !== null;
 
-	// (Re)initialize the form each time the sheet opens, based on edit/create mode.
+	const hasExistingRecurringRule = useMemo(
+		() =>
+			editingTransactionId != null &&
+			recurringRules.some(
+				(rule) => rule.sourceTransactionId === editingTransactionId,
+			),
+		[recurringRules, editingTransactionId],
+	);
+
+	const transferSibling = useMemo(() => {
+		if (editingRow?.transferGroupId == null) return null;
+		return (
+			allTransactions.find(
+				(transaction) =>
+					transaction.transferGroupId === editingRow.transferGroupId &&
+					transaction.id !== editingRow.id,
+			) ?? null
+		);
+	}, [allTransactions, editingRow?.transferGroupId, editingRow?.id]);
+
+	// (Re)initialize the form when the sheet opens or the edited row changes.
+	// Deliberately keyed on the row identity (not the full editingRow object or
+	// allTransactions), so background refetches don't clobber in-progress edits.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on row identity / open, not on data churn
 	useEffect(() => {
 		if (!open) return;
 		if (editingRow) {
-			const sibling =
-				editingRow.transferGroupId != null
-					? (allTransactions.find(
-							(transaction) =>
-								transaction.transferGroupId === editingRow.transferGroupId &&
-								transaction.id !== editingRow.id,
-						) ?? null)
-					: null;
-			setCreateForm(buildEditFormState(editingRow, userCurrency, sibling));
+			setCreateForm(buildEditFormState(editingRow, userCurrency, transferSibling));
 			setIsCurrencyPickerOpen(
 				editingRow.sourceCurrency.toUpperCase() !== userCurrency,
 			);
@@ -190,7 +209,7 @@ export function TransactionFormSheet({
 		}
 		setIsRecurring(false);
 		setCadence("monthly");
-	}, [open, editingRow, userCurrency, allTransactions]);
+	}, [open, editingTransactionId, userCurrency]);
 
 	const isForeignCurrency = createForm.currency !== userCurrency;
 	const convertedAmountPreview = useMemo(() => {
@@ -343,6 +362,43 @@ export function TransactionFormSheet({
 		onOpenChange(false);
 	}
 
+	/**
+	 * Creates a recurring rule for the given transaction. The transaction itself
+	 * covers the current occurrence; the rule schedules the next one for the cron
+	 * to materialize. Linking via sourceTransactionId lets the rule be purged when
+	 * that txn is deleted.
+	 */
+	async function scheduleRecurringRule(
+		sourceTransactionId: number,
+		happenedAt: string,
+	) {
+		const nextRunAt = advanceRecurringDate(new Date(happenedAt), cadence);
+		const recurringPromise = createRecurringMutation.mutateAsync({
+			title: createForm.title.trim(),
+			amount: createForm.amount.trim(),
+			currency: createForm.currency,
+			type: createForm.type,
+			categoryId: createForm.categoryId ? Number(createForm.categoryId) : null,
+			paymentAccountId:
+				createForm.paymentAccountId === "none"
+					? null
+					: Number(createForm.paymentAccountId),
+			note: createForm.note.trim() || null,
+			sourceTransactionId,
+			cadence,
+			nextRunAt: nextRunAt.toISOString(),
+		});
+
+		await toast.promise(recurringPromise, {
+			loading: "Scheduling repeat...",
+			success: `Repeats ${cadence} — next on ${nextRunAt.toLocaleDateString()}`,
+			error: (message) =>
+				message instanceof Error
+					? message.message
+					: "Transaction saved, but the repeat schedule failed",
+		});
+	}
+
 	async function handleSaveTransaction(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 
@@ -412,6 +468,10 @@ export function TransactionFormSheet({
 						? message.message
 						: "Unable to update transaction",
 			});
+
+			if (isRecurring && !hasExistingRecurringRule) {
+				await scheduleRecurringRule(editingTransactionId, happenedAt);
+			}
 		} else {
 			const createPromise = createTransactionMutation.mutateAsync(payload);
 
@@ -425,36 +485,7 @@ export function TransactionFormSheet({
 			}).unwrap();
 
 			if (isRecurring) {
-				// The transaction above covers this occurrence; the rule schedules the
-				// next one for the cron to materialize automatically. Linking the rule
-				// to its source transaction lets it be purged when that txn is deleted.
-				const nextRunAt = advanceRecurringDate(new Date(happenedAt), cadence);
-				const recurringPromise = createRecurringMutation.mutateAsync({
-					title: createForm.title.trim(),
-					amount: createForm.amount.trim(),
-					currency: createForm.currency,
-					type: createForm.type,
-					categoryId: createForm.categoryId
-						? Number(createForm.categoryId)
-						: null,
-					paymentAccountId:
-						createForm.paymentAccountId === "none"
-							? null
-							: Number(createForm.paymentAccountId),
-					note: createForm.note.trim() || null,
-					sourceTransactionId: createdTransaction.id,
-					cadence,
-					nextRunAt: nextRunAt.toISOString(),
-				});
-
-				await toast.promise(recurringPromise, {
-					loading: "Scheduling repeat...",
-					success: `Repeats ${cadence} — next on ${nextRunAt.toLocaleDateString()}`,
-					error: (message) =>
-						message instanceof Error
-							? message.message
-							: "Transaction saved, but the repeat schedule failed",
-				});
+				await scheduleRecurringRule(createdTransaction.id, happenedAt);
 			}
 		}
 
@@ -767,7 +798,12 @@ export function TransactionFormSheet({
 						}
 					/>
 
-					{!isEditing ? (
+					{createForm.type !== "transfer" && hasExistingRecurringRule ? (
+						<p className="rounded-panel border border-border bg-input-bg px-3 py-2 text-xs text-muted-foreground">
+							This transaction already repeats on a schedule. Manage it from the
+							recurring view.
+						</p>
+					) : createForm.type !== "transfer" ? (
 						<div className="grid gap-3 rounded-panel border border-border bg-input-bg p-3">
 							<label className="flex items-center justify-between gap-3">
 								<span className="grid gap-0.5">

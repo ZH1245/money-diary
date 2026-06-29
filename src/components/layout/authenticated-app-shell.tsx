@@ -20,7 +20,12 @@ import {
 	WalletCards,
 	X,
 } from "lucide-react";
-import { type ComponentType, type ReactNode, useState } from "react";
+import {
+	type ComponentType,
+	type ReactNode,
+	useEffect,
+	useState,
+} from "react";
 import { AiTransactionPanel } from "#/components/ai/ai-transaction-panel";
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { QueryRefreshButton } from "#/components/feedback/query-refresh-button";
@@ -51,6 +56,8 @@ import { useIsMobile } from "#/hooks/use-is-mobile";
 import { authClient } from "#/lib/auth-client";
 import { AUTH_ROLES } from "#/lib/auth-roles";
 import { cn } from "#/lib/utils";
+
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
 
 interface AuthenticatedAppShellProps {
 	children: ReactNode;
@@ -94,8 +101,16 @@ export function AuthenticatedAppShell({
 		(state) => state.isOpen,
 	);
 	const [aiPanelOpen, setAiPanelOpen] = useState(false);
-	const [collapsed, setCollapsed] = useState(false);
+	const [collapsed, setCollapsed] = useState(() => {
+		if (typeof window === "undefined") return false;
+		return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+	});
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+	}, [collapsed]);
 	const isAdmin = user.role === AUTH_ROLES.admin;
 	const fallbackText =
 		user.name?.charAt(0).toUpperCase() ||

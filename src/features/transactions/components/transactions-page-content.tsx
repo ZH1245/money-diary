@@ -478,6 +478,7 @@ export function TransactionsPageContent({
 				</div>
 
 				<TransactionFormSheet
+					key={editingRow?.id ?? "new"}
 					open={editingRow !== null}
 					onOpenChange={(open) => {
 						if (!open) setEditingRow(null);
