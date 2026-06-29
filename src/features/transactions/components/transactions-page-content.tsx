@@ -5,6 +5,7 @@ import {
 	ArrowLeftRight,
 	ArrowUpRight,
 	Plus,
+	Trash2,
 	TrendingDown,
 	TrendingUp,
 	Wallet,
@@ -38,6 +39,7 @@ import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-da
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
 import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
 import { TransactionFormSheet } from "#/features/transactions/components/transaction-form-sheet";
+import { TransactionTableFilters } from "#/features/transactions/components/transaction-table-filters";
 import {
 	useDeleteTransactionMutation,
 	useTransactionsQuery,
@@ -52,6 +54,7 @@ import {
 	buildTransactionChartData,
 	buildTransactionTableRows,
 	buildTransactionTotals,
+	filterTransactionTableRows,
 } from "#/features/transactions/utils/transaction-display";
 import {
 	TRANSFER_SOURCE_IN,
@@ -279,6 +282,22 @@ export function TransactionsPageContent({
 			),
 		[filteredTransactions, paymentAccounts, categories],
 	);
+	const filteredTableRows = useMemo(
+		() =>
+			filterTransactionTableRows(tableRows, {
+				categoryId: filters.categoryId,
+				accountId: filters.accountId,
+				dateFrom: filters.dateFrom,
+				dateTo: filters.dateTo,
+			}),
+		[
+			tableRows,
+			filters.categoryId,
+			filters.accountId,
+			filters.dateFrom,
+			filters.dateTo,
+		],
+	);
 
 	const handleDeleteTransaction = useCallback(
 		async (id: number, title: string) => {
@@ -290,6 +309,38 @@ export function TransactionsPageContent({
 						? message.message
 						: "Unable to delete transaction",
 			});
+		},
+		[deleteTransactionMutation],
+	);
+
+	const handleBulkDelete = useCallback(
+		async (rows: TransactionTableRow[], clearSelection: () => void) => {
+			if (!rows.length) {
+				return;
+			}
+
+			if (
+				!window.confirm(
+					`Delete ${rows.length} transaction${rows.length === 1 ? "" : "s"}?`,
+				)
+			) {
+				return;
+			}
+
+			await toast.promise(
+				Promise.all(
+					rows.map((row) => deleteTransactionMutation.mutateAsync(row.id)),
+				),
+				{
+					loading: `Deleting ${rows.length} transaction${rows.length === 1 ? "" : "s"}...`,
+					success: `Deleted ${rows.length} transaction${rows.length === 1 ? "" : "s"}`,
+					error: (message) =>
+						message instanceof Error
+							? message.message
+							: "Unable to delete transactions",
+				},
+			);
+			clearSelection();
 		},
 		[deleteTransactionMutation],
 	);
@@ -561,14 +612,43 @@ export function TransactionsPageContent({
 						</div>
 
 						<div className="md-panel p-5">
-							<DataTable
-								columns={transactionColumns}
-								data={tableRows}
-								filterPlaceholder="Search by title, type, category, or date..."
-								emptyMessage="No transactions match this filter."
-								showPrivacyToggle
-								initialSorting={[{ id: "happenedAt", desc: true }]}
-							/>
+							<TransactionTableFilters
+								categories={categories}
+								paymentAccounts={paymentAccounts}
+							>
+								{({ toolbarStart, belowToolbar }) => (
+									<DataTable
+										columns={transactionColumns}
+										data={filteredTableRows}
+										filterPlaceholder="Search transactions..."
+										emptyMessage="No transactions match this filter."
+										showPrivacyToggle
+										initialSorting={[{ id: "happenedAt", desc: true }]}
+										toolbarStart={toolbarStart}
+										belowToolbar={belowToolbar}
+										enableRowSelection
+										getRowId={(row) => String(row.id)}
+										bulkActions={({ selectedRows, clearSelection }) =>
+											selectedRows.length > 0 ? (
+												<Button
+													type="button"
+													variant="destructive"
+													size="sm"
+													className="h-8 shrink-0 gap-1.5"
+													disabled={deleteTransactionMutation.isPending}
+													onClick={() =>
+														void handleBulkDelete(selectedRows, clearSelection)
+													}
+												>
+													<Trash2 className="size-3.5" aria-hidden="true" />
+													<span className="hidden sm:inline">Delete</span>{' '}
+													{selectedRows.length}
+												</Button>
+											) : null
+										}
+									/>
+								)}
+							</TransactionTableFilters>
 						</div>
 					</>
 				) : null}

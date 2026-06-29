@@ -119,6 +119,31 @@ const EXAMPLES = [
 	"Add my HBL debit card",
 ];
 
+const CHAT_BUBBLE_BASE =
+	"max-w-[84%] px-3 py-1.5 text-sm leading-snug shadow-none";
+
+function getUserBubbleClassName() {
+	return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-br-[0.3rem] whitespace-pre-wrap bg-primary text-primary-foreground`;
+}
+
+function getAssistantBubbleClassName(
+	variant: "default" | "error" | "warning" | "success",
+) {
+	if (variant === "error") {
+		return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] border border-destructive/30 bg-destructive/10 text-destructive`;
+	}
+
+	if (variant === "warning") {
+		return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] border border-amber-300/60 bg-amber-50 text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100`;
+	}
+
+	if (variant === "success") {
+		return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] border border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100`;
+	}
+
+	return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] bg-soft-accent text-foreground`;
+}
+
 /**
  * Renders AI assistant text as full Markdown (GFM) scoped to the chat bubble.
  * Raw HTML is intentionally not rendered (no rehype-raw).
@@ -562,10 +587,12 @@ export function AiTransactionPanel({
 	}
 
 	function handlePromptKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-		if (event.key === "Enter" && !event.shiftKey) {
-			event.preventDefault();
-			event.currentTarget.form?.requestSubmit();
+		if (event.key !== "Enter" || event.shiftKey || isMobile) {
+			return;
 		}
+
+		event.preventDefault();
+		event.currentTarget.form?.requestSubmit();
 	}
 
 	function handleExampleClick(example: string) {
@@ -702,7 +729,9 @@ export function AiTransactionPanel({
 					) : null}
 
 					{isLoadingConversation ? (
-						<div className="rounded-2xl rounded-bl-md bg-soft-accent px-3.5 py-2.5 text-sm text-muted-foreground animate-pulse">
+						<div
+							className={`${getAssistantBubbleClassName("default")} animate-pulse`}
+						>
 							Loading chat...
 						</div>
 					) : null}
@@ -766,17 +795,19 @@ export function AiTransactionPanel({
 									<CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-500" />
 								) : null}
 								<div
-									className={`px-3.5 py-2.5 text-sm max-w-[84%] shadow-sm ${
+									className={
 										message.role === "user"
-											? "rounded-2xl rounded-br-md whitespace-pre-wrap bg-primary text-primary-foreground"
-											: message.isError
-												? "rounded-2xl rounded-bl-md border border-destructive/30 bg-destructive/10 text-destructive"
-												: message.isWarning
-													? "rounded-2xl rounded-bl-md border border-amber-300/60 bg-amber-50 text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100"
-													: message.ok
-														? "rounded-2xl rounded-bl-md bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:border-emerald-800"
-														: "rounded-2xl rounded-bl-md bg-soft-accent text-foreground"
-									}`}
+											? getUserBubbleClassName()
+											: getAssistantBubbleClassName(
+													message.isError
+														? "error"
+														: message.isWarning
+															? "warning"
+															: message.ok
+																? "success"
+																: "default",
+												)
+									}
 								>
 									{message.role === "user" ? (
 										message.text
@@ -814,7 +845,7 @@ export function AiTransactionPanel({
 								</div>
 							</div>
 							{message.createdAt ? (
-								<span className="px-1 text-[10px] text-muted-foreground/60">
+								<span className="px-1 text-[10px] text-foreground/55 dark:text-muted-foreground/75">
 									{formatMessageTime(message.createdAt)}
 								</span>
 							) : null}
@@ -823,7 +854,9 @@ export function AiTransactionPanel({
 
 					{mutation.isPending ? (
 						<div className="flex justify-start">
-							<div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-soft-accent px-3.5 py-3 text-sm text-muted-foreground">
+							<div
+								className={`${getAssistantBubbleClassName("default")} flex items-center gap-1.5 text-muted-foreground`}
+							>
 								<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
 								<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
 								<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground" />
@@ -843,6 +876,7 @@ export function AiTransactionPanel({
 							value={prompt}
 							onChange={(event) => setPrompt(event.target.value)}
 							onKeyDown={handlePromptKeyDown}
+							enterKeyHint={isMobile ? "enter" : "send"}
 							placeholder={
 								chatClosed ? "Chat closed" : "Ask about your finances..."
 							}
@@ -850,7 +884,7 @@ export function AiTransactionPanel({
 								chatClosed || mutation.isPending || isLoadingConversation
 							}
 							className="min-h-[40px] max-h-32 flex-1 resize-none border-0 bg-transparent px-0 py-2 shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
-							rows={2}
+							rows={isMobile ? 3 : 2}
 						/>
 						<Button
 							type="submit"
@@ -868,7 +902,9 @@ export function AiTransactionPanel({
 						</Button>
 					</div>
 					<p className="text-[11px] text-muted-foreground">
-						Shift+Enter for a new line · Enter to send
+						{isMobile
+							? "Enter for a new line · Tap send to submit"
+							: "Shift+Enter for a new line · Enter to send"}
 						{isBulkPasteDraft
 							? ` · Bulk paste mode (up to ${AI_CHAT_MESSAGE_LIMIT_BULK.toLocaleString()} chars)`
 							: null}

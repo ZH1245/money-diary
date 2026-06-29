@@ -232,3 +232,38 @@ export function resolveTransactionSourceForSave(form: TransactionFormState): str
 
   return trimmedSource
 }
+
+interface TransactionTableFilterInput {
+  categoryId: 'all' | string
+  accountId: 'all' | string
+  dateFrom: string
+  dateTo: string
+}
+
+/**
+ * Applies table toolbar filters to transaction rows.
+ */
+export function filterTransactionTableRows(
+  rows: TransactionTableRow[],
+  filters: TransactionTableFilterInput,
+): TransactionTableRow[] {
+  return rows.filter((row) => {
+    if (filters.categoryId !== 'all' && String(row.categoryId) !== filters.categoryId) {
+      return false
+    }
+
+    if (filters.accountId !== 'all' && String(row.paymentAccountId) !== filters.accountId) {
+      return false
+    }
+
+    if (filters.dateFrom && row.happenedAt < filters.dateFrom) {
+      return false
+    }
+
+    if (filters.dateTo && row.happenedAt > filters.dateTo) {
+      return false
+    }
+
+    return true
+  })
+}

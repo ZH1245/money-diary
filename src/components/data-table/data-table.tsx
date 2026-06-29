@@ -4,13 +4,16 @@ import {
 	getCoreRowModel,
 	getFilteredRowModel,
 	getSortedRowModel,
+	type RowSelectionState,
 	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DataTableColumnHeader } from "#/components/data-table/data-table-column-header";
 import { PrivacyModeToggle } from "#/components/privacy/privacy-mode-toggle";
+import { Checkbox } from "#/components/ui/checkbox";
 import { Input } from "#/components/ui/input";
 import {
 	Table,
@@ -21,6 +24,11 @@ import {
 	TableRow,
 } from "#/components/ui/table";
 import { cn } from "#/lib/utils.ts";
+
+interface DataTableBulkActionsContext<TData> {
+	selectedRows: TData[];
+	clearSelection: () => void;
+}
 
 interface DataTableProps<TData> {
 	columns: ColumnDef<TData, unknown>[];
@@ -33,6 +41,11 @@ interface DataTableProps<TData> {
 	maxBodyHeight?: number;
 	rowHeightEstimate?: number;
 	fillWidth?: boolean;
+	toolbarStart?: ReactNode;
+	belowToolbar?: ReactNode;
+	enableRowSelection?: boolean;
+	getRowId?: (row: TData) => string;
+	bulkActions?: (context: DataTableBulkActionsContext<TData>) => ReactNode;
 }
 
 /**
@@ -49,19 +62,66 @@ export function DataTable<TData>({
 	maxBodyHeight = 460,
 	rowHeightEstimate = 56,
 	fillWidth = false,
+	toolbarStart,
+	belowToolbar,
+	enableRowSelection = false,
+	getRowId,
+	bulkActions,
 }: DataTableProps<TData>) {
 	const [sorting, setSorting] = useState<SortingState>(initialSorting);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+	const selectionColumn = useMemo<ColumnDef<TData>>(
+		() => ({
+			id: "select",
+			header: ({ table }) => (
+				<Checkbox
+					checked={
+						table.getIsAllPageRowsSelected()
+							? true
+							: table.getIsSomePageRowsSelected()
+								? "indeterminate"
+								: false
+					}
+					onCheckedChange={(value) =>
+						table.toggleAllPageRowsSelected(value === true)
+					}
+					aria-label="Select all rows"
+				/>
+			),
+			cell: ({ row }) => (
+				<Checkbox
+					checked={row.getIsSelected()}
+					onCheckedChange={(value) => row.toggleSelected(value === true)}
+					aria-label={`Select row ${row.index + 1}`}
+				/>
+			),
+			enableSorting: false,
+			enableGlobalFilter: false,
+			meta: { cellClassName: "w-10 pr-0" },
+		}),
+		[],
+	);
+
+	const tableColumns = useMemo(
+		() => (enableRowSelection ? [selectionColumn, ...columns] : columns),
+		[columns, enableRowSelection, selectionColumn],
+	);
 
 	const table = useReactTable({
 		data,
-		columns,
+		columns: tableColumns,
 		state: {
 			sorting,
 			globalFilter,
+			rowSelection,
 		},
+		enableRowSelection,
+		getRowId,
 		onSortingChange: setSorting,
 		onGlobalFilterChange: setGlobalFilter,
+		onRowSelectionChange: setRowSelection,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
@@ -69,6 +129,14 @@ export function DataTable<TData>({
 	});
 
 	const rows = table.getRowModel().rows;
+	const selectedRows = table
+		.getSelectedRowModel()
+		.rows.map((row) => row.original);
+
+	useEffect(() => {
+		setRowSelection({});
+	}, [data]);
+
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const rowVirtualizer = useVirtualizer({
 		count: rows.length,
@@ -83,22 +151,33 @@ export function DataTable<TData>({
 			? rowVirtualizer.getTotalSize() - virtualRows[virtualRows.length - 1].end
 			: 0;
 
-	if (!data.length) {
-		return <p className="text-sm opacity-80">{emptyMessage}</p>;
-	}
-
 	return (
 		<div className="space-y-3">
 			{showToolbar ? (
-				<div className="flex flex-wrap items-center justify-end gap-2">
-					{showPrivacyToggle ? <PrivacyModeToggle compact /> : null}
-					<Input
-						value={globalFilter}
-						onChange={(event) => setGlobalFilter(event.target.value)}
-						placeholder={filterPlaceholder}
-						className={fillWidth ? "w-full" : "max-w-sm w-full sm:w-auto"}
-						aria-label="Filter table rows"
-					/>
+				<div className="space-y-3">
+					<div className="flex items-center gap-2">
+						{toolbarStart}
+						{enableRowSelection && bulkActions
+							? bulkActions({
+									selectedRows,
+									clearSelection: () => setRowSelection({}),
+								})
+							: null}
+						<div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
+							{showPrivacyToggle ? <PrivacyModeToggle compact /> : null}
+							<Input
+								value={globalFilter}
+								onChange={(event) => setGlobalFilter(event.target.value)}
+								placeholder={filterPlaceholder}
+								className={cn(
+									"h-8 min-w-0 flex-1 sm:flex-none",
+									fillWidth ? "w-full" : "sm:w-60",
+								)}
+								aria-label="Filter table rows"
+							/>
+						</div>
+					</div>
+					{belowToolbar}
 				</div>
 			) : null}
 
@@ -114,7 +193,9 @@ export function DataTable<TData>({
 							: undefined
 					}
 				>
-					<Table className={fillWidth ? "w-full table-fixed" : "min-w-[720px]"}>
+					<Table
+						className={fillWidth ? "w-full table-fixed" : "min-w-[720px]"}
+					>
 						<TableHeader>
 							{table.getHeaderGroups().map((headerGroup) => (
 								<TableRow key={headerGroup.id}>
@@ -140,7 +221,7 @@ export function DataTable<TData>({
 									{paddingTop > 0 ? (
 										<TableRow aria-hidden="true">
 											<TableCell
-												colSpan={columns.length}
+												colSpan={tableColumns.length}
 												className="p-0"
 												style={{ height: paddingTop }}
 											/>
@@ -149,7 +230,10 @@ export function DataTable<TData>({
 									{virtualRows.map((virtualRow) => {
 										const row = rows[virtualRow.index];
 										return (
-											<TableRow key={row.id}>
+											<TableRow
+												key={row.id}
+												data-state={row.getIsSelected() ? "selected" : undefined}
+											>
 												{row.getVisibleCells().map((cell) => (
 													<TableCell
 														key={cell.id}
@@ -174,7 +258,7 @@ export function DataTable<TData>({
 									{paddingBottom > 0 ? (
 										<TableRow aria-hidden="true">
 											<TableCell
-												colSpan={columns.length}
+												colSpan={tableColumns.length}
 												className="p-0"
 												style={{ height: paddingBottom }}
 											/>
@@ -184,10 +268,10 @@ export function DataTable<TData>({
 							) : (
 								<TableRow>
 									<TableCell
-										colSpan={columns.length}
+										colSpan={tableColumns.length}
 										className="h-24 text-center text-sm opacity-70"
 									>
-										No rows match your filter.
+										{data.length ? "No rows match your filter." : emptyMessage}
 									</TableCell>
 								</TableRow>
 							)}
