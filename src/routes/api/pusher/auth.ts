@@ -37,6 +37,12 @@ export const Route = createFileRoute('/api/pusher/auth')({
           return Response.json({ success: false, error: 'Missing socket_id or channel_name.' }, { status: 400 })
         }
 
+        // Prevent a user from subscribing to another user's private channel.
+        const privateUserMatch = channelName.match(/^private-user-(.+)$/)
+        if (privateUserMatch && privateUserMatch[1] !== userContext.id) {
+          return Response.json({ success: false, error: 'Forbidden.' }, { status: 403 })
+        }
+
         const auth = pusher.authorizeChannel(socketId, channelName, {
           user_id: userContext.id,
           user_info: {},

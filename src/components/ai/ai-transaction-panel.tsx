@@ -50,6 +50,9 @@ import {
 } from "#/features/ai/utils/ai-bulk-paste";
 import { queryKeys } from "#/features/query-keys";
 import { useIsMobile } from "#/hooks/use-is-mobile";
+import { useAuthSession } from "#/lib/use-auth-session";
+import { getPusherClient } from "#/lib/pusher-client";
+import type { Channel } from "pusher-js";
 
 interface ThreadMessage {
 	id?: number;
@@ -249,6 +252,13 @@ function buildAssistantThreadMessage(
 /**
  * Side panel AI assistant with persisted conversations across navigation.
  */
+interface AiProgressEvent {
+	phase: "thinking" | "step" | "done";
+	action?: string;
+	index?: number;
+	total?: number;
+}
+
 export function AiTransactionPanel({
 	open,
 	onOpenChange,
@@ -256,6 +266,7 @@ export function AiTransactionPanel({
 	const [prompt, setPrompt] = useState("");
 	const [pendingMessages, setPendingMessages] = useState<ThreadMessage[]>([]);
 	const [historyFeedback, setHistoryFeedback] = useState<string | null>(null);
+	const [aiProgress, setAiProgress] = useState<AiProgressEvent | null>(null);
 	const activeConversationId = useStore(
 		activeAiConversationStore,
 		(state) => state.conversationId,
@@ -271,13 +282,26 @@ export function AiTransactionPanel({
 	const deleteConversationMutation = useDeleteAiConversationMutation();
 	const conversationsQuery = useAiConversationsQuery(open);
 	const conversationQuery = useAiConversationQuery(activeConversationId);
-	const bottomRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const panelOpenRef = useRef(open);
 	const isMobile = useIsMobile();
+	const { data: session } = useAuthSession();
+	const currentUserId = session?.user?.id ?? null;
 
 	useEffect(() => {
 		panelOpenRef.current = open;
 	}, [open]);
+
+	/** Scrolls the chat container to the very bottom. */
+	function scrollToBottom(behavior: ScrollBehavior = "smooth") {
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				const el = scrollContainerRef.current;
+				if (!el) return;
+				el.scrollTo({ top: el.scrollHeight, behavior });
+			});
+		});
+	}
 
 	/** Sonner only when the chat panel is closed — inline bubbles handle feedback while open. */
 	function shouldUseToast() {
@@ -339,17 +363,51 @@ export function AiTransactionPanel({
 				: "Start typing below"
 			: (conversationQuery.data?.title ?? "Loading...");
 
-	// Snap instantly when panel opens or an existing conversation loads into view
+	// Snap to bottom when panel opens or conversation switches
 	useEffect(() => {
 		if (!open) return;
-		bottomRef.current?.scrollIntoView({ behavior: "instant" });
+		scrollToBottom("instant");
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [open, thread]);
 
-	// Smooth scroll as new messages stream in during an active session
+	// Smooth scroll when a new send starts or progress arrives
 	useEffect(() => {
 		if (!open) return;
-		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [mutation.isPending]);
+		scrollToBottom("smooth");
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [mutation.isPending, aiProgress]);
+
+	// Subscribe to per-user Pusher progress events while panel is open
+	useEffect(() => {
+		if (!open || !currentUserId) return;
+
+		let cancelled = false;
+		let channel: Channel | null = null;
+
+		void getPusherClient().then((pusher) => {
+			if (!pusher || cancelled) return;
+			const channelName = `private-user-${currentUserId}`;
+			channel = pusher.subscribe(channelName);
+			channel.bind("ai_progress", (data: AiProgressEvent) => {
+				if (cancelled) return;
+				if (data.phase === "done") {
+					setAiProgress(null);
+				} else {
+					setAiProgress(data);
+				}
+			});
+		});
+
+		return () => {
+			cancelled = true;
+			setAiProgress(null);
+			if (channel) {
+				channel.unbind("ai_progress");
+				channel.unsubscribe();
+			}
+		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open, currentUserId]);
 
 	function handleNewChat() {
 		setActiveAiConversationId(null);
@@ -439,6 +497,7 @@ export function AiTransactionPanel({
 			});
 
 			setPendingMessages([]);
+			setAiProgress(null);
 
 			if (result.conversationId) {
 				queryClient.setQueryData<AiConversationDetail>(
@@ -565,6 +624,7 @@ export function AiTransactionPanel({
 				}
 			}
 		} catch (error) {
+			setAiProgress(null);
 			const message =
 				error instanceof Error ? error.message : "Request failed.";
 			const errorMessage = buildAssistantThreadMessage(message, {
@@ -717,7 +777,7 @@ export function AiTransactionPanel({
 					) : null}
 				</header>
 
-				<div className="flex-1 overflow-y-auto bg-canvas px-4 py-4 space-y-3">
+				<div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-canvas px-4 py-4 space-y-3">
 					{chatClosed ? (
 						<div className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-3 text-sm text-destructive">
 							<AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -857,14 +917,26 @@ export function AiTransactionPanel({
 							<div
 								className={`${getAssistantBubbleClassName("default")} flex items-center gap-1.5 text-muted-foreground`}
 							>
-								<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-								<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-								<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground" />
+								{aiProgress?.phase === "step" ? (
+									<span className="text-xs">
+										{ACTION_LABELS[aiProgress.action ?? ""] ?? aiProgress.action}
+										{aiProgress.total && aiProgress.total > 1
+											? ` ${aiProgress.index ?? 1} of ${aiProgress.total}`
+											: null}
+										{"…"}
+									</span>
+								) : aiProgress?.phase === "thinking" ? (
+									<span className="text-xs">Thinking…</span>
+								) : (
+									<>
+										<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+										<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+										<span className="size-1.5 animate-bounce rounded-full bg-muted-foreground" />
+									</>
+								)}
 							</div>
 						</div>
 					) : null}
-
-					<div ref={bottomRef} />
 				</div>
 
 				<form

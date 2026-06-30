@@ -34,6 +34,7 @@ import {
 } from '#/features/ai/server/ai-tool-fallback'
 import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
 import { resolveBulkChatRuntimeLimits } from '#/features/ai/utils/ai-bulk-paste'
+import { triggerPusher } from '#/lib/server/pusher'
 
 interface ProviderGenerationLimits {
   maxOutputTokens: number
@@ -423,6 +424,20 @@ function buildProviderChatState({
 }
 
 /**
+ * Emits a minimal AI progress event to the user's private Pusher channel.
+ * No-ops when Pusher is disabled. Errors are swallowed — progress is best-effort.
+ */
+async function emitAiProgress(
+  userId: string,
+  data:
+    | { phase: 'thinking' }
+    | { phase: 'step'; action: string; index: number; total: number }
+    | { phase: 'done' },
+): Promise<void> {
+  await triggerPusher(`private-user-${userId}`, 'ai_progress', data).catch(() => undefined)
+}
+
+/**
  * Runs secure AI chat with multi-step tool chaining for one authenticated user.
  */
 export async function runAiChat({
@@ -528,6 +543,8 @@ export async function runAiChat({
   const executedSteps: AiChatStep[] = []
   let truncationWarning: string | undefined
 
+  void emitAiProgress(userId, { phase: 'thinking' })
+
   for (let step = 0; step < maxToolChainSteps; step += 1) {
     const providerResult = await callProviderChatWithRetry({
       provider: runtime.provider,
@@ -549,6 +566,7 @@ export async function runAiChat({
         ? providerResult.error
         : `${providerLabel}: ${providerResult.error}`
 
+      void emitAiProgress(userId, { phase: 'done' })
       return {
         success: false,
         action: 'provider_error',
@@ -568,6 +586,7 @@ export async function runAiChat({
 
     if (toolCalls.length === 0) {
       if (executedSteps.length > 0) {
+        void emitAiProgress(userId, { phase: 'done' })
         return {
           success: executedSteps.every((entry) => entry.success),
           action: executedSteps.length === 1 ? executedSteps[0].action : 'chained',
@@ -593,6 +612,7 @@ export async function runAiChat({
           })
 
           if (stepResult.success) {
+            void emitAiProgress(userId, { phase: 'done' })
             return {
               success: true,
               action: stepResult.action,
@@ -606,6 +626,7 @@ export async function runAiChat({
 
       const fallbackMessage = resolveClarificationFallback(messages)
 
+      void emitAiProgress(userId, { phase: 'done' })
       return {
         success: true,
         action: 'clarification',
@@ -615,8 +636,10 @@ export async function runAiChat({
     }
 
     const toolResults: Array<{ toolName: string; content: string }> = []
+    const total = toolCalls.length
 
-    for (const toolCall of toolCalls) {
+    for (let toolIndex = 0; toolIndex < toolCalls.length; toolIndex += 1) {
+      const toolCall = toolCalls[toolIndex]!
       const stepResult = await executeAiTool({
         toolName: toolCall.name,
         toolArgs: toolCall.arguments,
@@ -635,6 +658,13 @@ export async function runAiChat({
         entityId: stepResult.entityId,
         navigateTo: stepResult.navigateTo,
         duplicate: stepResult.duplicate,
+      })
+
+      void emitAiProgress(userId, {
+        phase: 'step',
+        action: stepResult.action,
+        index: executedSteps.length,
+        total,
       })
 
       toolResults.push({
@@ -656,6 +686,7 @@ export async function runAiChat({
     })
   }
 
+  void emitAiProgress(userId, { phase: 'done' })
   return {
     success: executedSteps.some((entry) => entry.success),
     action: executedSteps.length === 1 ? executedSteps[0].action : 'chained',
