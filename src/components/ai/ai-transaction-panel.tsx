@@ -11,6 +11,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
+import { cva } from "class-variance-authority";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -50,6 +51,7 @@ import {
 } from "#/features/ai/utils/ai-bulk-paste";
 import { queryKeys } from "#/features/query-keys";
 import { useIsMobile } from "#/hooks/use-is-mobile";
+import { cn } from "#/lib/utils";
 import { useAuthSession } from "#/lib/use-auth-session";
 import { getPusherClient } from "#/lib/pusher-client";
 import type { Channel } from "pusher-js";
@@ -117,35 +119,58 @@ const ACTION_LINK_LABELS: Partial<Record<string, string>> = {
 };
 
 const EXAMPLES = [
-	"Spent 2500 on groceries yesterday",
-	"Got salary of 85000 today",
-	"Add my HBL debit card",
+	"Paid 4,500 for groceries from my HBL card",
+	"Netflix 2,500 charged to JazzCash",
+	"Add a goal to save 500k for a laptop by December",
+	"Update yesterday's petrol expense to 3,500",
+	"How much did I spend on food this month?",
+	"Put 15,000 from salary into savings",
 ];
 
-const CHAT_BUBBLE_BASE =
-	"max-w-[84%] px-3 py-1.5 text-sm leading-snug shadow-none";
-
-function getUserBubbleClassName() {
-	return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-br-[0.3rem] whitespace-pre-wrap bg-primary text-primary-foreground`;
-}
-
-function getAssistantBubbleClassName(
-	variant: "default" | "error" | "warning" | "success",
-) {
-	if (variant === "error") {
-		return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] border border-destructive/30 bg-destructive/10 text-destructive`;
-	}
-
-	if (variant === "warning") {
-		return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] border border-amber-300/60 bg-amber-50 text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100`;
-	}
-
-	if (variant === "success") {
-		return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] border border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100`;
-	}
-
-	return `${CHAT_BUBBLE_BASE} rounded-[1.125rem] rounded-bl-[0.3rem] bg-soft-accent text-foreground`;
-}
+const chatBubbleVariants = cva(
+	"max-w-[84%] px-3 py-1.5 text-sm leading-snug shadow-none rounded-[1.125rem]",
+	{
+		variants: {
+			role: {
+				user: "rounded-br-[0.3rem] whitespace-pre-wrap bg-primary text-primary-foreground",
+				assistant: "rounded-bl-[0.3rem]",
+			},
+			variant: {
+				default: "",
+				error: "",
+				warning: "",
+				success: "",
+			},
+		},
+		compoundVariants: [
+			{
+				role: "assistant",
+				variant: "default",
+				class: "bg-soft-accent text-foreground",
+			},
+			{
+				role: "assistant",
+				variant: "error",
+				class:
+					"border border-destructive/30 bg-destructive/10 text-destructive",
+			},
+			{
+				role: "assistant",
+				variant: "warning",
+				class: "border border-chart-4/40 bg-chart-4/10 text-chart-4",
+			},
+			{
+				role: "assistant",
+				variant: "success",
+				class: "border border-income/30 bg-income/10 text-income",
+			},
+		],
+		defaultVariants: {
+			role: "assistant",
+			variant: "default",
+		},
+	},
+);
 
 /**
  * Renders AI assistant text as full Markdown (GFM) scoped to the chat bubble.
@@ -790,7 +815,10 @@ export function AiTransactionPanel({
 
 					{isLoadingConversation ? (
 						<div
-							className={`${getAssistantBubbleClassName("default")} animate-pulse`}
+							className={cn(
+								chatBubbleVariants({ role: "assistant", variant: "default" }),
+								"animate-pulse",
+							)}
 						>
 							Loading chat...
 						</div>
@@ -855,19 +883,21 @@ export function AiTransactionPanel({
 									<CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-500" />
 								) : null}
 								<div
-									className={
-										message.role === "user"
-											? getUserBubbleClassName()
-											: getAssistantBubbleClassName(
-													message.isError
+									className={cn(
+										chatBubbleVariants({
+											role: message.role,
+											variant:
+												message.role === "assistant"
+													? message.isError
 														? "error"
 														: message.isWarning
 															? "warning"
 															: message.ok
 																? "success"
-																: "default",
-												)
-									}
+																: "default"
+													: undefined,
+										}),
+									)}
 								>
 									{message.role === "user" ? (
 										message.text
@@ -915,7 +945,13 @@ export function AiTransactionPanel({
 					{mutation.isPending ? (
 						<div className="flex justify-start">
 							<div
-								className={`${getAssistantBubbleClassName("default")} flex items-center gap-1.5 text-muted-foreground`}
+								className={cn(
+									chatBubbleVariants({
+										role: "assistant",
+										variant: "default",
+									}),
+									"flex items-center gap-1.5 text-muted-foreground",
+								)}
 							>
 								{aiProgress?.phase === "step" ? (
 									<span className="text-xs">

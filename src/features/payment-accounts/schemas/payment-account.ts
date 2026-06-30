@@ -23,7 +23,7 @@ export const createPaymentAccountSchema = z.object({
     .regex(/^\d{4}$/)
     .nullable()
     .optional(),
-  note: apiNoteSchema,
+  note: apiNoteSchema.nullable().optional(),
 })
 
 export const updatePaymentAccountSchema = z.object({

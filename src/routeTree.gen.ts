@@ -39,11 +39,14 @@ import { Route as ApiGoalsRouteImport } from './routes/api/goals'
 import { Route as ApiExchangeRateRouteImport } from './routes/api/exchange-rate'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiWishlistIdRouteImport } from './routes/api/wishlist/$id'
+import { Route as ApiTransactionsDraftsRouteImport } from './routes/api/transactions/drafts'
 import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions/$id'
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
 import { Route as ApiSettingsAiRouteImport } from './routes/api/settings/ai'
 import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
 import { Route as ApiRecurringIdRouteImport } from './routes/api/recurring/$id'
+import { Route as ApiPusherConfigRouteImport } from './routes/api/pusher/config'
+import { Route as ApiPusherAuthRouteImport } from './routes/api/pusher/auth'
 import { Route as ApiPaymentAccountsIdRouteImport } from './routes/api/payment-accounts/$id'
 import { Route as ApiOpenapiJsonRouteImport } from './routes/api/openapi.json'
 import { Route as ApiGoalsIdRouteImport } from './routes/api/goals/$id'
@@ -63,6 +66,7 @@ import { Route as ApiAdminTicketsRouteImport } from './routes/api/admin/tickets'
 import { Route as ApiAdminGlobalAiRouteImport } from './routes/api/admin/global-ai'
 import { Route as ApiAdminCategoriesRouteImport } from './routes/api/admin/categories'
 import { Route as ApiAdminBansRouteImport } from './routes/api/admin/bans'
+import { Route as ApiTransactionsDraftsIdRouteImport } from './routes/api/transactions/drafts.$id'
 import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
 import { Route as ApiSettingsAiKeyRouteImport } from './routes/api/settings/ai/key'
 import { Route as ApiAuthRecoveryResetRouteImport } from './routes/api/auth/recovery/reset'
@@ -226,6 +230,11 @@ const ApiWishlistIdRoute = ApiWishlistIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiWishlistRoute,
 } as any)
+const ApiTransactionsDraftsRoute = ApiTransactionsDraftsRouteImport.update({
+  id: '/drafts',
+  path: '/drafts',
+  getParentRoute: () => ApiTransactionsRoute,
+} as any)
 const ApiTransactionsIdRoute = ApiTransactionsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -250,6 +259,16 @@ const ApiRecurringIdRoute = ApiRecurringIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiRecurringRoute,
+} as any)
+const ApiPusherConfigRoute = ApiPusherConfigRouteImport.update({
+  id: '/api/pusher/config',
+  path: '/api/pusher/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPusherAuthRoute = ApiPusherAuthRouteImport.update({
+  id: '/api/pusher/auth',
+  path: '/api/pusher/auth',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPaymentAccountsIdRoute = ApiPaymentAccountsIdRouteImport.update({
   id: '/$id',
@@ -346,6 +365,11 @@ const ApiAdminBansRoute = ApiAdminBansRouteImport.update({
   id: '/api/admin/bans',
   path: '/api/admin/bans',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTransactionsDraftsIdRoute = ApiTransactionsDraftsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiTransactionsDraftsRoute,
 } as any)
 const ApiSettingsAiTestRoute = ApiSettingsAiTestRouteImport.update({
   id: '/test',
@@ -460,11 +484,14 @@ export interface FileRoutesByFullPath {
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/pusher/auth': typeof ApiPusherAuthRoute
+  '/api/pusher/config': typeof ApiPusherConfigRoute
   '/api/recurring/$id': typeof ApiRecurringIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
+  '/api/transactions/drafts': typeof ApiTransactionsDraftsRouteWithChildren
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/bans/$id': typeof ApiAdminBansIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
@@ -477,6 +504,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/transactions/drafts/$id': typeof ApiTransactionsDraftsIdRoute
   '/api/admin/users/$id/reset-link': typeof ApiAdminUsersIdResetLinkRoute
 }
 export interface FileRoutesByTo {
@@ -528,11 +556,14 @@ export interface FileRoutesByTo {
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/pusher/auth': typeof ApiPusherAuthRoute
+  '/api/pusher/config': typeof ApiPusherConfigRoute
   '/api/recurring/$id': typeof ApiRecurringIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
+  '/api/transactions/drafts': typeof ApiTransactionsDraftsRouteWithChildren
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/bans/$id': typeof ApiAdminBansIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
@@ -545,6 +576,7 @@ export interface FileRoutesByTo {
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/transactions/drafts/$id': typeof ApiTransactionsDraftsIdRoute
   '/api/admin/users/$id/reset-link': typeof ApiAdminUsersIdResetLinkRoute
 }
 export interface FileRoutesById {
@@ -597,11 +629,14 @@ export interface FileRoutesById {
   '/api/goals/$id': typeof ApiGoalsIdRoute
   '/api/openapi/json': typeof ApiOpenapiJsonRoute
   '/api/payment-accounts/$id': typeof ApiPaymentAccountsIdRoute
+  '/api/pusher/auth': typeof ApiPusherAuthRoute
+  '/api/pusher/config': typeof ApiPusherConfigRoute
   '/api/recurring/$id': typeof ApiRecurringIdRoute
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
+  '/api/transactions/drafts': typeof ApiTransactionsDraftsRouteWithChildren
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
   '/api/admin/bans/$id': typeof ApiAdminBansIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
@@ -614,6 +649,7 @@ export interface FileRoutesById {
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/transactions/drafts/$id': typeof ApiTransactionsDraftsIdRoute
   '/api/admin/users/$id/reset-link': typeof ApiAdminUsersIdResetLinkRoute
 }
 export interface FileRouteTypes {
@@ -667,11 +703,14 @@ export interface FileRouteTypes {
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
+    | '/api/pusher/auth'
+    | '/api/pusher/config'
     | '/api/recurring/$id'
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
     | '/api/transactions/$id'
+    | '/api/transactions/drafts'
     | '/api/wishlist/$id'
     | '/api/admin/bans/$id'
     | '/api/admin/categories/$id'
@@ -684,6 +723,7 @@ export interface FileRouteTypes {
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/transactions/drafts/$id'
     | '/api/admin/users/$id/reset-link'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -735,11 +775,14 @@ export interface FileRouteTypes {
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
+    | '/api/pusher/auth'
+    | '/api/pusher/config'
     | '/api/recurring/$id'
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
     | '/api/transactions/$id'
+    | '/api/transactions/drafts'
     | '/api/wishlist/$id'
     | '/api/admin/bans/$id'
     | '/api/admin/categories/$id'
@@ -752,6 +795,7 @@ export interface FileRouteTypes {
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/transactions/drafts/$id'
     | '/api/admin/users/$id/reset-link'
   id:
     | '__root__'
@@ -803,11 +847,14 @@ export interface FileRouteTypes {
     | '/api/goals/$id'
     | '/api/openapi/json'
     | '/api/payment-accounts/$id'
+    | '/api/pusher/auth'
+    | '/api/pusher/config'
     | '/api/recurring/$id'
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
     | '/api/transactions/$id'
+    | '/api/transactions/drafts'
     | '/api/wishlist/$id'
     | '/api/admin/bans/$id'
     | '/api/admin/categories/$id'
@@ -820,6 +867,7 @@ export interface FileRouteTypes {
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/transactions/drafts/$id'
     | '/api/admin/users/$id/reset-link'
   fileRoutesById: FileRoutesById
 }
@@ -869,6 +917,8 @@ export interface RootRouteChildren {
   ApiAuthSignInModerationRoute: typeof ApiAuthSignInModerationRoute
   ApiCronRunRecurringRoute: typeof ApiCronRunRecurringRoute
   ApiOpenapiJsonRoute: typeof ApiOpenapiJsonRoute
+  ApiPusherAuthRoute: typeof ApiPusherAuthRoute
+  ApiPusherConfigRoute: typeof ApiPusherConfigRoute
   ApiSettingsAiRoute: typeof ApiSettingsAiRouteWithChildren
   ApiSettingsCurrencyRoute: typeof ApiSettingsCurrencyRoute
   ApiAuthRecoveryChallengeRoute: typeof ApiAuthRecoveryChallengeRoute
@@ -1087,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWishlistIdRouteImport
       parentRoute: typeof ApiWishlistRoute
     }
+    '/api/transactions/drafts': {
+      id: '/api/transactions/drafts'
+      path: '/drafts'
+      fullPath: '/api/transactions/drafts'
+      preLoaderRoute: typeof ApiTransactionsDraftsRouteImport
+      parentRoute: typeof ApiTransactionsRoute
+    }
     '/api/transactions/$id': {
       id: '/api/transactions/$id'
       path: '/$id'
@@ -1121,6 +1178,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/recurring/$id'
       preLoaderRoute: typeof ApiRecurringIdRouteImport
       parentRoute: typeof ApiRecurringRoute
+    }
+    '/api/pusher/config': {
+      id: '/api/pusher/config'
+      path: '/api/pusher/config'
+      fullPath: '/api/pusher/config'
+      preLoaderRoute: typeof ApiPusherConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pusher/auth': {
+      id: '/api/pusher/auth'
+      path: '/api/pusher/auth'
+      fullPath: '/api/pusher/auth'
+      preLoaderRoute: typeof ApiPusherAuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/payment-accounts/$id': {
       id: '/api/payment-accounts/$id'
@@ -1254,6 +1325,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/bans'
       preLoaderRoute: typeof ApiAdminBansRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/transactions/drafts/$id': {
+      id: '/api/transactions/drafts/$id'
+      path: '/$id'
+      fullPath: '/api/transactions/drafts/$id'
+      preLoaderRoute: typeof ApiTransactionsDraftsIdRouteImport
+      parentRoute: typeof ApiTransactionsDraftsRoute
     }
     '/api/settings/ai/test': {
       id: '/api/settings/ai/test'
@@ -1401,12 +1479,27 @@ const ApiSavingsRouteWithChildren = ApiSavingsRoute._addFileChildren(
   ApiSavingsRouteChildren,
 )
 
+interface ApiTransactionsDraftsRouteChildren {
+  ApiTransactionsDraftsIdRoute: typeof ApiTransactionsDraftsIdRoute
+}
+
+const ApiTransactionsDraftsRouteChildren: ApiTransactionsDraftsRouteChildren = {
+  ApiTransactionsDraftsIdRoute: ApiTransactionsDraftsIdRoute,
+}
+
+const ApiTransactionsDraftsRouteWithChildren =
+  ApiTransactionsDraftsRoute._addFileChildren(
+    ApiTransactionsDraftsRouteChildren,
+  )
+
 interface ApiTransactionsRouteChildren {
   ApiTransactionsIdRoute: typeof ApiTransactionsIdRoute
+  ApiTransactionsDraftsRoute: typeof ApiTransactionsDraftsRouteWithChildren
 }
 
 const ApiTransactionsRouteChildren: ApiTransactionsRouteChildren = {
   ApiTransactionsIdRoute: ApiTransactionsIdRoute,
+  ApiTransactionsDraftsRoute: ApiTransactionsDraftsRouteWithChildren,
 }
 
 const ApiTransactionsRouteWithChildren = ApiTransactionsRoute._addFileChildren(
@@ -1568,6 +1661,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSignInModerationRoute: ApiAuthSignInModerationRoute,
   ApiCronRunRecurringRoute: ApiCronRunRecurringRoute,
   ApiOpenapiJsonRoute: ApiOpenapiJsonRoute,
+  ApiPusherAuthRoute: ApiPusherAuthRoute,
+  ApiPusherConfigRoute: ApiPusherConfigRoute,
   ApiSettingsAiRoute: ApiSettingsAiRouteWithChildren,
   ApiSettingsCurrencyRoute: ApiSettingsCurrencyRoute,
   ApiAuthRecoveryChallengeRoute: ApiAuthRecoveryChallengeRoute,
