@@ -454,40 +454,44 @@ export function DashboardPageContent({
 											{upcomingBills.map((bill) => (
 												<li
 													key={bill.id}
-													className="md-row flex items-center gap-3 px-2 py-2.5"
+													className="md-row flex flex-col gap-2.5 px-2 py-3 sm:flex-row sm:items-center sm:gap-3 sm:py-2.5"
 												>
-													<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
-														{bill.badge}
-													</span>
-													<div className="min-w-0 flex-1">
-														<p className="truncate text-sm font-medium text-foreground">
-															<SensitiveText text={bill.name} />
-														</p>
-														<p className="truncate text-xs capitalize text-muted-foreground">
-															{bill.cadence} · next {bill.dueLabel}
-														</p>
+													<div className="flex min-w-0 items-start gap-3 sm:flex-1 sm:items-center">
+														<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
+															{bill.badge}
+														</span>
+														<div className="min-w-0 flex-1">
+															<p className="text-sm font-medium break-words text-foreground sm:truncate">
+																<SensitiveText text={bill.name} />
+															</p>
+															<p className="text-xs capitalize break-words text-muted-foreground sm:truncate">
+																{bill.cadence} · next {bill.dueLabel}
+															</p>
+														</div>
 													</div>
-													<span className="shrink-0 font-num font-extrabold tabular-nums text-foreground">
-														<SensitiveText
-															text={formatSensitiveCurrency(
-																bill.amount,
-																userCurrency,
-																isPrivacyMode,
-															)}
-														/>
-													</span>
-													<Button
-														variant="ghost"
-														size="sm"
-														className="shrink-0 text-muted-foreground hover:text-expense"
-														disabled={updateRecurringMutation.isPending}
-														onClick={() =>
-															handleSetRecurringActive(bill.id, bill.name, false)
-														}
-													>
-														<Ban className="size-4" />
-														Cancel
-													</Button>
+													<div className="flex items-center justify-between gap-2 pl-12 sm:shrink-0 sm:justify-end sm:pl-0">
+														<span className="font-num text-base font-extrabold tabular-nums text-foreground sm:text-sm">
+															<SensitiveText
+																text={formatSensitiveCurrency(
+																	bill.amount,
+																	userCurrency,
+																	isPrivacyMode,
+																)}
+															/>
+														</span>
+														<Button
+															variant="ghost"
+															size="sm"
+															className="shrink-0 text-muted-foreground hover:text-expense"
+															disabled={updateRecurringMutation.isPending}
+															onClick={() =>
+																handleSetRecurringActive(bill.id, bill.name, false)
+															}
+														>
+															<Ban className="size-4" />
+															Cancel
+														</Button>
+													</div>
 												</li>
 											))}
 										</ul>
@@ -502,40 +506,44 @@ export function DashboardPageContent({
 												{canceledBills.map((bill) => (
 													<li
 														key={bill.id}
-														className="md-row flex items-center gap-3 px-2 py-2.5 opacity-70"
+														className="md-row flex flex-col gap-2.5 px-2 py-3 opacity-70 sm:flex-row sm:items-center sm:gap-3 sm:py-2.5"
 													>
-														<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-track text-xs font-bold text-muted-foreground">
-															{bill.badge}
-														</span>
-														<div className="min-w-0 flex-1">
-															<p className="truncate text-sm font-medium text-foreground line-through">
-																<SensitiveText text={bill.name} />
-															</p>
-															<p className="truncate text-xs capitalize text-muted-foreground">
-																{bill.cadence} · canceled
-															</p>
+														<div className="flex min-w-0 items-start gap-3 sm:flex-1 sm:items-center">
+															<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-track text-xs font-bold text-muted-foreground">
+																{bill.badge}
+															</span>
+															<div className="min-w-0 flex-1">
+																<p className="text-sm font-medium break-words text-foreground line-through sm:truncate">
+																	<SensitiveText text={bill.name} />
+																</p>
+																<p className="text-xs capitalize break-words text-muted-foreground sm:truncate">
+																	{bill.cadence} · canceled
+																</p>
+															</div>
 														</div>
-														<span className="shrink-0 font-num font-extrabold tabular-nums text-muted-foreground">
-															<SensitiveText
-																text={formatSensitiveCurrency(
-																	bill.amount,
-																	userCurrency,
-																	isPrivacyMode,
-																)}
-															/>
-														</span>
-														<Button
-															variant="ghost"
-															size="sm"
-															className="shrink-0 text-muted-foreground hover:text-income"
-															disabled={updateRecurringMutation.isPending}
-															onClick={() =>
-																handleSetRecurringActive(bill.id, bill.name, true)
-															}
-														>
-															<RotateCcw className="size-4" />
-															Resume
-														</Button>
+														<div className="flex items-center justify-between gap-2 pl-12 sm:shrink-0 sm:justify-end sm:pl-0">
+															<span className="font-num text-base font-extrabold tabular-nums text-muted-foreground sm:text-sm">
+																<SensitiveText
+																	text={formatSensitiveCurrency(
+																		bill.amount,
+																		userCurrency,
+																		isPrivacyMode,
+																	)}
+																/>
+															</span>
+															<Button
+																variant="ghost"
+																size="sm"
+																className="shrink-0 text-muted-foreground hover:text-income"
+																disabled={updateRecurringMutation.isPending}
+																onClick={() =>
+																	handleSetRecurringActive(bill.id, bill.name, true)
+																}
+															>
+																<RotateCcw className="size-4" />
+																Resume
+															</Button>
+														</div>
 													</li>
 												))}
 											</ul>
