@@ -131,6 +131,7 @@ export const Route = createFileRoute('/api/auth/security-profile')({
             userId: userContext.id,
             questionOneKey: parsed.data.questionOneKey,
             answerOne: parsed.data.answerOne,
+            recoveryEmail: parsed.data.recoveryEmail,
           })
 
           const profile = await getSecurityProfileStatusForUser(userContext.id)

@@ -13,21 +13,31 @@ const RECOVERY_LOCKOUT_MS = 30 * 60 * 1000
 
 export interface SecurityProfileStatus {
   hasProfile: true
+  recoveryEmail: string
+  recoveryEmailVerified: boolean
 }
 
 /**
- * Returns whether the user has configured account recovery, without exposing recovery details.
+ * Returns whether the user has configured account recovery, including recovery email status.
  */
 export async function getSecurityProfileStatusForUser(userId: string): Promise<SecurityProfileStatus | null> {
   const [row] = await db
-    .select({ userId: userSecurityProfile.userId })
+    .select({
+      userId: userSecurityProfile.userId,
+      recoveryEmail: userSecurityProfile.recoveryEmail,
+      recoveryEmailVerified: userSecurityProfile.recoveryEmailVerified,
+    })
     .from(userSecurityProfile)
     .where(eq(userSecurityProfile.userId, userId))
     .limit(1)
 
   if (!row) return null
 
-  return { hasProfile: true }
+  return {
+    hasProfile: true,
+    recoveryEmail: row.recoveryEmail,
+    recoveryEmailVerified: row.recoveryEmailVerified,
+  }
 }
 
 /**
@@ -174,10 +184,12 @@ export async function updateSecurityProfile({
   userId,
   questionOneKey,
   answerOne,
+  recoveryEmail,
 }: {
   userId: string
   questionOneKey?: string
   answerOne?: string
+  recoveryEmail?: string
 }) {
   const [existing] = await db
     .select()
@@ -196,6 +208,13 @@ export async function updateSecurityProfile({
   if (questionOneKey && answerOne) {
     nextValues.questionOneKey = questionOneKey
     nextValues.answerOneHash = await hashSecurityAnswer(answerOne)
+  }
+
+  if (recoveryEmail) {
+    const normalized = normalizeRecoveryEmail(recoveryEmail)
+    await assertRecoveryEmailAvailable({ recoveryEmail: normalized, excludeUserId: userId })
+    nextValues.recoveryEmail = normalized
+    nextValues.recoveryEmailVerified = false
   }
 
   await db.update(userSecurityProfile).set(nextValues).where(eq(userSecurityProfile.userId, userId))

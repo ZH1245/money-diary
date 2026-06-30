@@ -1,5 +1,7 @@
 export interface SecurityProfileStatus {
   hasProfile: true
+  recoveryEmail: string
+  recoveryEmailVerified: boolean
 }
 
 interface SecurityProfileApiPayload {
@@ -87,6 +89,7 @@ export async function updateSecurityProfileRequest(body: {
   currentPassword: string
   questionOneKey?: string
   answerOne?: string
+  recoveryEmail?: string
 }): Promise<SecurityProfileStatus> {
   const response = await fetch('/api/auth/security-profile', {
     method: 'PATCH',

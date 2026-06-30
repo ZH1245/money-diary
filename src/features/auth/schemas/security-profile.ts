@@ -19,6 +19,7 @@ export const updateSecurityProfileSchema = z.object({
   currentPassword: z.string().min(8, 'Current password is required'),
   questionOneKey: securityQuestionKeySchema.optional(),
   answerOne: securityAnswerSchema.optional(),
+  recoveryEmail: z.string().trim().email('Enter a valid recovery email').optional(),
 })
 
 export const recoveryChallengeSchema = z.object({
