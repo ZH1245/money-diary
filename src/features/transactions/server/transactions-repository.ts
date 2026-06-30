@@ -28,14 +28,27 @@ interface CreateUserTransactionParams {
 }
 
 /**
- * Loads transactions belonging to a specific user.
+ * Loads confirmed transactions belonging to a specific user.
+ * Excludes drafts so all balances, stats, and lists automatically omit them.
  */
 export async function getUserTransactions(userId: string) {
   return db
     .select()
     .from(transactions)
-    .where(eq(transactions.userId, userId))
+    .where(and(eq(transactions.userId, userId), eq(transactions.status, 'confirmed')))
     .orderBy(desc(transactions.happenedAt))
+}
+
+/**
+ * Loads draft (pending) transactions belonging to a specific user, ordered by
+ * scheduled date ascending so the soonest pending item appears first.
+ */
+export async function getUserDraftTransactions(userId: string) {
+  return db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), eq(transactions.status, 'draft')))
+    .orderBy(transactions.happenedAt)
 }
 
 /**
@@ -63,7 +76,8 @@ export async function isCategoryAccessibleByUser({
 }
 
 /**
- * Loads transactions for one user on a single calendar day (duplicate checks).
+ * Loads confirmed transactions for one user on a single calendar day.
+ * Excludes drafts so they cannot block real duplicate detection.
  */
 export async function getUserTransactionsOnDay(userId: string, happenedAt: Date) {
   return db
@@ -72,6 +86,7 @@ export async function getUserTransactionsOnDay(userId: string, happenedAt: Date)
     .where(
       and(
         eq(transactions.userId, userId),
+        eq(transactions.status, 'confirmed'),
         gte(transactions.happenedAt, startOfDay(happenedAt)),
         lte(transactions.happenedAt, endOfDay(happenedAt)),
       ),
@@ -319,4 +334,83 @@ export async function deleteTransfer(userId: string, transferGroupId: string) {
       and(eq(transactions.userId, userId), eq(transactions.transferGroupId, transferGroupId)),
     )
     .returning({ id: transactions.id })
+}
+
+interface CreateScheduledTransactionParams {
+  userId: string
+  title: string
+  amount: string
+  sourceAmount: string | null
+  sourceCurrency: string
+  exchangeRate: string
+  type: 'income' | 'expense'
+  categoryId: number | null
+  paymentAccountId: number | null
+  note: string | null
+  happenedAt: Date
+}
+
+/**
+ * Creates a transaction row with status='draft'. It does not affect any balance
+ * or stat until confirmed by the user.
+ */
+export async function createScheduledTransaction(params: CreateScheduledTransactionParams) {
+  const [row] = await db
+    .insert(transactions)
+    .values({
+      userId: params.userId,
+      title: params.title,
+      amount: params.amount,
+      sourceAmount: params.sourceAmount,
+      sourceCurrency: params.sourceCurrency,
+      exchangeRate: params.exchangeRate,
+      type: params.type,
+      categoryId: params.categoryId,
+      paymentAccountId: params.paymentAccountId,
+      source: 'scheduled',
+      note: params.note,
+      status: 'draft',
+      happenedAt: params.happenedAt,
+    })
+    .returning()
+
+  return row
+}
+
+/**
+ * Confirms a draft transaction, making it affect balances and stats.
+ * Keeps the original happenedAt (scheduled date) intact.
+ */
+export async function confirmDraftTransaction(userId: string, transactionId: number) {
+  const [row] = await db
+    .update(transactions)
+    .set({ status: 'confirmed', updatedAt: new Date() })
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.id, transactionId),
+        eq(transactions.status, 'draft'),
+      ),
+    )
+    .returning()
+
+  return row ?? null
+}
+
+/**
+ * Discards a draft transaction permanently. Has no effect on balances.
+ */
+export async function discardDraftTransaction(userId: string, transactionId: number) {
+  const [row] = await db
+    .delete(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.id, transactionId),
+        eq(transactions.status, 'draft'),
+      ),
+    )
+    .returning({ id: transactions.id })
+
+  return row ?? null
 }

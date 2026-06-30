@@ -1,5 +1,6 @@
 import type { ApiListResponse } from '#/types/api'
 import type {
+  CreateScheduledTransactionInput,
   CreateTransactionInput,
   TransactionDto,
   TransferInput,
@@ -113,5 +114,66 @@ export async function deleteTransaction(id: number): Promise<void> {
 
   if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Unable to delete transaction')
+  }
+}
+
+/**
+ * Fetches all pending draft transactions for the active user.
+ */
+export async function getDraftTransactions(): Promise<TransactionDto[]> {
+  const response = await fetch('/api/transactions/drafts')
+  const json = (await response.json()) as ApiListResponse<TransactionDto>
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to load draft transactions')
+  }
+
+  return json.data
+}
+
+/**
+ * Creates a scheduled transaction as a draft.
+ */
+export async function createScheduledTransaction(
+  input: CreateScheduledTransactionInput,
+): Promise<TransactionDto> {
+  const response = await fetch('/api/transactions/drafts', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+
+  const json = (await response.json()) as { success: boolean; data: TransactionDto; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to create scheduled transaction')
+  }
+
+  return json.data
+}
+
+/**
+ * Confirms a draft transaction, committing it to balances.
+ */
+export async function confirmDraftTransaction(id: number): Promise<TransactionDto> {
+  const response = await fetch(`/api/transactions/drafts/${id}`, { method: 'POST' })
+  const json = (await response.json()) as { success: boolean; data: TransactionDto; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to confirm draft transaction')
+  }
+
+  return json.data
+}
+
+/**
+ * Discards a draft transaction permanently.
+ */
+export async function discardDraftTransaction(id: number): Promise<void> {
+  const response = await fetch(`/api/transactions/drafts/${id}`, { method: 'DELETE' })
+  const json = (await response.json()) as { success: boolean; error?: string }
+
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Unable to discard draft transaction')
   }
 }

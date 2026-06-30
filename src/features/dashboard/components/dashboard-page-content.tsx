@@ -20,6 +20,7 @@ import {
 import { Button } from "#/components/ui/button";
 import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { AccountCardsRow } from "#/features/dashboard/components/account-cards-row";
+import { PendingTransactionsSection } from "#/features/transactions/components/pending-transactions-section";
 import { InsightMiniCard } from "#/features/dashboard/components/insight-mini-card";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
@@ -286,6 +287,9 @@ export function DashboardPageContent({
 
 				{!isStatsPending && !statsError ? (
 					<>
+						{/* 0) Pending / scheduled transactions */}
+						<PendingTransactionsSection userCurrency={userCurrency} />
+
 						{/* 1) Account cards row */}
 						<AccountCardsRow
 							accounts={paymentAccounts}

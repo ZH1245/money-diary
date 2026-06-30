@@ -92,6 +92,7 @@ export const transactions = pgTable(
 		source: text(),
 		transferGroupId: text("transfer_group_id"),
 		note: text(),
+		status: text().notNull().default("confirmed"),
 		happenedAt: timestamp("happened_at").defaultNow().notNull(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -111,6 +112,7 @@ export const transactions = pgTable(
 			table.paymentAccountId,
 		),
 		typeIdx: index("transactions_type_idx").on(table.type),
+		statusIdx: index("transactions_status_idx").on(table.status),
 		categoryHappenedAtIdx: index("transactions_category_happened_at_idx").on(
 			table.categoryId,
 			table.happenedAt,

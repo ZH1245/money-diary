@@ -16,6 +16,7 @@ export const queryKeys = {
 	},
 	transactions: {
 		all: ["transactions"] as const,
+		drafts: ["transactions", "drafts"] as const,
 	},
 	recurring: {
 		all: ["recurring"] as const,

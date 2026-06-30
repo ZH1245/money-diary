@@ -377,6 +377,33 @@ export const AI_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'create_scheduled_transaction',
+      description:
+        'Schedule a future income or expense transaction as a pending draft. The draft does NOT affect balances until the user confirms it ("did this happen?"). Use when the user says they plan to spend/receive money later, wants a reminder, or asks to schedule a transaction for a specific date/time.',
+      parameters: {
+        type: 'object',
+        required: ['title', 'amount', 'type', 'scheduledAt'],
+        properties: {
+          title: { type: 'string' },
+          amount: { type: 'number', description: 'Positive amount in the stated currency' },
+          currency: { type: 'string', description: 'ISO 4217 code (e.g. PKR, USD). Omit to use ledger currency.' },
+          type: {
+            type: 'string',
+            enum: ['expense', 'income'],
+            description: 'expense = money to be spent; income = money to be received',
+          },
+          scheduledAt: { type: 'string', description: 'ISO datetime string for when the transaction is expected (e.g. "2026-06-30T22:00:00")' },
+          categoryId: { type: 'integer', description: 'Internal ref from context. Required for expense. Use -1 with categoryName if no match. Omit for income.' },
+          categoryName: { type: 'string', description: 'Required when categoryId is -1' },
+          paymentAccountId: { type: 'integer', description: 'Internal account ref from context, or omit' },
+          note: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'create_ticket',
       description:
         'File a feedback or support ticket on the user\'s behalf when they report a bug, request a feature, or ask for help with the app itself (not their finances). Confirm the gist with the user before filing.',
@@ -432,6 +459,7 @@ export type AiWriteToolAction =
   | 'delete_wishlist_item'
   | 'update_goal'
   | 'delete_goal'
+  | 'create_scheduled_transaction'
   | 'create_ticket'
 
 export type AiToolAction = AiWriteToolAction | 'get_exchange_rate' | 'query_user_data'

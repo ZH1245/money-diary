@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  createScheduledTransaction,
   createTransfer,
   createUserTransaction,
   findUserTransactionDuplicate,
@@ -204,6 +205,18 @@ const createTicketArgsSchema = z.object({
   type: z.enum(['bug', 'feature', 'support']),
   subject: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(2000),
+})
+
+const createScheduledTransactionArgsSchema = z.object({
+  title: z.string().min(1),
+  amount: z.number().positive(),
+  currency: z.string().trim().length(3).optional(),
+  type: z.enum(['expense', 'income']),
+  scheduledAt: z.string().min(6),
+  categoryId: z.number().int().optional(),
+  categoryName: z.string().optional(),
+  paymentAccountId: z.number().int().positive().optional(),
+  note: z.string().optional(),
 })
 
 const queryUserDataArgsSchema = z.object({
@@ -1075,6 +1088,74 @@ export async function executeAiTool({
     })
   }
 
+  if (toolName === 'create_scheduled_transaction') {
+    const args = createScheduledTransactionArgsSchema.safeParse(toolArgs)
+    if (!args.success) {
+      return { action: 'create_scheduled_transaction', success: false, message: 'Invalid scheduled transaction arguments.' }
+    }
+
+    const { title, amount, type, scheduledAt, currency: rawCurrency, categoryId: rawCatId, categoryName, paymentAccountId: rawAccId, note } = args.data
+
+    const categoryResult = await resolveAiCategoryId({
+      userId: context.userId,
+      type,
+      rawCategoryId: rawCatId,
+      categoryName,
+    })
+    if (!categoryResult.ok) {
+      return { action: 'create_scheduled_transaction', success: false, message: categoryResult.error }
+    }
+
+    let paymentAccountId: number | null = null
+    if (rawAccId != null) {
+      const ok = await isPaymentAccountAccessibleByUser({ userId: context.userId, paymentAccountId: rawAccId })
+      if (!ok) return { action: 'create_scheduled_transaction', success: false, message: 'Account not accessible.' }
+      paymentAccountId = rawAccId
+    }
+
+    const happenedAt = resolveScheduledDate(scheduledAt)
+    if (!happenedAt) {
+      return { action: 'create_scheduled_transaction', success: false, message: `Invalid scheduled date: ${scheduledAt}` }
+    }
+
+    const amountResult = await resolveAiTransactionAmount({
+      amount,
+      currency: rawCurrency,
+      userCurrency: context.currency,
+    })
+    if (!amountResult.ok) {
+      return { action: 'create_scheduled_transaction', success: false, message: amountResult.error }
+    }
+
+    const row = await createScheduledTransaction({
+      userId: context.userId,
+      title: title.trim(),
+      amount: amountResult.data.normalizedAmount,
+      sourceAmount: amountResult.data.sourceAmount,
+      sourceCurrency: amountResult.data.sourceCurrency,
+      exchangeRate: amountResult.data.exchangeRate,
+      type,
+      categoryId: categoryResult.categoryId,
+      paymentAccountId,
+      note: note?.trim() || null,
+      happenedAt,
+    })
+
+    const isForeign =
+      amountResult.data.sourceAmount !== null &&
+      amountResult.data.sourceCurrency.toUpperCase() !== context.currency.toUpperCase()
+    const amountPart = isForeign
+      ? `${amountResult.data.sourceAmount} ${amountResult.data.sourceCurrency}`
+      : `${amountResult.data.normalizedAmount} ${context.currency}`
+
+    return buildWriteStepResult({
+      action: 'create_scheduled_transaction',
+      success: true,
+      message: `Scheduled ${type} "${row.title}" (${amountPart}) on ${formatToolDate(happenedAt)} — saved as pending. It won't affect your balance until you confirm it.`,
+      entityId: row.id,
+    })
+  }
+
   if (toolName === 'query_user_data') {
     const args = queryUserDataArgsSchema.safeParse(toolArgs)
     if (!args.success) {
@@ -1245,6 +1326,22 @@ async function resolveAiCategoryId({
 function resolveToolDate(rawDate: string | undefined, today: string): Date | null {
   const value = rawDate?.trim() || today
   const parsed = new Date(`${value}T12:00:00`)
+  if (Number.isNaN(parsed.getTime())) {
+    return null
+  }
+  return parsed
+}
+
+/**
+ * Resolves a scheduled datetime string. Accepts full ISO datetimes (with time)
+ * or YYYY-MM-DD dates (defaulting to noon). Used by create_scheduled_transaction
+ * so the AI can pass an exact time (e.g. "today 10PM" → "2026-06-30T22:00:00").
+ */
+function resolveScheduledDate(rawDate: string): Date | null {
+  const value = rawDate.trim()
+  // If it already contains a time component (T or space-delimited), parse as-is.
+  const hasTime = value.includes('T') || /\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(value)
+  const parsed = hasTime ? new Date(value) : new Date(`${value}T12:00:00`)
   if (Number.isNaN(parsed.getTime())) {
     return null
   }

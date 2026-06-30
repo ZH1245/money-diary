@@ -14,6 +14,22 @@ export interface TransactionDto {
   source: string | null
   transferGroupId: string | null
   note: string | null
+  status: 'confirmed' | 'draft'
+  happenedAt: string
+}
+
+/**
+ * Payload accepted by the create scheduled transaction API.
+ */
+export interface CreateScheduledTransactionInput {
+  title: string
+  amount: string
+  currency?: string
+  exchangeRate?: string
+  type: 'income' | 'expense'
+  categoryId: number | null
+  paymentAccountId?: number | null
+  note?: string
   happenedAt: string
 }
 

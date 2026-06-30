@@ -63,3 +63,15 @@ export const updateTransferSchema = z
     message: 'Transfer accounts must differ',
     path: ['toPaymentAccountId'],
   })
+
+export const createScheduledTransactionSchema = z.object({
+  title: z.string().min(1),
+  amount: z.string().min(1),
+  currency: z.string().trim().length(3).optional(),
+  exchangeRate: z.string().trim().min(1).optional(),
+  type: z.enum(['income', 'expense']),
+  categoryId: z.number().int().positive().nullable().optional(),
+  paymentAccountId: z.number().int().positive().nullable().optional(),
+  note: z.string().optional(),
+  happenedAt: z.string().datetime(),
+})
