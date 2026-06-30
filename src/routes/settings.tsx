@@ -1,12 +1,11 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileText, Loader2, ScrollText } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { InlineError } from "#/components/feedback/inline-error";
-import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { SearchableSelect } from "#/components/forms/searchable-select";
-import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-shell";
+import { AuthenticatedRoutePage } from "#/components/layout/authenticated-route-page";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { ChangePasswordSection } from "#/features/auth/components/change-password-section";
 import { FeedbackFormSection } from "#/features/feedback/components/feedback-form-section";
@@ -16,10 +15,12 @@ import {
 	type SettingsNavGroup,
 	SettingsPageLayout,
 } from "#/features/settings/components/settings-page-layout";
+import { createAuthenticatedRouteLoader } from "#/lib/authenticated-route";
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from "#/lib/currency";
 import { useAuthSession } from "#/lib/use-auth-session";
 
 export const Route = createFileRoute("/settings")({
+	loader: createAuthenticatedRouteLoader("settings"),
 	component: SettingsPage,
 });
 
@@ -90,16 +91,14 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
 ];
 
 function SettingsPage() {
-	const {
-		data: session,
-		isInitialPending: isSessionPending,
-		refetch: refetchSession,
-	} = useAuthSession();
+	const loaderData = Route.useLoaderData();
+	const { data: session, refetch: refetchSession } = useAuthSession();
 	const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
 	const [isCurrencySubmitting, setIsCurrencySubmitting] = useState(false);
 	const [currencyError, setCurrencyError] = useState<string | null>(null);
 	const selectedCurrency = (
 		(session?.user as { currency?: string } | undefined)?.currency ??
+		loaderData?.user.currency ??
 		DEFAULT_CURRENCY
 	).toUpperCase();
 	const currencyOptions = useMemo(
@@ -120,14 +119,6 @@ function SettingsPage() {
 			return selectedCurrency;
 		});
 	}, [session?.user, selectedCurrency, isCurrencySubmitting, currencyError]);
-
-	if (isSessionPending) {
-		return <SessionLoadingSkeleton />;
-	}
-
-	if (!session?.user) {
-		return <Navigate to="/sign-in" />;
-	}
 
 	async function handleCurrencySubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -178,21 +169,18 @@ function SettingsPage() {
 		}
 	}
 
+	const profileName = session?.user?.name ?? loaderData?.user.name ?? "";
+	const profileEmail = session?.user?.email ?? loaderData?.user.email ?? "";
+	const profileImage = session?.user?.image ?? loaderData?.user.image ?? null;
+
 	return (
-		<AuthenticatedAppShell
-			user={{
-				name: session.user.name,
-				email: session.user.email,
-				image: session.user.image,
-				role: (session.user as { role?: string }).role,
-				currency: (session.user as { currency?: string }).currency,
-			}}
-		>
+		<AuthenticatedRoutePage loaderData={loaderData}>
+			{() => (
 			<main className="p-4 md:p-6 lg:p-8">
 				<ProfileCard
-					name={session.user.name}
-					email={session.user.email}
-					image={session.user.image}
+					name={profileName}
+					email={profileEmail}
+					image={profileImage}
 				/>
 				<SettingsPageLayout groups={SETTINGS_NAV_GROUPS}>
 					{(item) => {
@@ -276,7 +264,8 @@ function SettingsPage() {
 					}}
 				</SettingsPageLayout>
 			</main>
-		</AuthenticatedAppShell>
+			)}
+		</AuthenticatedRoutePage>
 	);
 }
 
