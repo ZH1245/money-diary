@@ -7,6 +7,47 @@ import { DEFAULT_AUTH_ROLE } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { resolveAuthBaseUrl } from '#/lib/server/app-hosts'
 
+function otpEmailHtml(otp: string): string {
+  return `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background-color:#f4f3ef;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f3ef;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background-color:#ffffff;border:1px solid #e7e7e1;border-radius:14px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px 32px 8px 32px;">
+                <p style="margin:0;font-size:18px;font-weight:700;color:#1f6b4a;letter-spacing:-0.01em;">Money Diary</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 0 32px;">
+                <p style="margin:0;font-size:15px;line-height:1.5;color:#15201a;">Use this code to sign in to your account.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 32px;">
+                <div style="font-size:34px;font-weight:700;letter-spacing:10px;color:#15201a;text-align:center;background-color:#f4f4ef;border:1px solid #e7e7e1;border-radius:10px;padding:18px 0;">${otp}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 8px 32px;">
+                <p style="margin:0;font-size:13px;line-height:1.5;color:#9aa09a;">This code expires in 5 minutes.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 28px 32px;">
+                <p style="margin:0;font-size:12px;line-height:1.5;color:#9aa09a;">If you didn't request this, you can safely ignore this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`
+}
+
 async function sendOtpEmail(email: string, otp: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -25,8 +66,8 @@ async function sendOtpEmail(email: string, otp: string): Promise<void> {
       from: process.env.RESEND_FROM || 'onboarding@resend.dev',
       to: email,
       subject: 'Your Money Diary sign-in code',
-      text: `Your sign-in code is ${otp}. It expires in 5 minutes.`,
-      html: `<p>Your Money Diary sign-in code is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px">${otp}</p><p>It expires in 5 minutes. If you didn't request this, you can ignore this email.</p>`,
+      text: `Money Diary\n\nUse this code to sign in: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, you can safely ignore this email.`,
+      html: otpEmailHtml(otp),
     }),
   })
 

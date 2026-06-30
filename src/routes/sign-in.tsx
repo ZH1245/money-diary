@@ -8,6 +8,11 @@ import { FormField } from "#/components/forms/form-field";
 import { AuthFeaturePanel } from "#/components/layout/auth-feature-panel";
 import { AuthSplitLayout } from "#/components/layout/auth-split-layout";
 import { ThemeToggle } from "#/components/layout/theme-toggle";
+import {
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+} from "#/components/ui/input-otp";
 import { AuthenticatedEntryRedirect } from "#/features/auth/components/authenticated-entry-redirect";
 import { authClient } from "#/lib/auth-client";
 
@@ -387,21 +392,39 @@ function SignInPage() {
 							/>
 
 							{otpSent ? (
-								<FormField
-									id="otp"
-									label="6-digit code"
-									type="text"
-									value={otpCode}
-									onChange={(nextValue) => {
-										setOtpCode(nextValue);
-										setErrorMessage(null);
-										setFieldErrors((previous) => ({ ...previous, otp: "" }));
-									}}
-									placeholder="123456"
-									error={fieldErrors.otp}
-									isDisabled={isSubmitting}
-									autoComplete="one-time-code"
-								/>
+								<div className="space-y-2">
+									<label
+										htmlFor="otp"
+										className="text-sm font-medium text-foreground"
+									>
+										6-digit code
+									</label>
+									<InputOTP
+										id="otp"
+										maxLength={6}
+										value={otpCode}
+										onChange={(nextValue) => {
+											setOtpCode(nextValue);
+											setErrorMessage(null);
+											setFieldErrors((previous) => ({ ...previous, otp: "" }));
+										}}
+										disabled={isSubmitting}
+										autoComplete="one-time-code"
+										containerClassName="justify-center"
+									>
+										<InputOTPGroup>
+											<InputOTPSlot index={0} />
+											<InputOTPSlot index={1} />
+											<InputOTPSlot index={2} />
+											<InputOTPSlot index={3} />
+											<InputOTPSlot index={4} />
+											<InputOTPSlot index={5} />
+										</InputOTPGroup>
+									</InputOTP>
+									{fieldErrors.otp ? (
+										<InlineError message={fieldErrors.otp} />
+									) : null}
+								</div>
 							) : null}
 
 							{errorMessage ? <InlineError message={errorMessage} /> : null}
