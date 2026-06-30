@@ -4,8 +4,15 @@ import { cn } from "#/lib/utils";
 
 export type ViewportMode = "desktop" | "mobile";
 
+/** True when the OS/browser requests reduced motion. */
+function prefersReducedMotion(): boolean {
+	if (typeof window === "undefined") return false;
+	return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 /**
  * Fades and slides content in when it enters the viewport.
+ * Skips animation when prefers-reduced-motion is active.
  */
 export function ScrollReveal({
 	children,
@@ -15,9 +22,13 @@ export function ScrollReveal({
 	className?: string;
 }) {
 	const ref = useRef<HTMLDivElement>(null);
-	const [visible, setVisible] = useState(false);
+	// Start visible immediately when reduced motion is preferred.
+	const [visible, setVisible] = useState(() => prefersReducedMotion());
 
 	useEffect(() => {
+		// If already visible (reduced-motion path) nothing to observe.
+		if (visible) return;
+
 		const node = ref.current;
 		if (!node) return;
 
@@ -28,12 +39,12 @@ export function ScrollReveal({
 					observer.disconnect();
 				}
 			},
-			{ threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
+			{ threshold: 0.1, rootMargin: "0px 0px -6% 0px" },
 		);
 
 		observer.observe(node);
 		return () => observer.disconnect();
-	}, []);
+	}, [visible]);
 
 	return (
 		<div
