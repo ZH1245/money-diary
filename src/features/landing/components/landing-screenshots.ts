@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
 	BarChart3,
+	EyeOff,
 	LayoutDashboard,
 	ReceiptText,
 	Sparkles,
@@ -97,5 +98,13 @@ export const LANDING_SCREENSHOTS: LandingScreenshot[] = [
 			"Track NayaPay, JazzCash, bank cards, and cash — each with its own balance and brand colour.",
 		urlLabel: "moneydiary.app/accounts",
 		icon: WalletCards,
+	},
+	{
+		id: "privacy",
+		title: "Privacy mode",
+		description:
+			"Hide every balance and amount with one tap — open your finances anywhere without showing the numbers.",
+		urlLabel: "moneydiary.app/dashboard",
+		icon: EyeOff,
 	},
 ];

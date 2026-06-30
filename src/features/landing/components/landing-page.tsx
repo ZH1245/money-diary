@@ -9,6 +9,7 @@ import { FeatureShowcase } from "./feature-showcase";
 import { LANDING_THEMES } from "./landing-themes";
 import { ScrollReveal } from "./landing-ui-bits";
 import { LandingNav } from "./landing-nav";
+import { PrivacySection } from "./privacy-section";
 import { ThemesShowcase } from "./themes-showcase";
 
 /**
@@ -125,6 +126,9 @@ export function LandingPage() {
 			<ScrollReveal>
 				<FeatureGrid />
 			</ScrollReveal>
+
+			{/* ── Privacy section ────────────────────────────────────── */}
+			<PrivacySection />
 
 			{/* ── Themes showcase ────────────────────────────────────── */}
 			<ThemesShowcase />
