@@ -23,10 +23,17 @@ import {
 import {
 	type ComponentType,
 	type ReactNode,
+	lazy,
+	Suspense,
 	useEffect,
 	useState,
 } from "react";
-import { AiTransactionPanel } from "#/components/ai/ai-transaction-panel";
+
+const AiTransactionPanel = lazy(() =>
+	import("#/components/ai/ai-transaction-panel").then((module) => ({
+		default: module.AiTransactionPanel,
+	})),
+);
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { QueryRefreshButton } from "#/components/feedback/query-refresh-button";
 import { DashboardDateRangeFilter } from "#/components/layout/dashboard-date-range-filter";
@@ -317,7 +324,14 @@ export function AuthenticatedAppShell({
 					/>
 				)}
 
-				<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
+				{aiPanelOpen ? (
+					<Suspense fallback={null}>
+						<AiTransactionPanel
+							open={aiPanelOpen}
+							onOpenChange={setAiPanelOpen}
+						/>
+					</Suspense>
+				) : null}
 				{quickAddSheet}
 			</div>
 		);
@@ -422,7 +436,11 @@ export function AuthenticatedAppShell({
 				</div>
 			</div>
 
-			<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
+			{aiPanelOpen ? (
+				<Suspense fallback={null}>
+					<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
+				</Suspense>
+			) : null}
 			{quickAddSheet}
 		</div>
 	);

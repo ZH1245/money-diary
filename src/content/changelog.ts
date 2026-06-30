@@ -13,6 +13,14 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.2',
+    date: '2026-06-30',
+    title: 'Faster loading',
+    highlights: [
+      'Quicker first paint when opening the app, especially on dashboard',
+    ],
+  },
+  {
     version: '0.1.1',
     date: '2026-06-30',
     title: 'Feedback conversations',

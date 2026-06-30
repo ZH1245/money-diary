@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
+import { SpeedInsightsRouteReporter } from "#/components/observability/speed-insights-route-reporter";
 import { Toaster } from "sonner";
 import { NotFoundPage } from "#/components/layout/not-found-page";
 import {
@@ -65,12 +65,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		],
 		links: [
 			{
-				rel: "stylesheet",
+				rel: "preload",
 				href: appCss,
+				as: "style",
 			},
 			{
-				rel: "manifest",
-				href: "/manifest.json",
+				rel: "stylesheet",
+				href: appCss,
 			},
 			{
 				rel: "icon",
@@ -108,7 +109,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<ServiceWorkerRegistration />
 				<AppUpdateNotifier />
 				<Analytics />
-				<SpeedInsights />
+				<SpeedInsightsRouteReporter />
 				{import.meta.env.DEV ? (
 					<TanStackDevtools
 						config={{

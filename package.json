@@ -36,6 +36,9 @@
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
+    "@fontsource-variable/inter-tight": "^5.2.7",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
     "@neondatabase/serverless": "^1.0.2",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
