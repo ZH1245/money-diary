@@ -400,7 +400,6 @@ export function PaymentAccountsPageContent({
 								data={accounts}
 								filterPlaceholder="Filter accounts..."
 								emptyMessage="No accounts added yet."
-								fillWidth
 							/>
 						</div>
 					) : (

@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 import { Slot } from "radix-ui"
 
-import { useIsMobile } from "#/hooks/use-mobile.ts"
+import { SIDEBAR_MOBILE_BREAKPOINT, useIsMobile } from "#/hooks/use-is-mobile"
 import { cn } from "#/lib/utils.ts"
 import { Button } from "#/components/ui/button.tsx"
 import { Input } from "#/components/ui/input.tsx"
@@ -67,7 +67,7 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile(SIDEBAR_MOBILE_BREAKPOINT)
   const [openMobile, setOpenMobile] = React.useState(false)
   const getPersistedOpenState = React.useCallback((): boolean | null => {
     if (typeof window === "undefined") return null

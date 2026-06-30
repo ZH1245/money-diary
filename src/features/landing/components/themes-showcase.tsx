@@ -1,199 +1,74 @@
-import { Check } from "lucide-react";
+import { Check, Palette } from "lucide-react";
+import { useState } from "react";
+import { useTheme } from "#/components/layout/theme-provider";
+import { cn } from "#/lib/utils";
+import { BrowserFrame, PhoneFrame } from "./landing-device-frames";
+import { getThemeDashboardImage, LANDING_THEMES } from "./landing-themes";
 import {
-	type ThemeMode,
-	type ThemePalette,
-	useTheme,
-} from "#/components/layout/theme-provider";
+	ScrollReveal,
+	ViewportToggle,
+	type ViewportMode,
+} from "./landing-ui-bits";
 
-/**
- * Interactive themes showcase — each card renders a mini dashboard preview using
- * the palette's real hex values (mirrors styles.css). Clicking a card applies
- * that palette + mode live to the whole page via the ThemeProvider.
- */
-
-interface ThemePreview {
-	name: string;
-	mode: string;
-	palette: ThemePalette;
-	themeMode: ThemeMode;
-	canvas: string;
-	panel: string;
-	border: string;
-	fg: string;
-	muted: string;
-	accent: string;
-	accentOn: string;
-	income: string;
-	expense: string;
-}
-
-const THEMES: ThemePreview[] = [
-	{
-		name: "Calm",
-		mode: "Light",
-		palette: "c",
-		themeMode: "light",
-		canvas: "#f4f3ef",
-		panel: "#fcfcfa",
-		border: "#e7e7e1",
-		fg: "#15201a",
-		muted: "#9aa09a",
-		accent: "#1f6b4a",
-		accentOn: "#f0f4f1",
-		income: "#1f6b4a",
-		expense: "#b0473d",
-	},
-	{
-		name: "Calm",
-		mode: "Dark",
-		palette: "c",
-		themeMode: "dark",
-		canvas: "#181c18",
-		panel: "#20251f",
-		border: "#2f352e",
-		fg: "#eaf0ea",
-		muted: "#868d86",
-		accent: "#45b483",
-		accentOn: "#0c130f",
-		income: "#56cf97",
-		expense: "#ea8576",
-	},
-	{
-		name: "Aurora",
-		mode: "Light",
-		palette: "a",
-		themeMode: "light",
-		canvas: "#f5f5f7",
-		panel: "#ffffff",
-		border: "#ececef",
-		fg: "#16161c",
-		muted: "#9a9aa4",
-		accent: "#4f46e5",
-		accentOn: "#ffffff",
-		income: "#1f9d5b",
-		expense: "#d4493f",
-	},
-	{
-		name: "Aurora",
-		mode: "Dark",
-		palette: "a",
-		themeMode: "dark",
-		canvas: "#141419",
-		panel: "#1c1c24",
-		border: "#2c2c36",
-		fg: "#f2f2f5",
-		muted: "#8a8a95",
-		accent: "#8078ff",
-		accentOn: "#ffffff",
-		income: "#34d680",
-		expense: "#f06a5d",
-	},
-];
-
-const PREVIEW_BARS = [60, 85, 45, 70, 55];
-
-function ThemeCard({
+function ThemeScreenshotCard({
 	theme,
+	viewport,
 	active,
 	onSelect,
 }: {
-	theme: ThemePreview;
+	theme: (typeof LANDING_THEMES)[number];
+	viewport: ViewportMode;
 	active: boolean;
 	onSelect: () => void;
 }) {
+	const image = getThemeDashboardImage(theme, viewport);
+	const alt = `Money Diary dashboard — ${theme.name} ${theme.modeLabel} theme`;
+
 	return (
 		<button
 			type="button"
 			onClick={onSelect}
 			aria-pressed={active}
-			className={`group block overflow-hidden rounded-panel border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${
+			className={cn(
+				"group block w-full overflow-hidden rounded-panel border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-md",
 				active
-					? "border-primary ring-2 ring-primary/40"
-					: "border-border hover:border-primary/40"
-			}`}
+					? "border-primary ring-2 ring-primary/30"
+					: "border-border hover:border-primary/40",
+			)}
 		>
-			{/* Mini preview rendered with the theme's own colors */}
-			<div className="p-3" style={{ backgroundColor: theme.canvas }}>
-				<div
-					className="rounded-xl p-3"
-					style={{
-						backgroundColor: theme.panel,
-						border: `1px solid ${theme.border}`,
-					}}
-				>
-					<div className="flex items-center justify-between">
-						<span
-							className="text-[9px] font-semibold uppercase tracking-wide"
-							style={{ color: theme.muted }}
-						>
-							Total balance
-						</span>
-						<span
-							className="size-4 rounded-md"
-							style={{ backgroundColor: theme.accent }}
-						/>
-					</div>
-					<p
-						className="mt-1.5 font-num text-lg font-extrabold tracking-tight"
-						style={{ color: theme.fg }}
-					>
-						$24,858
-					</p>
-
-					{/* Mini bar chart */}
-					<div className="mt-3 flex h-10 items-end gap-1.5">
-						{PREVIEW_BARS.map((h, i) => (
-							<div
-								// biome-ignore lint/suspicious/noArrayIndexKey: static demo bars
-								key={i}
-								className="min-h-[2px] flex-1 rounded-t-[3px]"
-								style={{ height: `${h}%`, backgroundColor: theme.accent }}
-							/>
-						))}
-					</div>
-
-					{/* Income / expense chips */}
-					<div className="mt-3 flex items-center gap-1.5">
-						<span
-							className="rounded-md px-1.5 py-0.5 font-num text-[9px] font-bold"
-							style={{
-								color: theme.income,
-								backgroundColor: `${theme.income}1f`,
-							}}
-						>
-							+$5.4k
-						</span>
-						<span
-							className="rounded-md px-1.5 py-0.5 font-num text-[9px] font-bold"
-							style={{
-								color: theme.expense,
-								backgroundColor: `${theme.expense}1f`,
-							}}
-						>
-							-$2.1k
-						</span>
-						<span
-							className="ml-auto rounded-md px-2 py-0.5 text-[9px] font-bold"
-							style={{ backgroundColor: theme.accent, color: theme.accentOn }}
-						>
-							Add
-						</span>
-					</div>
-				</div>
+			<div className="p-3 sm:p-4">
+				{viewport === "desktop" ? (
+					<BrowserFrame
+						urlLabel="moneydiary.app/dashboard"
+						image={image}
+						alt={alt}
+					/>
+				) : (
+					<PhoneFrame image={image} alt={alt} />
+				)}
 			</div>
 
-			{/* Label */}
-			<div className="flex items-center justify-between px-3 py-2.5">
-				<span className="text-sm font-semibold text-foreground">
-					{theme.name}
-				</span>
+			<div className="flex items-center justify-between border-t border-border px-4 py-3">
+				<div>
+					<p className="text-sm font-semibold text-foreground">
+						{theme.name}
+						<span className="font-normal text-muted-foreground">
+							{" "}
+							· {theme.modeLabel}
+						</span>
+					</p>
+					<p className="mt-0.5 text-xs text-muted-foreground">
+						{theme.description}
+					</p>
+				</div>
 				{active ? (
-					<span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-						<Check className="size-3" /> Active
+					<span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+						<Check className="size-3" />
+						Active
 					</span>
 				) : (
-					<span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-						{theme.mode} · Try it
+					<span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+						Try it
 					</span>
 				)}
 			</div>
@@ -201,12 +76,21 @@ function ThemeCard({
 	);
 }
 
+/**
+ * Theme gallery — real dashboard screenshots for every palette × mode.
+ * Tapping a card applies that theme live across the landing page.
+ */
 export function ThemesShowcase() {
 	const { palette, mode, setPalette, setMode } = useTheme();
+	const [viewport, setViewport] = useState<ViewportMode>("desktop");
 
 	return (
 		<section className="mx-auto w-full max-w-6xl px-4 py-16 sm:py-24">
-			<div className="mb-10 text-center">
+			<div className="mb-12 text-center">
+				<span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted-foreground">
+					<Palette className="size-3.5 text-primary" />
+					Personalization
+				</span>
 				<h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
 					Make it yours
 				</h2>
@@ -216,22 +100,31 @@ export function ThemesShowcase() {
 						{" "}
 						Tap any theme to preview it live
 					</span>{" "}
-					across this whole page.
+					across this page.
 				</p>
+				<div className="mt-6 flex justify-center">
+					<ViewportToggle mode={viewport} onChange={setViewport} />
+				</div>
 			</div>
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				{THEMES.map((theme) => (
-					<ThemeCard
-						key={`${theme.name}-${theme.mode}`}
-						theme={theme}
-						active={palette === theme.palette && mode === theme.themeMode}
-						onSelect={() => {
-							setPalette(theme.palette);
-							setMode(theme.themeMode);
-						}}
-					/>
-				))}
-			</div>
+
+			<ScrollReveal>
+				<div className="grid gap-6 sm:grid-cols-2">
+					{LANDING_THEMES.map((theme) => (
+						<ThemeScreenshotCard
+							key={theme.id}
+							theme={theme}
+							viewport={viewport}
+							active={
+								palette === theme.palette && mode === theme.themeMode
+							}
+							onSelect={() => {
+								setPalette(theme.palette);
+								setMode(theme.themeMode);
+							}}
+						/>
+					))}
+				</div>
+			</ScrollReveal>
 		</section>
 	);
 }

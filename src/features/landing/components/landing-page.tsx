@@ -1,10 +1,64 @@
 import { Link } from "@tanstack/react-router";
 import { ShieldCheck, Sparkles } from "lucide-react";
+import { useTheme } from "#/components/layout/theme-provider";
 import { Button } from "#/components/ui/button";
+import { cn } from "#/lib/utils";
 import { DeviceMockups } from "./device-mockups";
 import { FeatureGrid } from "./feature-grid";
+import { FeatureShowcase } from "./feature-showcase";
+import { LANDING_THEMES } from "./landing-themes";
+import { ScrollReveal } from "./landing-ui-bits";
 import { LandingNav } from "./landing-nav";
+import { PrivacySection } from "./privacy-section";
 import { ThemesShowcase } from "./themes-showcase";
+
+/**
+ * Compact 4-pill theme switcher for the hero section.
+ * Wires directly to the global theme so DeviceMockups react live.
+ */
+function HeroThemeSwitcher() {
+	const { palette, mode, setPalette, setMode } = useTheme();
+
+	return (
+		<div className="mt-8 flex flex-col items-center gap-2">
+			<p className="text-xs font-medium text-muted-foreground">
+				Try a theme →
+			</p>
+			<div className="flex flex-wrap items-center justify-center gap-2">
+				{LANDING_THEMES.map((theme) => {
+					const active = palette === theme.palette && mode === theme.themeMode;
+					return (
+						<button
+							key={theme.id}
+							type="button"
+							aria-pressed={active}
+							onClick={() => {
+								setPalette(theme.palette);
+								setMode(theme.themeMode);
+							}}
+							className={cn(
+								"inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all",
+								active
+									? "border-primary bg-primary text-primary-foreground shadow-sm"
+									: "border-border bg-panel text-muted-foreground hover:border-primary/40 hover:text-foreground",
+							)}
+						>
+							<span
+								aria-hidden
+								className={cn(
+									"block size-2 rounded-full",
+									theme.palette === "c" ? "bg-emerald-500" : "bg-indigo-500",
+								)}
+							/>
+							{theme.name}
+							<span className="opacity-70">· {theme.modeLabel}</span>
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
 
 export function LandingPage() {
 	return (
@@ -49,22 +103,38 @@ export function LandingPage() {
 							<ShieldCheck className="size-3.5" />
 							Free to start · No card required · Your data stays private
 						</p>
+
+						{/* ── Hero theme switcher ─────────────────────────── */}
+						<HeroThemeSwitcher />
 					</div>
 				</div>
 
 				{/* ── Device mockups ───────────────────────────────────── */}
-				<div className="relative mx-auto w-full max-w-6xl overflow-hidden px-4 pb-20 sm:pb-32">
+				{/*
+				  Extra bottom padding on sm+ accommodates the overlapping phone
+				  that hangs ~40px below the desktop frame (-bottom-10).
+				*/}
+				<div className="relative mx-auto w-full max-w-6xl px-4 pb-20 sm:pb-20 sm:pt-4 lg:pb-24">
 					<DeviceMockups />
 				</div>
 			</section>
 
+			{/* ── Feature showcase (screenshot carousel) ─────────────── */}
+			<FeatureShowcase />
+
 			{/* ── Feature grid ───────────────────────────────────────── */}
-			<FeatureGrid />
+			<ScrollReveal>
+				<FeatureGrid />
+			</ScrollReveal>
+
+			{/* ── Privacy section ────────────────────────────────────── */}
+			<PrivacySection />
 
 			{/* ── Themes showcase ────────────────────────────────────── */}
 			<ThemesShowcase />
 
 			{/* ── Bottom CTA band ────────────────────────────────────── */}
+			<ScrollReveal>
 			<section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:pb-24">
 				<div className="relative overflow-hidden rounded-panel bg-primary px-6 py-14 text-center text-primary-foreground sm:px-10">
 					<div
@@ -96,6 +166,7 @@ export function LandingPage() {
 					</div>
 				</div>
 			</section>
+			</ScrollReveal>
 
 			{/* ── Footer ─────────────────────────────────────────────── */}
 			<footer className="border-t border-border">
