@@ -136,3 +136,11 @@ API rules:
 - Every new API endpoint must be documented in OpenAPI in the same change
 - Use zod validation for request payloads and query params
 - Return consistent JSON shape for success and error responses
+
+# release version and changelog
+
+For any user-facing feature, fix, or behavior change shipped in a PR:
+1. Bump `APP_VERSION` in `src/lib/app-version.ts` (patch for fixes/small features, minor for larger releases)
+2. Add a new entry at the top of `CHANGELOG_RELEASES` in `src/content/changelog.ts` (version, date, title, highlights)
+3. Keep `src/routes/api/openapi.json.ts` `info.version` in sync with `APP_VERSION`
+4. Include the version bump in the same PR as the feature work — never merge without it

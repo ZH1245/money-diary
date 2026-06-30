@@ -42,6 +42,7 @@ import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiWishlistIdRouteImport } from './routes/api/wishlist/$id'
 import { Route as ApiTransactionsDraftsRouteImport } from './routes/api/transactions/drafts'
 import { Route as ApiTransactionsIdRouteImport } from './routes/api/transactions/$id'
+import { Route as ApiTicketsIdRouteImport } from './routes/api/tickets/$id'
 import { Route as ApiSettingsCurrencyRouteImport } from './routes/api/settings/currency'
 import { Route as ApiSettingsAiRouteImport } from './routes/api/settings/ai'
 import { Route as ApiSavingsIdRouteImport } from './routes/api/savings/$id'
@@ -69,6 +70,7 @@ import { Route as ApiAdminGlobalAiRouteImport } from './routes/api/admin/global-
 import { Route as ApiAdminCategoriesRouteImport } from './routes/api/admin/categories'
 import { Route as ApiAdminBansRouteImport } from './routes/api/admin/bans'
 import { Route as ApiTransactionsDraftsIdRouteImport } from './routes/api/transactions/drafts.$id'
+import { Route as ApiTicketsIdMessagesRouteImport } from './routes/api/tickets/$id/messages'
 import { Route as ApiSettingsAiTestRouteImport } from './routes/api/settings/ai/test'
 import { Route as ApiSettingsAiKeyRouteImport } from './routes/api/settings/ai/key'
 import { Route as ApiAuthRecoveryResetRouteImport } from './routes/api/auth/recovery/reset'
@@ -82,6 +84,7 @@ import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/glob
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
 import { Route as ApiAdminBansIdRouteImport } from './routes/api/admin/bans/$id'
 import { Route as ApiAdminUsersIdResetLinkRouteImport } from './routes/api/admin/users/$id/reset-link'
+import { Route as ApiAdminTicketsIdMessagesRouteImport } from './routes/api/admin/tickets/$id/messages'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -248,6 +251,11 @@ const ApiTransactionsIdRoute = ApiTransactionsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiTransactionsRoute,
 } as any)
+const ApiTicketsIdRoute = ApiTicketsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiTicketsRoute,
+} as any)
 const ApiSettingsCurrencyRoute = ApiSettingsCurrencyRouteImport.update({
   id: '/api/settings/currency',
   path: '/api/settings/currency',
@@ -384,6 +392,11 @@ const ApiTransactionsDraftsIdRoute = ApiTransactionsDraftsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiTransactionsDraftsRoute,
 } as any)
+const ApiTicketsIdMessagesRoute = ApiTicketsIdMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => ApiTicketsIdRoute,
+} as any)
 const ApiSettingsAiTestRoute = ApiSettingsAiTestRouteImport.update({
   id: '/test',
   path: '/test',
@@ -453,6 +466,12 @@ const ApiAdminUsersIdResetLinkRoute =
     path: '/reset-link',
     getParentRoute: () => ApiAdminUsersIdRoute,
   } as any)
+const ApiAdminTicketsIdMessagesRoute =
+  ApiAdminTicketsIdMessagesRouteImport.update({
+    id: '/messages',
+    path: '/messages',
+    getParentRoute: () => ApiAdminTicketsIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -482,7 +501,7 @@ export interface FileRoutesByFullPath {
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
-  '/api/tickets': typeof ApiTicketsRoute
+  '/api/tickets': typeof ApiTicketsRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/bans': typeof ApiAdminBansRouteWithChildren
@@ -511,6 +530,7 @@ export interface FileRoutesByFullPath {
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
+  '/api/tickets/$id': typeof ApiTicketsIdRouteWithChildren
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
   '/api/transactions/drafts': typeof ApiTransactionsDraftsRouteWithChildren
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
@@ -519,14 +539,16 @@ export interface FileRoutesByFullPath {
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/openrouter-models': typeof ApiAdminGlobalAiOpenrouterModelsRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
-  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
+  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRouteWithChildren
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/tickets/$id/messages': typeof ApiTicketsIdMessagesRoute
   '/api/transactions/drafts/$id': typeof ApiTransactionsDraftsIdRoute
+  '/api/admin/tickets/$id/messages': typeof ApiAdminTicketsIdMessagesRoute
   '/api/admin/users/$id/reset-link': typeof ApiAdminUsersIdResetLinkRoute
 }
 export interface FileRoutesByTo {
@@ -557,7 +579,7 @@ export interface FileRoutesByTo {
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
-  '/api/tickets': typeof ApiTicketsRoute
+  '/api/tickets': typeof ApiTicketsRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/bans': typeof ApiAdminBansRouteWithChildren
@@ -586,6 +608,7 @@ export interface FileRoutesByTo {
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
+  '/api/tickets/$id': typeof ApiTicketsIdRouteWithChildren
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
   '/api/transactions/drafts': typeof ApiTransactionsDraftsRouteWithChildren
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
@@ -594,14 +617,16 @@ export interface FileRoutesByTo {
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/openrouter-models': typeof ApiAdminGlobalAiOpenrouterModelsRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
-  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
+  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRouteWithChildren
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/tickets/$id/messages': typeof ApiTicketsIdMessagesRoute
   '/api/transactions/drafts/$id': typeof ApiTransactionsDraftsIdRoute
+  '/api/admin/tickets/$id/messages': typeof ApiAdminTicketsIdMessagesRoute
   '/api/admin/users/$id/reset-link': typeof ApiAdminUsersIdResetLinkRoute
 }
 export interface FileRoutesById {
@@ -633,7 +658,7 @@ export interface FileRoutesById {
   '/api/payment-accounts': typeof ApiPaymentAccountsRouteWithChildren
   '/api/recurring': typeof ApiRecurringRouteWithChildren
   '/api/savings': typeof ApiSavingsRouteWithChildren
-  '/api/tickets': typeof ApiTicketsRoute
+  '/api/tickets': typeof ApiTicketsRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/api/wishlist': typeof ApiWishlistRouteWithChildren
   '/api/admin/bans': typeof ApiAdminBansRouteWithChildren
@@ -662,6 +687,7 @@ export interface FileRoutesById {
   '/api/savings/$id': typeof ApiSavingsIdRoute
   '/api/settings/ai': typeof ApiSettingsAiRouteWithChildren
   '/api/settings/currency': typeof ApiSettingsCurrencyRoute
+  '/api/tickets/$id': typeof ApiTicketsIdRouteWithChildren
   '/api/transactions/$id': typeof ApiTransactionsIdRoute
   '/api/transactions/drafts': typeof ApiTransactionsDraftsRouteWithChildren
   '/api/wishlist/$id': typeof ApiWishlistIdRoute
@@ -670,14 +696,16 @@ export interface FileRoutesById {
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
   '/api/admin/global-ai/openrouter-models': typeof ApiAdminGlobalAiOpenrouterModelsRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
-  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
+  '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRouteWithChildren
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
   '/api/ai/conversations/$conversationId': typeof ApiAiConversationsConversationIdRoute
   '/api/auth/recovery/challenge': typeof ApiAuthRecoveryChallengeRoute
   '/api/auth/recovery/reset': typeof ApiAuthRecoveryResetRoute
   '/api/settings/ai/key': typeof ApiSettingsAiKeyRoute
   '/api/settings/ai/test': typeof ApiSettingsAiTestRoute
+  '/api/tickets/$id/messages': typeof ApiTicketsIdMessagesRoute
   '/api/transactions/drafts/$id': typeof ApiTransactionsDraftsIdRoute
+  '/api/admin/tickets/$id/messages': typeof ApiAdminTicketsIdMessagesRoute
   '/api/admin/users/$id/reset-link': typeof ApiAdminUsersIdResetLinkRoute
 }
 export interface FileRouteTypes {
@@ -739,6 +767,7 @@ export interface FileRouteTypes {
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
+    | '/api/tickets/$id'
     | '/api/transactions/$id'
     | '/api/transactions/drafts'
     | '/api/wishlist/$id'
@@ -754,7 +783,9 @@ export interface FileRouteTypes {
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/tickets/$id/messages'
     | '/api/transactions/drafts/$id'
+    | '/api/admin/tickets/$id/messages'
     | '/api/admin/users/$id/reset-link'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -814,6 +845,7 @@ export interface FileRouteTypes {
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
+    | '/api/tickets/$id'
     | '/api/transactions/$id'
     | '/api/transactions/drafts'
     | '/api/wishlist/$id'
@@ -829,7 +861,9 @@ export interface FileRouteTypes {
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/tickets/$id/messages'
     | '/api/transactions/drafts/$id'
+    | '/api/admin/tickets/$id/messages'
     | '/api/admin/users/$id/reset-link'
   id:
     | '__root__'
@@ -889,6 +923,7 @@ export interface FileRouteTypes {
     | '/api/savings/$id'
     | '/api/settings/ai'
     | '/api/settings/currency'
+    | '/api/tickets/$id'
     | '/api/transactions/$id'
     | '/api/transactions/drafts'
     | '/api/wishlist/$id'
@@ -904,7 +939,9 @@ export interface FileRouteTypes {
     | '/api/auth/recovery/reset'
     | '/api/settings/ai/key'
     | '/api/settings/ai/test'
+    | '/api/tickets/$id/messages'
     | '/api/transactions/drafts/$id'
+    | '/api/admin/tickets/$id/messages'
     | '/api/admin/users/$id/reset-link'
   fileRoutesById: FileRoutesById
 }
@@ -936,7 +973,7 @@ export interface RootRouteChildren {
   ApiPaymentAccountsRoute: typeof ApiPaymentAccountsRouteWithChildren
   ApiRecurringRoute: typeof ApiRecurringRouteWithChildren
   ApiSavingsRoute: typeof ApiSavingsRouteWithChildren
-  ApiTicketsRoute: typeof ApiTicketsRoute
+  ApiTicketsRoute: typeof ApiTicketsRouteWithChildren
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   ApiWishlistRoute: typeof ApiWishlistRouteWithChildren
   ApiAdminBansRoute: typeof ApiAdminBansRouteWithChildren
@@ -1197,6 +1234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTransactionsIdRouteImport
       parentRoute: typeof ApiTransactionsRoute
     }
+    '/api/tickets/$id': {
+      id: '/api/tickets/$id'
+      path: '/$id'
+      fullPath: '/api/tickets/$id'
+      preLoaderRoute: typeof ApiTicketsIdRouteImport
+      parentRoute: typeof ApiTicketsRoute
+    }
     '/api/settings/currency': {
       id: '/api/settings/currency'
       path: '/api/settings/currency'
@@ -1386,6 +1430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTransactionsDraftsIdRouteImport
       parentRoute: typeof ApiTransactionsDraftsRoute
     }
+    '/api/tickets/$id/messages': {
+      id: '/api/tickets/$id/messages'
+      path: '/messages'
+      fullPath: '/api/tickets/$id/messages'
+      preLoaderRoute: typeof ApiTicketsIdMessagesRouteImport
+      parentRoute: typeof ApiTicketsIdRoute
+    }
     '/api/settings/ai/test': {
       id: '/api/settings/ai/test'
       path: '/test'
@@ -1477,6 +1528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminUsersIdResetLinkRouteImport
       parentRoute: typeof ApiAdminUsersIdRoute
     }
+    '/api/admin/tickets/$id/messages': {
+      id: '/api/admin/tickets/$id/messages'
+      path: '/messages'
+      fullPath: '/api/admin/tickets/$id/messages'
+      preLoaderRoute: typeof ApiAdminTicketsIdMessagesRouteImport
+      parentRoute: typeof ApiAdminTicketsIdRoute
+    }
   }
 }
 
@@ -1537,6 +1595,30 @@ const ApiSavingsRouteChildren: ApiSavingsRouteChildren = {
 
 const ApiSavingsRouteWithChildren = ApiSavingsRoute._addFileChildren(
   ApiSavingsRouteChildren,
+)
+
+interface ApiTicketsIdRouteChildren {
+  ApiTicketsIdMessagesRoute: typeof ApiTicketsIdMessagesRoute
+}
+
+const ApiTicketsIdRouteChildren: ApiTicketsIdRouteChildren = {
+  ApiTicketsIdMessagesRoute: ApiTicketsIdMessagesRoute,
+}
+
+const ApiTicketsIdRouteWithChildren = ApiTicketsIdRoute._addFileChildren(
+  ApiTicketsIdRouteChildren,
+)
+
+interface ApiTicketsRouteChildren {
+  ApiTicketsIdRoute: typeof ApiTicketsIdRouteWithChildren
+}
+
+const ApiTicketsRouteChildren: ApiTicketsRouteChildren = {
+  ApiTicketsIdRoute: ApiTicketsIdRouteWithChildren,
+}
+
+const ApiTicketsRouteWithChildren = ApiTicketsRoute._addFileChildren(
+  ApiTicketsRouteChildren,
 )
 
 interface ApiTransactionsDraftsRouteChildren {
@@ -1616,12 +1698,23 @@ const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
 const ApiAdminGlobalAiRouteWithChildren =
   ApiAdminGlobalAiRoute._addFileChildren(ApiAdminGlobalAiRouteChildren)
 
+interface ApiAdminTicketsIdRouteChildren {
+  ApiAdminTicketsIdMessagesRoute: typeof ApiAdminTicketsIdMessagesRoute
+}
+
+const ApiAdminTicketsIdRouteChildren: ApiAdminTicketsIdRouteChildren = {
+  ApiAdminTicketsIdMessagesRoute: ApiAdminTicketsIdMessagesRoute,
+}
+
+const ApiAdminTicketsIdRouteWithChildren =
+  ApiAdminTicketsIdRoute._addFileChildren(ApiAdminTicketsIdRouteChildren)
+
 interface ApiAdminTicketsRouteChildren {
-  ApiAdminTicketsIdRoute: typeof ApiAdminTicketsIdRoute
+  ApiAdminTicketsIdRoute: typeof ApiAdminTicketsIdRouteWithChildren
 }
 
 const ApiAdminTicketsRouteChildren: ApiAdminTicketsRouteChildren = {
-  ApiAdminTicketsIdRoute: ApiAdminTicketsIdRoute,
+  ApiAdminTicketsIdRoute: ApiAdminTicketsIdRouteWithChildren,
 }
 
 const ApiAdminTicketsRouteWithChildren = ApiAdminTicketsRoute._addFileChildren(
@@ -1705,7 +1798,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPaymentAccountsRoute: ApiPaymentAccountsRouteWithChildren,
   ApiRecurringRoute: ApiRecurringRouteWithChildren,
   ApiSavingsRoute: ApiSavingsRouteWithChildren,
-  ApiTicketsRoute: ApiTicketsRoute,
+  ApiTicketsRoute: ApiTicketsRouteWithChildren,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   ApiWishlistRoute: ApiWishlistRouteWithChildren,
   ApiAdminBansRoute: ApiAdminBansRouteWithChildren,
