@@ -158,29 +158,17 @@ async function prepareDashboardMobile(page: Page) {
 
 /**
  * Loads the dashboard with privacy mode ON so balances render masked.
- * After the shot loop moves to the next feature it calls page.goto again,
- * which triggers addInitScript and resets the key back to 'false'.
+ * Toggles privacy via the UI (not localStorage) — a reload re-runs
+ * addInitScript which would reset the stored flag back to 'false'.
  */
 async function preparePrivacyDashboard(page: Page) {
-	// Navigate first so addInitScript fires (sets key to 'false').
-	await page.goto(`${BASE_URL}/dashboard`, { waitUntil: "domcontentloaded" });
-	// Override to privacy ON and reload so the store re-reads from localStorage.
-	await page.evaluate(
-		({ key }) => { localStorage.setItem(key, "true"); },
-		{ key: PRIVACY_STORAGE_KEY },
-	);
-	await page.reload({ waitUntil: "domcontentloaded" });
-	await page.getByText("Net balance", { exact: false }).first().waitFor({
-		state: "visible",
-		timeout: 60_000,
-	});
-	await waitForNoSkeletons(page);
-	await page.getByText("Recent activity").waitFor({
-		state: "visible",
-		timeout: 60_000,
-	});
-	await collapseSidebarIfVisible(page);
-	await page.waitForTimeout(600);
+	await prepareDashboardDesktop(page);
+	// Privacy is OFF here (addInitScript set the flag to 'false'); the toggle's
+	// label in that state is "Hide amounts and titles". Click it to mask live.
+	await page
+		.getByRole("button", { name: "Hide amounts and titles" })
+		.click();
+	await page.waitForTimeout(400);
 }
 
 async function prepareAiDesktop(page: Page) {
