@@ -6,7 +6,7 @@ const openApiSpec = {
   openapi: '3.0.3',
   info: {
     title: 'Money Diary API',
-    version: '0.1.1',
+    version: '0.1.2',
     description: 'OpenAPI specification for Money Diary server routes.',
   },
   servers: [{ url: '/' }],

@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Toaster } from "sonner";
 import { NotFoundPage } from "#/components/layout/not-found-page";
 import {
@@ -107,6 +108,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<ServiceWorkerRegistration />
 				<AppUpdateNotifier />
 				<Analytics />
+				<SpeedInsights />
 				{import.meta.env.DEV ? (
 					<TanStackDevtools
 						config={{

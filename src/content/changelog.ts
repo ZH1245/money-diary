@@ -11,6 +11,14 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.2',
+    date: '2026-06-30',
+    title: 'Performance monitoring',
+    highlights: [
+      'Vercel Speed Insights for real-user Core Web Vitals on production',
+    ],
+  },
+  {
     version: '0.1.1',
     date: '2026-06-30',
     title: 'Feedback conversations',
