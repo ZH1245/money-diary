@@ -1,3 +1,4 @@
 # https://www.robotstxt.org/robotstxt.html
+# Private, invite-only app — keep it out of search engines entirely.
 User-agent: *
-Disallow:
+Disallow: /
