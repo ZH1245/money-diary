@@ -1,4 +1,6 @@
 # https://www.robotstxt.org/robotstxt.html
-# Private, invite-only app — keep it out of search engines entirely.
+# Public app — allow crawling. Only block the API + auth-gated app routes
+# (those redirect to sign-in and hold no indexable content).
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /api/
