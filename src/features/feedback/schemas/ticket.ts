@@ -7,6 +7,7 @@ export const ticketStatusSchema = z.enum([
   'resolved',
   'closed',
 ])
+export const ticketMessageAuthorRoleSchema = z.enum(['user', 'admin'])
 
 export const createTicketSchema = z.object({
   type: ticketTypeSchema,
@@ -16,4 +17,8 @@ export const createTicketSchema = z.object({
 
 export const updateTicketStatusSchema = z.object({
   status: ticketStatusSchema,
+})
+
+export const createTicketMessageSchema = z.object({
+  body: z.string().trim().min(1, 'Message is required').max(2000),
 })

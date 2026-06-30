@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getAllTickets } from '#/features/feedback/server/tickets-repository'
+import { getAllTicketsForAdmin } from '#/features/feedback/server/tickets-repository'
 import { requireAdmin } from '#/lib/server/admin-guard'
 import {
   buildOptionsResponse,
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/api/admin/tickets')({
         if (adminResponse) return adminResponse
 
         try {
-          const data = await getAllTickets()
+          const data = await getAllTicketsForAdmin()
           return Response.json({ success: true, data })
         } catch (error) {
           console.error('[admin/tickets GET]', error)

@@ -421,3 +421,27 @@ export const tickets = pgTable(
 		statusIdx: index("tickets_status_idx").on(table.status),
 	}),
 );
+
+export const ticketMessages = pgTable(
+	"ticket_messages",
+	{
+		id: serial().primaryKey(),
+		ticketId: integer("ticket_id")
+			.notNull()
+			.references(() => tickets.id, {
+				onDelete: "cascade",
+			}),
+		authorUserId: text("author_user_id")
+			.notNull()
+			.references(() => user.id, {
+				onDelete: "cascade",
+			}),
+		authorRole: text("author_role").notNull(),
+		body: text().notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => ({
+		ticketIdIdx: index("ticket_messages_ticket_id_idx").on(table.ticketId),
+		createdAtIdx: index("ticket_messages_created_at_idx").on(table.createdAt),
+	}),
+);

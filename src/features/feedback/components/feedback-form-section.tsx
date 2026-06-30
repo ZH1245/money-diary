@@ -13,6 +13,7 @@ import {
 } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
 import { useCreateTicketMutation } from "#/features/feedback/hooks/use-tickets";
+import { UserTicketsSection } from "#/features/feedback/components/user-tickets-section";
 import type { TicketType } from "#/features/feedback/types/ticket";
 
 const TYPE_OPTIONS: { value: TicketType; label: string }[] = [
@@ -56,7 +57,8 @@ export function FeedbackFormSection() {
 	};
 
 	return (
-		<article className="md-panel p-5 md:p-6">
+		<div className="space-y-6">
+			<article className="md-panel p-5 md:p-6">
 			<h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
 				<MessageSquarePlus className="size-4 text-primary" />
 				Send feedback
@@ -127,5 +129,8 @@ export function FeedbackFormSection() {
 				</Button>
 			</form>
 		</article>
+
+		<UserTicketsSection />
+		</div>
 	);
 }

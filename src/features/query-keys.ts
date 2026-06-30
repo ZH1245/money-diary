@@ -30,9 +30,11 @@ export const queryKeys = {
 	},
 	tickets: {
 		all: ["tickets"] as const,
+		detail: (id: number) => ["tickets", id] as const,
 	},
 	admin: {
 		bans: ["admin", "bans"] as const,
 		tickets: ["admin", "tickets"] as const,
+		ticket: (id: number) => ["admin", "tickets", id] as const,
 	},
 };

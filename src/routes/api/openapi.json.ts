@@ -22,6 +22,7 @@ const openApiSpec = {
     { name: 'settings', description: 'User settings endpoints' },
     { name: 'admin', description: 'Admin-only global configuration endpoints' },
     { name: 'app', description: 'App metadata and release info' },
+    { name: 'tickets', description: 'User feedback and support tickets' },
   ],
   paths: {
     '/api/app/meta': {
@@ -502,6 +503,80 @@ const openApiSpec = {
         },
       },
     },
+    '/api/tickets': {
+      get: {
+        tags: ['tickets'],
+        summary: 'List the current user tickets',
+        responses: {
+          '200': { description: 'Ticket list' },
+          '401': { description: 'Unauthorized' },
+        },
+      },
+      post: {
+        tags: ['tickets'],
+        summary: 'Create a feedback or support ticket',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['type', 'subject', 'body'],
+                properties: {
+                  type: { type: 'string', enum: ['bug', 'feature', 'support'] },
+                  subject: { type: 'string', maxLength: 200 },
+                  body: { type: 'string', maxLength: 2000 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Ticket created' },
+          '400': { description: 'Validation error' },
+          '401': { description: 'Unauthorized' },
+        },
+      },
+    },
+    '/api/tickets/{id}': {
+      get: {
+        tags: ['tickets'],
+        summary: 'Get ticket detail with conversation thread',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Ticket detail' },
+          '404': { description: 'Ticket not found' },
+          '401': { description: 'Unauthorized' },
+        },
+      },
+    },
+    '/api/tickets/{id}/messages': {
+      post: {
+        tags: ['tickets'],
+        summary: 'Reply on a ticket thread (user)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['body'],
+                properties: {
+                  body: { type: 'string', maxLength: 2000 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Reply created' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Ticket not found' },
+          '401': { description: 'Unauthorized' },
+        },
+      },
+    },
     '/api/goals': {
       get: {
         tags: ['goals'],
@@ -671,6 +746,81 @@ const openApiSpec = {
           '200': { description: 'Global category deleted' },
           '404': { description: 'Category not found' },
           '409': { description: 'Category in use' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/tickets': {
+      get: {
+        tags: ['admin'],
+        summary: 'List all tickets with submitter info (admin)',
+        responses: {
+          '200': { description: 'Ticket list' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/tickets/{id}': {
+      get: {
+        tags: ['admin'],
+        summary: 'Get ticket detail with thread and submitter (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          '200': { description: 'Ticket detail' },
+          '404': { description: 'Ticket not found' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+      patch: {
+        tags: ['admin'],
+        summary: 'Update ticket status (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: {
+                    type: 'string',
+                    enum: ['open', 'in_progress', 'resolved', 'closed'],
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Ticket updated' },
+          '404': { description: 'Ticket not found' },
+          '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/tickets/{id}/messages': {
+      post: {
+        tags: ['admin'],
+        summary: 'Reply on a ticket thread (admin)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['body'],
+                properties: {
+                  body: { type: 'string', maxLength: 2000 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'Reply created' },
+          '404': { description: 'Ticket not found' },
           '403': { description: 'Forbidden' },
         },
       },
