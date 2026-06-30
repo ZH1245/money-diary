@@ -1,5 +1,7 @@
 /**
- * Release changelog — bump APP_VERSION in src/lib/app-version.ts when adding an entry.
+ * User-facing release notes (Settings → About, update prompt).
+ * Write for end users only — not admin, analytics, or infra changes.
+ * Bump APP_VERSION in src/lib/app-version.ts when adding an entry.
  * Newest release first.
  */
 export interface ChangelogRelease {
@@ -11,21 +13,13 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
-    version: '0.1.2',
-    date: '2026-06-30',
-    title: 'Performance monitoring',
-    highlights: [
-      'Vercel Speed Insights for real-user Core Web Vitals on production',
-    ],
-  },
-  {
     version: '0.1.1',
     date: '2026-06-30',
     title: 'Feedback conversations',
     highlights: [
-      'Two-way support tickets: view full threads and reply in Settings',
-      'Admin ticket detail with submitter name, ADMIN replies, and status control',
-      'Closed tickets cannot receive new replies until reopened',
+      'View your support tickets and full conversation history in Settings',
+      'Reply to follow up on bugs, feature requests, or help requests',
+      'Closed tickets stay read-only until support reopens them',
     ],
   },
   {

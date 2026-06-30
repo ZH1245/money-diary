@@ -37,6 +37,11 @@ export const Route = createFileRoute('/api/pusher/auth')({
           return Response.json({ success: false, error: 'Missing socket_id or channel_name.' }, { status: 400 })
         }
 
+        // Presence channels are not used — AI chat uses private-user-* only.
+        if (channelName.startsWith('presence-')) {
+          return Response.json({ success: false, error: 'Forbidden.' }, { status: 403 })
+        }
+
         // Prevent a user from subscribing to another user's private channel.
         const privateUserMatch = channelName.match(/^private-user-(.+)$/)
         if (privateUserMatch && privateUserMatch[1] !== userContext.id) {

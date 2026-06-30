@@ -139,8 +139,27 @@ API rules:
 
 # release version and changelog
 
-For any user-facing feature, fix, or behavior change shipped in a PR:
-1. Bump `APP_VERSION` in `src/lib/app-version.ts` (patch for fixes/small features, minor for larger releases)
+`src/content/changelog.ts` is shown to **end users** in Settings → About and in the update prompt. Write for people using Money Diary to manage money — not for you as the developer.
+
+## When to bump version + add a changelog entry
+
+Only when the change is **user-visible** (new capability, UX improvement, or bug fix they would notice).
+
+Skip version/changelog for internal-only work: analytics, tracking, admin tooling, infra, refactors, dependency updates, or ops changes users never see.
+
+Deploy-only changes still ship via `VITE_APP_BUILD_ID`; users may get an update prompt without a new changelog line.
+
+## How to write entries
+
+- Focus on **what users can do** or **what got better/fixed** in plain language
+- Good: "Reply to support tickets in Settings", "Faster transaction list on mobile"
+- Bad: "Added Vercel Speed Insights", "Removed admin online count", "Pusher presence channel", "OpenAPI updated"
+
+Do **not** mention: admin panels, monitoring, tracking, Pusher, APIs, migrations, or implementation details.
+
+## Checklist (user-facing ships only)
+
+1. Bump `APP_VERSION` in `src/lib/app-version.ts` (patch for small fixes/features, minor for larger releases)
 2. Add a new entry at the top of `CHANGELOG_RELEASES` in `src/content/changelog.ts` (version, date, title, highlights)
 3. Keep `src/routes/api/openapi.json.ts` `info.version` in sync with `APP_VERSION`
-4. Include the version bump in the same PR as the feature work — never merge without it
+4. Include the version bump in the same PR as the feature work
