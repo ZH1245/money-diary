@@ -28,8 +28,22 @@ function stampServiceWorker(): import('vite').Plugin {
   }
 }
 
+const buildSiteUrl =
+  process.env.VITE_SITE_URL?.trim() ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined)
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  define: {
+    'import.meta.env.VITE_APP_BUILD_ID': JSON.stringify(
+      (process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.APP_BUILD_ID ?? 'dev').slice(0, 10),
+    ),
+    ...(buildSiteUrl
+      ? { 'import.meta.env.VITE_SITE_URL': JSON.stringify(buildSiteUrl) }
+      : {}),
+  },
   plugins: [
     devtools(),
     ...(process.env.VERCEL ? [] : [neon]),

@@ -13,6 +13,7 @@ import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SwaggerRouteImport } from './routes/swagger'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SetupSecurityRouteImport } from './routes/setup-security'
@@ -58,6 +59,7 @@ import { Route as ApiAuthResetPasswordTokenRouteImport } from './routes/api/auth
 import { Route as ApiAuthModerationStatusRouteImport } from './routes/api/auth/moderation-status'
 import { Route as ApiAuthChangePasswordRouteImport } from './routes/api/auth/change-password'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAppMetaRouteImport } from './routes/api/app/meta'
 import { Route as ApiAiTransactionRouteImport } from './routes/api/ai/transaction'
 import { Route as ApiAiConversationsRouteImport } from './routes/api/ai/conversations'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
@@ -75,6 +77,7 @@ import { Route as ApiAiConversationsConversationIdRouteImport } from './routes/a
 import { Route as ApiAdminUsersIdRouteImport } from './routes/api/admin/users/$id'
 import { Route as ApiAdminTicketsIdRouteImport } from './routes/api/admin/tickets/$id'
 import { Route as ApiAdminGlobalAiTestRouteImport } from './routes/api/admin/global-ai/test'
+import { Route as ApiAdminGlobalAiOpenrouterModelsRouteImport } from './routes/api/admin/global-ai/openrouter-models'
 import { Route as ApiAdminGlobalAiKeyRouteImport } from './routes/api/admin/global-ai/key'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
 import { Route as ApiAdminBansIdRouteImport } from './routes/api/admin/bans/$id'
@@ -98,6 +101,11 @@ const TermsRoute = TermsRouteImport.update({
 const SwaggerRoute = SwaggerRouteImport.update({
   id: '/swagger',
   path: '/swagger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignUpRoute = SignUpRouteImport.update({
@@ -326,6 +334,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAppMetaRoute = ApiAppMetaRouteImport.update({
+  id: '/api/app/meta',
+  path: '/api/app/meta',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAiTransactionRoute = ApiAiTransactionRouteImport.update({
   id: '/api/ai/transaction',
   path: '/api/ai/transaction',
@@ -413,6 +426,12 @@ const ApiAdminGlobalAiTestRoute = ApiAdminGlobalAiTestRouteImport.update({
   path: '/test',
   getParentRoute: () => ApiAdminGlobalAiRoute,
 } as any)
+const ApiAdminGlobalAiOpenrouterModelsRoute =
+  ApiAdminGlobalAiOpenrouterModelsRouteImport.update({
+    id: '/openrouter-models',
+    path: '/openrouter-models',
+    getParentRoute: () => ApiAdminGlobalAiRoute,
+  } as any)
 const ApiAdminGlobalAiKeyRoute = ApiAdminGlobalAiKeyRouteImport.update({
   id: '/key',
   path: '/key',
@@ -452,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/setup-security': typeof SetupSecurityRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/swagger': typeof SwaggerRoute
   '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
@@ -473,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
+  '/api/app/meta': typeof ApiAppMetaRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
   '/api/auth/moderation-status': typeof ApiAuthModerationStatusRoute
@@ -496,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/bans/$id': typeof ApiAdminBansIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/openrouter-models': typeof ApiAdminGlobalAiOpenrouterModelsRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
@@ -524,6 +546,7 @@ export interface FileRoutesByTo {
   '/setup-security': typeof SetupSecurityRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/swagger': typeof SwaggerRoute
   '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
@@ -545,6 +568,7 @@ export interface FileRoutesByTo {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
+  '/api/app/meta': typeof ApiAppMetaRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
   '/api/auth/moderation-status': typeof ApiAuthModerationStatusRoute
@@ -568,6 +592,7 @@ export interface FileRoutesByTo {
   '/api/admin/bans/$id': typeof ApiAdminBansIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/openrouter-models': typeof ApiAdminGlobalAiOpenrouterModelsRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
@@ -597,6 +622,7 @@ export interface FileRoutesById {
   '/setup-security': typeof SetupSecurityRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/swagger': typeof SwaggerRoute
   '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
@@ -618,6 +644,7 @@ export interface FileRoutesById {
   '/api/ai/chat': typeof ApiAiChatRoute
   '/api/ai/conversations': typeof ApiAiConversationsRouteWithChildren
   '/api/ai/transaction': typeof ApiAiTransactionRoute
+  '/api/app/meta': typeof ApiAppMetaRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/change-password': typeof ApiAuthChangePasswordRoute
   '/api/auth/moderation-status': typeof ApiAuthModerationStatusRoute
@@ -641,6 +668,7 @@ export interface FileRoutesById {
   '/api/admin/bans/$id': typeof ApiAdminBansIdRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/global-ai/key': typeof ApiAdminGlobalAiKeyRoute
+  '/api/admin/global-ai/openrouter-models': typeof ApiAdminGlobalAiOpenrouterModelsRoute
   '/api/admin/global-ai/test': typeof ApiAdminGlobalAiTestRoute
   '/api/admin/tickets/$id': typeof ApiAdminTicketsIdRoute
   '/api/admin/users/$id': typeof ApiAdminUsersIdRouteWithChildren
@@ -671,6 +699,7 @@ export interface FileRouteTypes {
     | '/setup-security'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/swagger'
     | '/terms'
     | '/transactions'
@@ -692,6 +721,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/conversations'
     | '/api/ai/transaction'
+    | '/api/app/meta'
     | '/api/auth/$'
     | '/api/auth/change-password'
     | '/api/auth/moderation-status'
@@ -715,6 +745,7 @@ export interface FileRouteTypes {
     | '/api/admin/bans/$id'
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
+    | '/api/admin/global-ai/openrouter-models'
     | '/api/admin/global-ai/test'
     | '/api/admin/tickets/$id'
     | '/api/admin/users/$id'
@@ -743,6 +774,7 @@ export interface FileRouteTypes {
     | '/setup-security'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/swagger'
     | '/terms'
     | '/transactions'
@@ -764,6 +796,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/conversations'
     | '/api/ai/transaction'
+    | '/api/app/meta'
     | '/api/auth/$'
     | '/api/auth/change-password'
     | '/api/auth/moderation-status'
@@ -787,6 +820,7 @@ export interface FileRouteTypes {
     | '/api/admin/bans/$id'
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
+    | '/api/admin/global-ai/openrouter-models'
     | '/api/admin/global-ai/test'
     | '/api/admin/tickets/$id'
     | '/api/admin/users/$id'
@@ -815,6 +849,7 @@ export interface FileRouteTypes {
     | '/setup-security'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/swagger'
     | '/terms'
     | '/transactions'
@@ -836,6 +871,7 @@ export interface FileRouteTypes {
     | '/api/ai/chat'
     | '/api/ai/conversations'
     | '/api/ai/transaction'
+    | '/api/app/meta'
     | '/api/auth/$'
     | '/api/auth/change-password'
     | '/api/auth/moderation-status'
@@ -859,6 +895,7 @@ export interface FileRouteTypes {
     | '/api/admin/bans/$id'
     | '/api/admin/categories/$id'
     | '/api/admin/global-ai/key'
+    | '/api/admin/global-ai/openrouter-models'
     | '/api/admin/global-ai/test'
     | '/api/admin/tickets/$id'
     | '/api/admin/users/$id'
@@ -888,6 +925,7 @@ export interface RootRouteChildren {
   SetupSecurityRoute: typeof SetupSecurityRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SwaggerRoute: typeof SwaggerRoute
   TermsRoute: typeof TermsRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -909,6 +947,7 @@ export interface RootRouteChildren {
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiAiConversationsRoute: typeof ApiAiConversationsRouteWithChildren
   ApiAiTransactionRoute: typeof ApiAiTransactionRoute
+  ApiAppMetaRoute: typeof ApiAppMetaRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthChangePasswordRoute: typeof ApiAuthChangePasswordRoute
   ApiAuthModerationStatusRoute: typeof ApiAuthModerationStatusRoute
@@ -953,6 +992,13 @@ declare module '@tanstack/react-router' {
       path: '/swagger'
       fullPath: '/swagger'
       preLoaderRoute: typeof SwaggerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-up': {
@@ -1270,6 +1316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/app/meta': {
+      id: '/api/app/meta'
+      path: '/api/app/meta'
+      fullPath: '/api/app/meta'
+      preLoaderRoute: typeof ApiAppMetaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ai/transaction': {
       id: '/api/ai/transaction'
       path: '/api/ai/transaction'
@@ -1387,6 +1440,13 @@ declare module '@tanstack/react-router' {
       path: '/test'
       fullPath: '/api/admin/global-ai/test'
       preLoaderRoute: typeof ApiAdminGlobalAiTestRouteImport
+      parentRoute: typeof ApiAdminGlobalAiRoute
+    }
+    '/api/admin/global-ai/openrouter-models': {
+      id: '/api/admin/global-ai/openrouter-models'
+      path: '/openrouter-models'
+      fullPath: '/api/admin/global-ai/openrouter-models'
+      preLoaderRoute: typeof ApiAdminGlobalAiOpenrouterModelsRouteImport
       parentRoute: typeof ApiAdminGlobalAiRoute
     }
     '/api/admin/global-ai/key': {
@@ -1543,11 +1603,13 @@ const ApiAdminCategoriesRouteWithChildren =
 
 interface ApiAdminGlobalAiRouteChildren {
   ApiAdminGlobalAiKeyRoute: typeof ApiAdminGlobalAiKeyRoute
+  ApiAdminGlobalAiOpenrouterModelsRoute: typeof ApiAdminGlobalAiOpenrouterModelsRoute
   ApiAdminGlobalAiTestRoute: typeof ApiAdminGlobalAiTestRoute
 }
 
 const ApiAdminGlobalAiRouteChildren: ApiAdminGlobalAiRouteChildren = {
   ApiAdminGlobalAiKeyRoute: ApiAdminGlobalAiKeyRoute,
+  ApiAdminGlobalAiOpenrouterModelsRoute: ApiAdminGlobalAiOpenrouterModelsRoute,
   ApiAdminGlobalAiTestRoute: ApiAdminGlobalAiTestRoute,
 }
 
@@ -1632,6 +1694,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupSecurityRoute: SetupSecurityRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SwaggerRoute: SwaggerRoute,
   TermsRoute: TermsRoute,
   TransactionsRoute: TransactionsRoute,
@@ -1653,6 +1716,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiChatRoute: ApiAiChatRoute,
   ApiAiConversationsRoute: ApiAiConversationsRouteWithChildren,
   ApiAiTransactionRoute: ApiAiTransactionRoute,
+  ApiAppMetaRoute: ApiAppMetaRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthChangePasswordRoute: ApiAuthChangePasswordRoute,
   ApiAuthModerationStatusRoute: ApiAuthModerationStatusRoute,

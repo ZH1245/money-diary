@@ -13,14 +13,16 @@ import {
 import { AI_PROVIDER_OPTIONS } from "#/features/settings/constants/ai-providers";
 import {
 	OPENROUTER_DEFAULT_BASE_URL,
-	OPENROUTER_DEFAULT_MODEL,
+	OPENROUTER_DEFAULT_MODEL_CHAIN,
 } from "#/features/settings/constants/openrouter-defaults";
+import { OpenRouterModelsEditor } from "#/features/admin/components/openrouter-models-editor";
 
 interface GlobalAiSettingsResponse {
 	isEnabled: boolean;
 	provider: string;
 	baseUrl: string;
 	model: string;
+	models: string[];
 	hasApiKey: boolean;
 	apiKeyMasked: string | null;
 	updatedAt: string | null;
@@ -110,6 +112,9 @@ export function AdminGlobalAiSection() {
 	const [providerId, setProviderId] = useState("gemini");
 	const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:11434");
 	const [model, setModel] = useState("gemini-2.0-flash");
+	const [openRouterModels, setOpenRouterModels] = useState<string[]>([
+		...OPENROUTER_DEFAULT_MODEL_CHAIN,
+	]);
 	const [apiKey, setApiKey] = useState("");
 	const [savedApiKeyMask, setSavedApiKeyMask] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -264,6 +269,13 @@ export function AdminGlobalAiSection() {
 					setProviderId(payload.data.provider);
 					setBaseUrl(payload.data.baseUrl || "http://127.0.0.1:11434");
 					setModel(payload.data.model);
+					setOpenRouterModels(
+						payload.data.models?.length
+							? payload.data.models
+							: payload.data.model
+								? [payload.data.model]
+								: [...OPENROUTER_DEFAULT_MODEL_CHAIN],
+					);
 					setSavedApiKeyMask(payload.data.apiKeyMasked);
 				}
 			} catch (error) {
@@ -309,7 +321,7 @@ export function AdminGlobalAiSection() {
 
 		if (nextProviderId === "openrouter") {
 			setBaseUrl(OPENROUTER_DEFAULT_BASE_URL);
-			setModel(OPENROUTER_DEFAULT_MODEL);
+			setOpenRouterModels([...OPENROUTER_DEFAULT_MODEL_CHAIN]);
 			return;
 		}
 
@@ -339,7 +351,7 @@ export function AdminGlobalAiSection() {
 							isEnabled,
 							provider: "openrouter" as const,
 							baseUrl: baseUrl.trim(),
-							model: model.trim(),
+							models: openRouterModels,
 							apiKey: apiKey.trim() || undefined,
 						}
 					: {
@@ -619,13 +631,12 @@ export function AdminGlobalAiSection() {
 								) : undefined
 							}
 						/>
-						<FormField
-							id="admin-openrouter-model"
-							label="Model"
-							type="text"
-							value={model}
-							onChange={setModel}
-							placeholder={OPENROUTER_DEFAULT_MODEL}
+						<OpenRouterModelsEditor
+							models={openRouterModels}
+							onChange={setOpenRouterModels}
+							baseUrl={baseUrl}
+							apiKey={apiKey}
+							savedApiKeyMask={savedApiKeyMask}
 							isDisabled={isLoading || isSubmitting}
 						/>
 					</>

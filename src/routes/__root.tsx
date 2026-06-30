@@ -14,9 +14,11 @@ import {
 	themeNoFlashScript,
 } from "#/components/layout/theme-provider";
 import { ServiceWorkerRegistration } from "#/components/pwa/service-worker-registration";
+import { AppUpdateNotifier } from "#/components/app/app-update-notifier";
 import { TooltipProvider } from "#/components/ui/tooltip";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
+import { LANDING_SEO, SITE_NAME } from "#/lib/seo/public-seo";
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	head: () => ({
@@ -29,11 +31,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Money Diary",
+				title: SITE_NAME,
 			},
 			{
 				name: "description",
-				content: "Track income, expenses, savings, and financial goals.",
+				content: LANDING_SEO.description,
+			},
+			{
+				name: "application-name",
+				content: SITE_NAME,
 			},
 			{
 				name: "theme-color",
@@ -99,6 +105,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				</ThemeProvider>
 				<Toaster richColors position="top-right" closeButton />
 				<ServiceWorkerRegistration />
+				<AppUpdateNotifier />
 				<Analytics />
 				{import.meta.env.DEV ? (
 					<TanStackDevtools

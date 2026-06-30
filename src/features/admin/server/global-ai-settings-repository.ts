@@ -4,6 +4,7 @@ import { aiProviderSettings } from '#/db/schema'
 import { decryptSecret, encryptSecret, maskSecret } from '#/lib/server/encryption'
 
 import { parseLiveAiProviderId, type LiveAiProviderId } from '#/features/settings/constants/ai-provider-ids'
+import { parseAiModelConfig, serializeAiModelConfig } from '#/features/settings/utils/ai-model-config'
 
 export type GlobalAiProviderId = LiveAiProviderId
 
@@ -12,6 +13,7 @@ export interface GlobalAiSettingsRecord {
   provider: string
   baseUrl: string
   model: string
+  models: string[]
   hasApiKey: boolean
   apiKeyMasked: string | null
   updatedAt: string | null
@@ -22,6 +24,7 @@ export interface GlobalAiRuntimeSettings {
   provider: GlobalAiProviderId
   baseUrl: string
   model: string
+  models: string[]
   apiKey: string | null
 }
 
@@ -43,12 +46,14 @@ export async function getGlobalAiSettings(): Promise<GlobalAiSettingsRecord | nu
   if (!row?.baseUrlEncrypted || !row.modelEncrypted) return null
 
   const apiKey = row.apiKeyEncrypted ? decryptSecret(row.apiKeyEncrypted) : null
+  const models = parseAiModelConfig(decryptSecret(row.modelEncrypted))
 
   return {
     isEnabled: row.isEnabled,
     provider: row.provider,
     baseUrl: decryptSecret(row.baseUrlEncrypted),
-    model: decryptSecret(row.modelEncrypted),
+    model: models[0] ?? '',
+    models,
     hasApiKey: Boolean(apiKey),
     apiKeyMasked: apiKey ? maskSecret(apiKey) : null,
     updatedAt: row.updatedAt?.toISOString() ?? null,
@@ -67,11 +72,14 @@ export async function getGlobalAiSettingsForRuntime(): Promise<GlobalAiRuntimeSe
 
   if (!row?.baseUrlEncrypted || !row.modelEncrypted) return null
 
+  const models = parseAiModelConfig(decryptSecret(row.modelEncrypted))
+
   return {
     isEnabled: row.isEnabled,
     provider: parseLiveAiProviderId(row.provider),
     baseUrl: decryptSecret(row.baseUrlEncrypted),
-    model: decryptSecret(row.modelEncrypted),
+    model: models[0] ?? '',
+    models,
     apiKey: row.apiKeyEncrypted ? decryptSecret(row.apiKeyEncrypted) : null,
   }
 }
@@ -84,10 +92,11 @@ export async function getGlobalAiPublicStatus(): Promise<{
   enabled: boolean
   provider: string | null
   model: string | null
+  models: string[] | null
 }> {
   const settings = await getGlobalAiSettings()
   if (!settings) {
-    return { available: false, enabled: false, provider: null, model: null }
+    return { available: false, enabled: false, provider: null, model: null, models: null }
   }
 
   return {
@@ -95,6 +104,7 @@ export async function getGlobalAiPublicStatus(): Promise<{
     enabled: settings.isEnabled,
     provider: settings.provider,
     model: settings.model,
+    models: settings.models,
   }
 }
 
@@ -107,15 +117,22 @@ export async function upsertGlobalAiSettings({
   provider,
   baseUrl,
   model,
+  models,
   apiKey,
 }: {
   adminUserId: string
   isEnabled: boolean
   provider: GlobalAiProviderId
   baseUrl: string
-  model: string
+  model?: string
+  models?: string[]
   apiKey?: string | null
 }) {
+  const modelChain = (models?.length ? models : model ? [model] : []).map((entry) => entry.trim()).filter(Boolean)
+  if (modelChain.length === 0) {
+    throw new Error('At least one model is required')
+  }
+
   const [existing] = await db
     .select({ id: aiProviderSettings.id, apiKeyEncrypted: aiProviderSettings.apiKeyEncrypted })
     .from(aiProviderSettings)
@@ -126,7 +143,7 @@ export async function upsertGlobalAiSettings({
     isEnabled,
     provider,
     baseUrlEncrypted: encryptSecret(baseUrl),
-    modelEncrypted: encryptSecret(model),
+    modelEncrypted: encryptSecret(serializeAiModelConfig(modelChain)),
     updatedBy: adminUserId,
     updatedAt: new Date(),
     useGlobalProvider: false,

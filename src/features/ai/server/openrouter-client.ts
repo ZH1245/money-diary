@@ -268,6 +268,93 @@ export async function probeOpenRouterApiKey({
   }
 }
 
+export interface OpenRouterCatalogModel {
+  id: string
+  name: string
+  inputPerMillion: number | null
+  outputPerMillion: number | null
+}
+
+interface OpenRouterModelsResponse {
+  data?: Array<{
+    id?: string
+    name?: string
+    pricing?: {
+      prompt?: string
+      completion?: string
+    }
+  }>
+}
+
+/** Returns true when a model slug is likely code-only and unsuitable for finance chat. */
+function isCodingSpecializedModel(modelId: string): boolean {
+  return /code|coder|codex|starcoder|deepseek-coder|embed|whisper|dall-e|image-preview|ocr|rerank/i.test(
+    modelId,
+  )
+}
+
+function pricingToPerMillion(value: string | undefined): number | null {
+  if (!value) return null
+  const parsed = Number.parseFloat(value)
+  if (!Number.isFinite(parsed)) return null
+  return parsed * 1_000_000
+}
+
+/**
+ * Fetches OpenRouter model catalog for admin model picker (general chat models only).
+ */
+export async function fetchOpenRouterModels({
+  baseUrl,
+  apiKey,
+}: {
+  baseUrl: string
+  apiKey: string
+}): Promise<
+  | { ok: true; models: OpenRouterCatalogModel[] }
+  | { ok: false; error: string }
+> {
+  const trimmedKey = apiKey.trim()
+  if (!trimmedKey) {
+    return { ok: false, error: 'OpenRouter API key is required.' }
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, {
+      method: 'GET',
+      headers: buildOpenRouterHeaders(trimmedKey),
+    })
+  } catch {
+    return { ok: false, error: 'Could not reach OpenRouter.' }
+  }
+
+  const payload = (await response.json().catch(() => null)) as OpenRouterModelsResponse | null
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: formatAiProviderError(`OpenRouter error: ${response.status}`, 'openrouter'),
+    }
+  }
+
+  const models =
+    payload?.data
+      ?.filter((entry) => typeof entry.id === 'string' && entry.id.trim())
+      .filter((entry) => !isCodingSpecializedModel(entry.id!))
+      .map((entry) => ({
+        id: entry.id!.trim(),
+        name: entry.name?.trim() || entry.id!.trim(),
+        inputPerMillion: pricingToPerMillion(entry.pricing?.prompt),
+        outputPerMillion: pricingToPerMillion(entry.pricing?.completion),
+      }))
+      .sort((left, right) => {
+        const leftCost = left.outputPerMillion ?? Number.POSITIVE_INFINITY
+        const rightCost = right.outputPerMillion ?? Number.POSITIVE_INFINITY
+        return leftCost - rightCost
+      }) ?? []
+
+  return { ok: true, models }
+}
+
 function parseToolArguments(raw: unknown): unknown {
   if (typeof raw === 'string') {
     try {

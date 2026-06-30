@@ -15,9 +15,18 @@ import {
 } from "#/components/ui/input-otp";
 import { AuthenticatedEntryRedirect } from "#/features/auth/components/authenticated-entry-redirect";
 import { authClient } from "#/lib/auth-client";
+import {
+	buildPublicPageHead,
+	SIGN_IN_SEO,
+} from "#/lib/seo/public-seo";
 
 export const Route = createFileRoute("/sign-in")({
 	component: SignInPage,
+	head: () =>
+		buildPublicPageHead({
+			...SIGN_IN_SEO,
+			path: "/sign-in",
+		}),
 });
 
 const signInSchema = z.object({

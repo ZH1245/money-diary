@@ -7,13 +7,41 @@ import {
   getUserAiSettingsForRuntime,
   type AiProviderId,
 } from '#/features/settings/server/settings-repository'
+import { parseAiModelConfig } from '#/features/settings/utils/ai-model-config'
 
 export interface ResolvedAiProviderSettings {
   source: 'global' | 'custom' | 'default'
   provider: AiProviderId
   baseUrl: string
   model: string
+  models: string[]
   apiKey: string | null
+}
+
+function toResolvedSettings({
+  source,
+  provider,
+  baseUrl,
+  modelRaw,
+  models,
+  apiKey,
+}: {
+  source: ResolvedAiProviderSettings['source']
+  provider: AiProviderId
+  baseUrl: string
+  modelRaw: string
+  models?: string[]
+  apiKey: string | null
+}): ResolvedAiProviderSettings {
+  const chain = models?.length ? models : parseAiModelConfig(modelRaw)
+  return {
+    source,
+    provider,
+    baseUrl,
+    model: chain[0] ?? modelRaw,
+    models: chain.length > 0 ? chain : [modelRaw],
+    apiKey,
+  }
 }
 
 const DEFAULT_OLLAMA_BASE_URL = 'http://127.0.0.1:11434'
@@ -32,52 +60,54 @@ export async function resolveAiProviderForUser(userId: string): Promise<Resolved
   const userPrefersGlobal = userSettings?.useGlobalProvider !== false
 
   if (userPrefersGlobal && globalReady && globalSettings) {
-    return {
+    return toResolvedSettings({
       source: 'global',
       provider: globalSettings.provider,
       baseUrl: globalSettings.baseUrl,
-      model: globalSettings.model,
+      modelRaw: globalSettings.model,
+      models: globalSettings.models,
       apiKey: globalSettings.apiKey,
-    }
+    })
   }
 
   if (userSettings?.useGlobalProvider === false && userSettings.baseUrl && userSettings.model) {
-    return {
+    return toResolvedSettings({
       source: 'custom',
       provider: userSettings.provider,
       baseUrl: userSettings.baseUrl,
-      model: userSettings.model,
+      modelRaw: userSettings.model,
       apiKey: userSettings.apiKey,
-    }
+    })
   }
 
   if (userSettings?.baseUrl && userSettings.model) {
-    return {
+    return toResolvedSettings({
       source: 'custom',
       provider: userSettings.provider,
       baseUrl: userSettings.baseUrl,
-      model: userSettings.model,
+      modelRaw: userSettings.model,
       apiKey: userSettings.apiKey,
-    }
+    })
   }
 
   if (globalReady && globalSettings) {
-    return {
+    return toResolvedSettings({
       source: 'global',
       provider: globalSettings.provider,
       baseUrl: globalSettings.baseUrl,
-      model: globalSettings.model,
+      modelRaw: globalSettings.model,
+      models: globalSettings.models,
       apiKey: globalSettings.apiKey,
-    }
+    })
   }
 
-  return {
+  return toResolvedSettings({
     source: 'default',
     provider: 'ollama',
     baseUrl: DEFAULT_OLLAMA_BASE_URL,
-    model: DEFAULT_OLLAMA_MODEL,
+    modelRaw: DEFAULT_OLLAMA_MODEL,
     apiKey: null,
-  }
+  })
 }
 
 /**

@@ -1,4 +1,5 @@
 import { format, parseISO, startOfMonth, startOfWeek, subDays } from 'date-fns'
+import { isPrimarilyProductQuestion } from '#/features/ai/utils/product-knowledge'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -74,6 +75,7 @@ export function resolveFallbackToolInvocation(
 ): { toolName: 'query_user_data'; toolArgs: Record<string, unknown> } | null {
   const context = buildUserContext(messages)
   if (!context.trim()) return null
+  if (isPrimarilyProductQuestion(context)) return null
   if (WRITE_INTENT.test(context)) return null
 
   const isReadQuestion =

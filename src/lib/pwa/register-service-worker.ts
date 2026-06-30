@@ -1,8 +1,8 @@
-import { toast } from 'sonner'
+import { APP_UPDATE_EVENT } from '#/lib/app-version'
 
 /**
  * Registers the app service worker in production builds.
- * When a new SW takes control after a deploy, prompts the user to reload.
+ * When a new SW takes control after a deploy, notifies the update modal.
  */
 export function registerServiceWorker() {
   if (!import.meta.env.PROD || typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -17,13 +17,6 @@ export function registerServiceWorker() {
 
   navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
     if (event.data?.type !== 'SW_UPDATED') return
-    toast.info('A new version is available.', {
-      description: 'Refresh to get the latest updates.',
-      duration: Infinity,
-      action: {
-        label: 'Refresh',
-        onClick: () => window.location.reload(),
-      },
-    })
+    window.dispatchEvent(new CustomEvent(APP_UPDATE_EVENT))
   })
 }

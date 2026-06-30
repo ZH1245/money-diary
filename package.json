@@ -23,6 +23,8 @@
     "db:studio": "drizzle-kit studio",
     "seed:demo": "tsx scripts/seed-demo-user.ts",
     "seed:demo:prod": "DRIZZLE_ENV=prod tsx scripts/seed-demo-user.ts",
+    "ai:chain": "tsx scripts/set-openrouter-chain.ts",
+    "ai:chain:prod": "DRIZZLE_ENV=prod tsx scripts/set-openrouter-chain.ts",
     "capture:landing": "tsx scripts/capture-landing-screenshots.mts",
     "capture:landing:headless": "HEADLESS=1 tsx scripts/capture-landing-screenshots.mts",
     "issue:feature": "bash scripts/gh-new-issue.sh feature",

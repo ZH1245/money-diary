@@ -65,12 +65,16 @@ export const Route = createFileRoute('/api/admin/global-ai')({
               return Response.json({ success: false, error: 'OpenRouter API key is required' }, { status: 400 })
             }
 
+            const models =
+              parsed.data.models?.map((entry) => entry.trim()).filter(Boolean) ??
+              (parsed.data.model?.trim() ? [parsed.data.model.trim()] : [])
+
             await upsertGlobalAiSettings({
               adminUserId: userContext.id,
               isEnabled: parsed.data.isEnabled,
               provider: 'openrouter',
               baseUrl: parsed.data.baseUrl,
-              model: parsed.data.model,
+              models,
               apiKey: nextApiKey,
             })
           } else {

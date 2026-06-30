@@ -20,7 +20,7 @@ export function formatAiProviderError(raw: string, provider?: string): string {
 
   if (/insufficient credits|requires more credits|can only afford|payment required|\b402\b/i.test(normalized)) {
     if (providerName === 'OpenRouter') {
-      return 'Your OpenRouter credits are used up. Add credits at openrouter.ai/settings/credits or switch to a free model in Settings → AI Provider.'
+      return 'Your OpenRouter credits are used up. Add credits at openrouter.ai/settings/credits or switch to another paid model in Admin → AI Provider.'
     }
     return `Your ${providerName} credits are used up. Check billing or switch models in Settings → AI Provider.`
   }
@@ -53,22 +53,22 @@ export function formatAiProviderError(raw: string, provider?: string): string {
   }
 
   if (/no endpoints found that support tool/i.test(normalized)) {
-    return `${providerName}: this model does not support tool calling, which Money Diary needs to read and update your finances. Use google/gemini-2.0-flash-exp:free or another model with tool support (openrouter.ai/models?supported_parameters=tools).`
+    return `${providerName}: this model does not support tool calling, which Money Diary needs to read and update your finances. Use deepseek/deepseek-v4-flash or another paid model with tool support.`
   }
 
   if (/developer instruction is not enabled|system instruction is not enabled/i.test(normalized)) {
-    return `${providerName}: this model does not support system instructions. Switch to google/gemini-2.0-flash-exp:free instead of Gemma free models.`
+    return `${providerName}: this model does not support system instructions. Switch to deepseek/deepseek-v4-flash or google/gemini-2.5-flash-preview instead of Gemma models.`
   }
 
   if (
     /provider returned error/i.test(normalized) &&
     (/\/gemma|gemma-/i.test(normalized) || /openinference/i.test(normalized))
   ) {
-    return `${providerName} could not run this Gemma model for Money Diary — free Gemma endpoints often reject tools and system prompts. In Settings → AI Provider, set the model to google/gemini-2.0-flash-exp:free.`
+    return `${providerName} could not run this Gemma model for Money Diary — Gemma endpoints often reject tools and system prompts. In Admin → AI Provider, use deepseek/deepseek-v4-flash or google/gemini-2.5-flash-preview.`
   }
 
   if (/upstream model provider returned an error/i.test(normalized)) {
-    return `The AI model ran into an error processing your request. This usually means the free model is rate-limited or temporarily overloaded — wait a moment and try again, or switch to a paid model like google/gemini-2.5-flash-lite in Settings → AI Provider.`
+    return `The AI model ran into an error processing your request. Wait a moment and try again, or switch to another paid model in Admin → AI Provider (e.g. deepseek/deepseek-v4-flash).`
   }
 
   const withoutPrefix = normalized.replace(/^(Gemini|Ollama|OpenRouter):\s*/i, '')

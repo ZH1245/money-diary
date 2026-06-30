@@ -1,9 +1,17 @@
 import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { LandingPage } from "#/features/landing/components/landing-page";
+import { buildPublicPageHead, LANDING_SEO } from "#/lib/seo/public-seo";
 import { useAuthSession } from "#/lib/use-auth-session";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+	component: Home,
+	head: () =>
+		buildPublicPageHead({
+			...LANDING_SEO,
+			path: "/",
+		}),
+});
 
 function Home() {
 	const { data: session, isInitialPending } = useAuthSession();

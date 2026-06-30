@@ -21,8 +21,27 @@ const openApiSpec = {
     { name: 'wishlist', description: 'Wishlist endpoints' },
     { name: 'settings', description: 'User settings endpoints' },
     { name: 'admin', description: 'Admin-only global configuration endpoints' },
+    { name: 'app', description: 'App metadata and release info' },
   ],
   paths: {
+    '/api/app/meta': {
+      get: {
+        tags: ['app'],
+        summary: 'Get app version, build id, and changelog',
+        responses: {
+          '200': { description: 'App metadata' },
+        },
+      },
+    },
+    '/sitemap.xml': {
+      get: {
+        tags: ['app'],
+        summary: 'XML sitemap for public indexable pages',
+        responses: {
+          '200': { description: 'Sitemap XML' },
+        },
+      },
+    },
     '/api/auth/{path}': {
       get: {
         tags: ['auth'],
@@ -599,6 +618,18 @@ const openApiSpec = {
           '200': { description: 'API key removed' },
           '404': { description: 'No API key stored' },
           '403': { description: 'Forbidden' },
+        },
+      },
+    },
+    '/api/admin/global-ai/openrouter-models': {
+      post: {
+        tags: ['admin'],
+        summary: 'List OpenRouter models for admin model picker (admin)',
+        responses: {
+          '200': { description: 'OpenRouter model catalog' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden' },
+          '502': { description: 'OpenRouter upstream error' },
         },
       },
     },

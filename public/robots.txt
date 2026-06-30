@@ -1,6 +1,19 @@
-# https://www.robotstxt.org/robotstxt.html
-# Public app — allow crawling. Only block the API + auth-gated app routes
-# (those redirect to sign-in and hold no indexable content).
+# Public marketing + auth entry pages only. App routes require sign-in.
 User-agent: *
-Allow: /
+Allow: /$
+Allow: /sign-in$
+Allow: /sign-up$
 Disallow: /api/
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /accounts
+Disallow: /savings
+Disallow: /goals
+Disallow: /wishlist
+Disallow: /categories
+Disallow: /analytics
+Disallow: /settings
+Disallow: /admin
+Disallow: /swagger
+
+Sitemap: https://money-diary-eight.vercel.app/sitemap.xml

@@ -12,9 +12,18 @@ import { ThemeToggle } from "#/components/layout/theme-toggle";
 import { AuthenticatedEntryRedirect } from "#/features/auth/components/authenticated-entry-redirect";
 import { authClient } from "#/lib/auth-client";
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from "#/lib/currency";
+import {
+	buildPublicPageHead,
+	SIGN_UP_SEO,
+} from "#/lib/seo/public-seo";
 
 export const Route = createFileRoute("/sign-up")({
 	component: SignUpPage,
+	head: () =>
+		buildPublicPageHead({
+			...SIGN_UP_SEO,
+			path: "/sign-up",
+		}),
 });
 
 const signUpSchema = z.object({

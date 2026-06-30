@@ -1,3 +1,4 @@
+import { buildProductKnowledgeAnswer, isPrimarilyProductQuestion } from '#/features/ai/utils/product-knowledge'
 import { buildLegalPolicyAnswer, isPrimarilyLegalQuestion } from '#/features/legal/utils/legal-knowledge'
 import { getAiToolsForProvider } from '#/features/ai/server/ai-tools'
 import { resolveAiProviderForUser } from '#/features/admin/server/resolve-ai-provider'
@@ -194,6 +195,7 @@ async function callProviderChat({
   settings: {
     baseUrl: string
     model: string
+    models?: string[]
     apiKey: string | null
   }
   tools: ReturnType<typeof getAiToolsForProvider>
@@ -261,17 +263,41 @@ function isRetryableProviderError(error: string): boolean {
 }
 
 /**
- * Calls the provider once and, on transient failure, waits 1.5 s and retries exactly once.
+ * Calls the provider with per-model retry, then cycles OpenRouter models on failure.
  */
 async function callProviderChatWithRetry(
   params: Parameters<typeof callProviderChat>[0],
 ): ReturnType<typeof callProviderChat> {
-  const result = await callProviderChat(params)
-  if (!result.ok && isRetryableProviderError(result.error)) {
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    return callProviderChat(params)
+  const models =
+    params.provider === 'openrouter' && params.settings.models?.length
+      ? params.settings.models
+      : [params.settings.model]
+
+  let lastError = 'Provider request failed.'
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const result = await callProviderChat({
+        ...params,
+        settings: { ...params.settings, model },
+      })
+
+      if (result.ok) {
+        return result
+      }
+
+      lastError = result.error
+      if (!isRetryableProviderError(result.error)) {
+        break
+      }
+
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+      }
+    }
   }
-  return result
+
+  return { ok: false, error: lastError }
 }
 
 /**
@@ -496,6 +522,14 @@ export async function runAiChat({
     }
   }
 
+  if (lastUserMessage && isPrimarilyProductQuestion(lastUserMessage.content)) {
+    return {
+      success: true,
+      action: 'clarification',
+      message: buildProductKnowledgeAnswer(lastUserMessage.content),
+    }
+  }
+
   const resolved = await resolveAiProviderForUser(userId).catch((error) => {
     const message = error instanceof Error ? error.message : 'Unable to load AI provider settings'
     return {
@@ -515,6 +549,7 @@ export async function runAiChat({
     provider: resolved.provider,
     baseUrl: resolved.baseUrl,
     model: resolved.model,
+    models: resolved.models,
     apiKey: resolved.apiKey,
   }
   const isOllamaProvider = runtime.provider === 'ollama'
@@ -714,6 +749,10 @@ function resolveClarificationFallback(
 
   if (isPrimarilyLegalQuestion(lastUser.content)) {
     return buildLegalPolicyAnswer(lastUser.content)
+  }
+
+  if (isPrimarilyProductQuestion(lastUser.content)) {
+    return buildProductKnowledgeAnswer(lastUser.content)
   }
 
   return 'I did not understand. Please try again.'

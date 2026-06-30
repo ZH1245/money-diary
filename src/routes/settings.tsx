@@ -10,6 +10,7 @@ import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-she
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { ChangePasswordSection } from "#/features/auth/components/change-password-section";
 import { FeedbackFormSection } from "#/features/feedback/components/feedback-form-section";
+import { AboutSection } from "#/features/settings/components/about-section";
 import { AiSettingsSection } from "#/features/settings/components/ai-settings-section";
 import {
 	type SettingsNavGroup,
@@ -71,6 +72,12 @@ const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
 	{
 		label: "About & Legal",
 		items: [
+			{
+				id: "about",
+				label: "About",
+				title: "About",
+				description: "App version, build, and release notes.",
+			},
 			{
 				id: "legal",
 				label: "Legal",
@@ -259,6 +266,10 @@ function SettingsPage() {
 
 						if (item.id === "feedback") {
 							return <FeedbackFormSection />;
+						}
+
+						if (item.id === "about") {
+							return <AboutSection />;
 						}
 
 						return <LegalLinksSection />;
