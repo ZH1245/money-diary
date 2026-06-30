@@ -216,6 +216,17 @@ Use ISO date format (YYYY-MM-DD) for the date field.`,
           )
         }
 
+        if ((type === 'expense' || type === 'transfer') && rawPaymentAccountId == null) {
+          return Response.json(
+            {
+              success: false,
+              clarification:
+                'Please tell me which account was used for this payment. I did not create the transaction yet.',
+            },
+            { status: 200 },
+          )
+        }
+
         // Resolve payment account — ownership check
         let resolvedPaymentAccountId: number | null = null
         if (rawPaymentAccountId != null) {

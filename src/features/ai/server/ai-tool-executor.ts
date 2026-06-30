@@ -297,6 +297,14 @@ export async function executeAiTool({
       return { action: 'create_transaction', success: false, message: 'Category is required for expense and transfer.' }
     }
 
+    if ((type === 'expense' || type === 'transfer') && rawAccId == null) {
+      return {
+        action: 'create_transaction',
+        success: false,
+        message: 'Please tell me which account was used for this payment. I did not create the transaction yet.',
+      }
+    }
+
     let paymentAccountId: number | null = null
     if (rawAccId != null) {
       const ok = await isPaymentAccountAccessibleByUser({ userId: context.userId, paymentAccountId: rawAccId })
