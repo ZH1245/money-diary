@@ -6,6 +6,7 @@ import { AdminGlobalAiSection } from "#/features/admin/components/admin-global-a
 import { AdminGlobalCategoriesSection } from "#/features/admin/components/admin-global-categories-section";
 import { AdminUsersSection } from "#/features/admin/components/admin-users-section";
 import { AdminTicketsSection } from "#/features/feedback/components/admin-tickets-section";
+import { OnlineNowBadge } from "#/features/presence/components/online-now-badge";
 import {
 	type SettingsNavGroup,
 	SettingsPageLayout,
@@ -94,6 +95,9 @@ function AdminPage() {
 			}}
 		>
 			<main className="p-4 md:p-6 lg:p-8">
+				<div className="mb-4 flex justify-end">
+					<OnlineNowBadge />
+				</div>
 				<SettingsPageLayout
 					pageLabel="Global settings"
 					pageNote="Configure shared resources for all users. Your personal transactions, savings, goals, and settings are unchanged — use Dashboard and the rest of the app for your own finances."

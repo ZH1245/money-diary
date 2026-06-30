@@ -46,6 +46,7 @@ import {
 } from "#/components/ui/dropdown-menu";
 import { useAccountModerationGuard } from "#/features/auth/hooks/use-account-moderation-guard";
 import { useSecurityProfile } from "#/features/auth/hooks/use-security-profile";
+import { PresenceMount } from "#/features/presence/components/presence-mount";
 import { TransactionFormSheet } from "#/features/transactions/components/transaction-form-sheet";
 import {
 	openQuickAddTransaction,
@@ -259,6 +260,7 @@ export function AuthenticatedAppShell({
 	// ---------- Mobile shell ----------
 	if (isMobile) {
 		return (
+			<PresenceMount>
 			<div className="flex h-svh flex-col overflow-hidden bg-canvas text-foreground">
 				<header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
 					<Link
@@ -320,11 +322,13 @@ export function AuthenticatedAppShell({
 				<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
 				{quickAddSheet}
 			</div>
+			</PresenceMount>
 		);
 	}
 
 	// ---------- Desktop shell ----------
 	return (
+		<PresenceMount>
 		<div className="flex h-svh overflow-hidden bg-canvas text-foreground">
 			<aside
 				className={cn(
@@ -425,6 +429,7 @@ export function AuthenticatedAppShell({
 			<AiTransactionPanel open={aiPanelOpen} onOpenChange={setAiPanelOpen} />
 			{quickAddSheet}
 		</div>
+		</PresenceMount>
 	);
 }
 

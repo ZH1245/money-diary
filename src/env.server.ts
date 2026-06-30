@@ -49,6 +49,22 @@ export const serverEnv = createEnv({
      * The resend from.
      */
     RESEND_FROM: z.string().optional(),
+    /**
+     * Pusher app id (server-only).
+     */
+    PUSHER_APP_ID: z.string().min(1).optional(),
+    /**
+     * Pusher publishable key (also used client-side via config endpoint).
+     */
+    PUSHER_KEY: z.string().min(1).optional(),
+    /**
+     * Pusher secret (server-only — never sent to the client).
+     */
+    PUSHER_SECRET: z.string().min(1).optional(),
+    /**
+     * Pusher cluster (also used client-side via config endpoint).
+     */
+    PUSHER_CLUSTER: z.string().min(1).optional(),
   },
   /**
    * The runtime environment variables.
