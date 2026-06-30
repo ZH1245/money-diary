@@ -37,7 +37,7 @@ export function themeSlugFromTheme(
 
 /**
  * Path for a themed landing screenshot.
- * Files follow `{feature}-{viewport}-{themeSlug}.png` — regenerate with `pnpm capture:landing`.
+ * Files follow `{feature}-{viewport}-{themeSlug}.webp` — regenerate with `pnpm capture:landing`.
  */
 export function getThemedScreenshotPath(
 	featureId: string,
@@ -46,7 +46,7 @@ export function getThemedScreenshotPath(
 	mode: ThemeMode,
 ): string {
 	const slug = themeSlugFromTheme(palette, mode);
-	return `/landing/${featureId}-${viewport}-${slug}.png`;
+	return `/landing/${featureId}-${viewport}-${slug}.webp`;
 }
 
 /** Resolves screenshot path for the active landing-page theme. */
