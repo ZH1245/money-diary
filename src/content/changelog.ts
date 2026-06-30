@@ -18,6 +18,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
     title: 'Faster loading',
     highlights: [
       'Quicker first paint when opening the app, especially on dashboard',
+      'Pages load their data earlier when you navigate around the app',
     ],
   },
   {

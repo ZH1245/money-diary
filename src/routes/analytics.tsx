@@ -1,33 +1,21 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
-import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-shell";
-import { AnalyticsPageContent } from "#/features/analytics/components/analytics-page-content";
-import { DEFAULT_CURRENCY } from "#/lib/currency";
-import { useAuthSession } from "#/lib/use-auth-session";
-import { toSessionUser } from "#/types/auth";
+import { createFileRoute } from '@tanstack/react-router'
+import { AuthenticatedRoutePage } from '#/components/layout/authenticated-route-page'
+import { AnalyticsPageContent } from '#/features/analytics/components/analytics-page-content'
+import { createAuthenticatedRouteLoader } from '#/lib/authenticated-route'
 
-export const Route = createFileRoute("/analytics")({
-	component: AnalyticsPage,
-});
+export const Route = createFileRoute('/analytics')({
+  loader: createAuthenticatedRouteLoader('analytics'),
+  component: AnalyticsPage,
+})
 
 function AnalyticsPage() {
-	const { data: session, isInitialPending: isSessionPending } =
-		useAuthSession();
+  const loaderData = Route.useLoaderData()
 
-	if (isSessionPending) {
-		return <SessionLoadingSkeleton />;
-	}
-
-	if (!session?.user) {
-		return <Navigate to="/sign-in" />;
-	}
-
-	const userCurrency =
-		(session.user as { currency?: string }).currency ?? DEFAULT_CURRENCY;
-
-	return (
-		<AuthenticatedAppShell user={toSessionUser(session.user)}>
-			<AnalyticsPageContent userCurrency={userCurrency} />
-		</AuthenticatedAppShell>
-	);
+  return (
+    <AuthenticatedRoutePage loaderData={loaderData}>
+      {({ userCurrency }) => (
+        <AnalyticsPageContent userCurrency={userCurrency} />
+      )}
+    </AuthenticatedRoutePage>
+  )
 }

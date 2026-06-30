@@ -1,6 +1,5 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
-import { AuthenticatedAppShell } from "#/components/layout/authenticated-app-shell";
+import { createFileRoute } from "@tanstack/react-router";
+import { AuthenticatedRoutePage } from "#/components/layout/authenticated-route-page";
 import { AdminBansSection } from "#/features/admin/components/admin-bans-section";
 import { AdminGlobalAiSection } from "#/features/admin/components/admin-global-ai-section";
 import { AdminGlobalCategoriesSection } from "#/features/admin/components/admin-global-categories-section";
@@ -10,10 +9,10 @@ import {
 	type SettingsNavGroup,
 	SettingsPageLayout,
 } from "#/features/settings/components/settings-page-layout";
-import { AUTH_ROLES } from "#/lib/auth-roles";
-import { useAuthSession } from "#/lib/use-auth-session";
+import { createAuthenticatedRouteLoader } from "#/lib/authenticated-route";
 
 export const Route = createFileRoute("/admin")({
+	loader: createAuthenticatedRouteLoader("admin", { requireAdmin: true }),
 	component: AdminPage,
 });
 
@@ -66,61 +65,40 @@ const ADMIN_NAV_GROUPS: SettingsNavGroup[] = [
 ];
 
 function AdminPage() {
-	const { data: session, isInitialPending } = useAuthSession();
-
-	if (isInitialPending) {
-		return <SessionLoadingSkeleton />;
-	}
-
-	// Don't render an "access denied" page — that confirms the admin route exists.
-	// Unauthenticated users go to sign-in; signed-in non-admins are sent to their
-	// dashboard as if the route were just any other page.
-	if (!session?.user) {
-		return <Navigate to="/sign-in" />;
-	}
-	const role = (session.user as { role?: string }).role;
-	if (role !== AUTH_ROLES.admin) {
-		return <Navigate to="/dashboard" />;
-	}
+	const loaderData = Route.useLoaderData();
 
 	return (
-		<AuthenticatedAppShell
-			user={{
-				name: session.user.name,
-				email: session.user.email,
-				image: session.user.image,
-				role,
-				currency: (session.user as { currency?: string }).currency,
-			}}
-		>
-			<main className="p-4 md:p-6 lg:p-8">
-				<SettingsPageLayout
-					pageLabel="Global settings"
-					pageNote="Configure shared resources for all users. Your personal transactions, savings, goals, and settings are unchanged — use Dashboard and the rest of the app for your own finances."
-					navAriaLabel="Global settings sections"
-					groups={ADMIN_NAV_GROUPS}
-				>
-					{(item) => {
-						if (item.id === "global-ai") {
-							return <AdminGlobalAiSection />;
-						}
+		<AuthenticatedRoutePage loaderData={loaderData} requireAdmin>
+			{() => (
+				<main className="p-4 md:p-6 lg:p-8">
+					<SettingsPageLayout
+						pageLabel="Global settings"
+						pageNote="Configure shared resources for all users. Your personal transactions, savings, goals, and settings are unchanged — use Dashboard and the rest of the app for your own finances."
+						navAriaLabel="Global settings sections"
+						groups={ADMIN_NAV_GROUPS}
+					>
+						{(item) => {
+							if (item.id === "global-ai") {
+								return <AdminGlobalAiSection />;
+							}
 
-						if (item.id === "categories") {
-							return <AdminGlobalCategoriesSection />;
-						}
+							if (item.id === "categories") {
+								return <AdminGlobalCategoriesSection />;
+							}
 
-						if (item.id === "bans") {
-							return <AdminBansSection />;
-						}
+							if (item.id === "bans") {
+								return <AdminBansSection />;
+							}
 
-						if (item.id === "tickets") {
-							return <AdminTicketsSection />;
-						}
+							if (item.id === "tickets") {
+								return <AdminTicketsSection />;
+							}
 
-						return <AdminUsersSection />;
-					}}
-				</SettingsPageLayout>
-			</main>
-		</AuthenticatedAppShell>
+							return <AdminUsersSection />;
+						}}
+					</SettingsPageLayout>
+				</main>
+			)}
+		</AuthenticatedRoutePage>
 	);
 }

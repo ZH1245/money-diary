@@ -1,28 +1,19 @@
-import { SessionLoadingSkeleton } from '#/components/feedback/page-state'
-import { AuthenticatedAppShell } from '#/components/layout/authenticated-app-shell'
+import { createFileRoute } from '@tanstack/react-router'
+import { AuthenticatedRoutePage } from '#/components/layout/authenticated-route-page'
 import { CategoriesPageContent } from '#/features/categories/components/categories-page-content'
-import { useAuthSession } from '#/lib/use-auth-session'
-import { toSessionUser } from '#/types/auth'
-import { Navigate, createFileRoute } from '@tanstack/react-router'
+import { createAuthenticatedRouteLoader } from '#/lib/authenticated-route'
 
 export const Route = createFileRoute('/categories')({
+  loader: createAuthenticatedRouteLoader('categories'),
   component: CategoriesPage,
 })
 
 function CategoriesPage() {
-  const { data: session, isInitialPending: isSessionPending } = useAuthSession()
-
-  if (isSessionPending) {
-    return <SessionLoadingSkeleton />
-  }
-
-  if (!session?.user) {
-    return <Navigate to="/sign-in" />
-  }
+  const loaderData = Route.useLoaderData()
 
   return (
-    <AuthenticatedAppShell user={toSessionUser(session.user)}>
-      <CategoriesPageContent userId={session.user.id} />
-    </AuthenticatedAppShell>
+    <AuthenticatedRoutePage loaderData={loaderData}>
+      {({ userId }) => <CategoriesPageContent userId={userId} />}
+    </AuthenticatedRoutePage>
   )
 }
