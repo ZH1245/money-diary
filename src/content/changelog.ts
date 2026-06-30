@@ -11,6 +11,16 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.1',
+    date: '2026-06-30',
+    title: 'Feedback conversations',
+    highlights: [
+      'Two-way support tickets: view full threads and reply in Settings',
+      'Admin ticket detail with submitter name, ADMIN replies, and status control',
+      'Closed tickets cannot receive new replies until reopened',
+    ],
+  },
+  {
     version: '0.1.0',
     date: '2026-06-30',
     title: 'Early access',

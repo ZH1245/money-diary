@@ -1,5 +1,5 @@
 /** Public app release version — keep in sync with src/content/changelog.ts. */
-export const APP_VERSION = '0.1.0'
+export const APP_VERSION = '0.1.1'
 
 /** Build id baked into the client bundle at compile time. */
 export const CLIENT_BUILD_ID = import.meta.env.VITE_APP_BUILD_ID ?? 'dev'
