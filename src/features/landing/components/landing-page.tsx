@@ -3,6 +3,7 @@ import { ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { DeviceMockups } from "./device-mockups";
 import { FeatureGrid } from "./feature-grid";
+import { FeatureShowcase } from "./feature-showcase";
 import { LandingNav } from "./landing-nav";
 import { ThemesShowcase } from "./themes-showcase";
 
@@ -57,6 +58,9 @@ export function LandingPage() {
 					<DeviceMockups />
 				</div>
 			</section>
+
+			{/* ── Feature showcase (screenshot carousel) ─────────────── */}
+			<FeatureShowcase />
 
 			{/* ── Feature grid ───────────────────────────────────────── */}
 			<FeatureGrid />
