@@ -56,6 +56,17 @@ async function sendOtpEmail(email: string, otp: string): Promise<void> {
     )
   }
 
+  const fromAddress = process.env.RESEND_FROM || 'onboarding@resend.dev'
+  const senderEmail = fromAddress.includes('<')
+    ? fromAddress.match(/<([^>]+)>/)?.[1]?.trim()
+    : fromAddress.trim()
+
+  if (!senderEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail)) {
+    throw new Error(
+      `RESEND_FROM is invalid (${fromAddress}). Use a verified sender like "Money Diary <noreply@yourdomain.com>".`,
+    )
+  }
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -63,7 +74,7 @@ async function sendOtpEmail(email: string, otp: string): Promise<void> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM || 'onboarding@resend.dev',
+      from: fromAddress,
       to: email,
       subject: 'Your Money Diary sign-in code',
       text: `Money Diary\n\nUse this code to sign in: ${otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, you can safely ignore this email.`,
@@ -72,8 +83,16 @@ async function sendOtpEmail(email: string, otp: string): Promise<void> {
   })
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => '')
-    throw new Error(`Failed to send sign-in code email (${response.status}). ${detail}`)
+    let detail = ''
+    try {
+      const payload = (await response.json()) as { message?: string; error?: string }
+      detail = payload.message ?? payload.error ?? ''
+    } catch {
+      detail = await response.text().catch(() => '')
+    }
+    throw new Error(
+      detail.trim() || `Failed to send sign-in code email (${response.status}).`,
+    )
   }
 }
 

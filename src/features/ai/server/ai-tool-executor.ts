@@ -274,7 +274,10 @@ export async function executeAiTool({
     if (type === 'income') {
       categoryId = null
     } else if (rawCatId === undefined) {
-      return { action: 'create_transaction', success: false, message: 'Category is required for expense and transfer.' }
+      if (type === 'expense') {
+        return { action: 'create_transaction', success: false, message: 'Category is required for expense entries.' }
+      }
+      categoryId = null
     } else if (rawCatId === -1) {
       if (!categoryName?.trim()) {
         return { action: 'create_transaction', success: false, message: 'Category name is required for new category.' }
@@ -294,7 +297,7 @@ export async function executeAiTool({
 
     categoryId = resolveTransactionCategoryId(type, categoryId)
     if (requiresTransactionCategory(type) && categoryId === null) {
-      return { action: 'create_transaction', success: false, message: 'Category is required for expense and transfer.' }
+      return { action: 'create_transaction', success: false, message: 'Category is required for expense entries.' }
     }
 
     if ((type === 'expense' || type === 'transfer') && rawAccId == null) {
@@ -427,13 +430,13 @@ export async function executeAiTool({
       return {
         action: 'update_transaction',
         success: false,
-        message: 'Category is required when changing to expense or transfer.',
+        message: 'Category is required when changing to expense.',
       }
     }
 
     categoryId = resolveTransactionCategoryId(nextType, categoryId)
     if (requiresTransactionCategory(nextType) && categoryId === null) {
-      return { action: 'update_transaction', success: false, message: 'Category is required for expense and transfer.' }
+      return { action: 'update_transaction', success: false, message: 'Category is required for expense entries.' }
     }
 
     let paymentAccountId: number | null | undefined
@@ -572,6 +575,7 @@ export async function executeAiTool({
       exchangeRate: amountResult.data.exchangeRate,
       fromPaymentAccountId,
       toPaymentAccountId,
+      categoryId: null,
       note: note?.trim() || null,
       happenedAt,
     })

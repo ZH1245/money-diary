@@ -13,6 +13,19 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.3',
+    date: '2026-07-01',
+    title: 'Transfers and polish',
+    highlights: [
+      'Optional category on transfers so you can filter them like expenses',
+      'AI chat shows what it is doing while logging entries',
+      'Converting an expense to a transfer now saves correctly',
+      'Sign-in shows a clear message when the verification email cannot be sent',
+      'Transactions table and date filters layout better on small screens',
+      'Upcoming bills on the dashboard are easier to read on mobile',
+    ],
+  },
+  {
     version: '0.1.2',
     date: '2026-06-30',
     title: 'Faster loading',

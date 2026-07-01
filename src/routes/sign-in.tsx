@@ -66,32 +66,39 @@ function SignInPage() {
 		}
 
 		setIsSendingOtp(true);
-		const requestPromise = authClient.emailOtp.sendVerificationOtp({
-			email,
-			type: "sign-in",
-		});
-		const sendPromise = requestPromise.then((result) => {
-			if (result.error)
-				throw new Error(result.error.message ?? "Unable to send code");
-			return result;
-		});
 
-		toast.promise(sendPromise, {
-			loading: "Sending code...",
-			success: "Code sent — check your email",
-			error: "Unable to send code",
-		});
-
-		const result = await requestPromise;
-
-		setIsSendingOtp(false);
-
-		if (result.error) {
-			setErrorMessage(result.error.message ?? "Unable to send code");
-			return;
+		try {
+			await toast.promise(
+				authClient.emailOtp
+					.sendVerificationOtp({
+						email,
+						type: "sign-in",
+					})
+					.then((result) => {
+						if (result.error) {
+							throw new Error(
+								result.error.message ?? "Unable to send code",
+							);
+						}
+						return result;
+					}),
+				{
+					loading: "Sending code...",
+					success: "Code sent — check your email",
+					error: (message) =>
+						message instanceof Error
+							? message.message
+							: "Unable to send code",
+				},
+			);
+			setOtpSent(true);
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error ? error.message : "Unable to send code",
+			);
+		} finally {
+			setIsSendingOtp(false);
 		}
-
-		setOtpSent(true);
 	}
 
 	async function handleVerifyOtp(event: React.FormEvent<HTMLFormElement>) {
@@ -108,32 +115,39 @@ function SignInPage() {
 		}
 
 		setIsSubmitting(true);
-		const requestPromise = authClient.signIn.emailOtp({
-			email,
-			otp: otpCode,
-		});
-		const verifyPromise = requestPromise.then((result) => {
-			if (result.error)
-				throw new Error(result.error.message ?? "Unable to sign in");
-			return result;
-		});
 
-		toast.promise(verifyPromise, {
-			loading: "Signing in...",
-			success: "Signed in successfully",
-			error: "Unable to sign in",
-		});
-
-		const result = await requestPromise;
-
-		setIsSubmitting(false);
-
-		if (result.error) {
-			setErrorMessage(result.error.message ?? "Unable to sign in");
-			return;
+		try {
+			await toast.promise(
+				authClient.signIn
+					.emailOtp({
+						email,
+						otp: otpCode,
+					})
+					.then((result) => {
+						if (result.error) {
+							throw new Error(
+								result.error.message ?? "Unable to sign in",
+							);
+						}
+						return result;
+					}),
+				{
+					loading: "Signing in...",
+					success: "Signed in successfully",
+					error: (message) =>
+						message instanceof Error
+							? message.message
+							: "Unable to sign in",
+				},
+			);
+			await navigate({ to: "/dashboard" });
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error ? error.message : "Unable to sign in",
+			);
+		} finally {
+			setIsSubmitting(false);
 		}
-
-		await navigate({ to: "/dashboard" });
 	}
 
 	function getFieldError(field: "email" | "password", value: string): string {

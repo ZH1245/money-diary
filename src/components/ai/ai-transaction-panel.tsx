@@ -55,6 +55,7 @@ import { cn } from "#/lib/utils";
 import { useAuthSession } from "#/lib/use-auth-session";
 import { getPusherClient } from "#/lib/pusher-client";
 import type { Channel } from "pusher-js";
+import { getAiActionDisplayLabel } from "#/features/ai/utils/ai-progress-message";
 
 interface ThreadMessage {
 	id?: number;
@@ -74,25 +75,30 @@ interface AiTransactionPanelProps {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-	create_transaction: "Transaction",
+	create_transaction: "Transaction logged",
 	update_transaction: "Transaction updated",
-	create_saving: "Saving",
-	create_payment_account: "Account",
+	create_transfer: "Transfer recorded",
+	create_recurring_rule: "Recurring entry set up",
+	update_recurring_rule: "Recurring entry updated",
+	create_scheduled_transaction: "Transaction scheduled",
+	create_saving: "Saving recorded",
+	create_payment_account: "Account added",
 	update_payment_account: "Account updated",
-	create_goal: "Goal",
-	create_wishlist_item: "Wishlist item",
+	create_goal: "Goal created",
+	create_wishlist_item: "Wishlist item added",
 	update_wishlist_item: "Wishlist updated",
-	delete_wishlist_item: "Wishlist removed",
+	delete_wishlist_item: "Wishlist item removed",
 	update_goal: "Goal updated",
 	delete_goal: "Goal removed",
 	get_exchange_rate: "Exchange rate",
-	query_user_data: "Data query",
+	query_user_data: "Data lookup",
 	chained: "Multiple actions",
 };
 
 const ACTION_ROUTE_MAP: Partial<Record<string, string>> = {
 	create_transaction: "/transactions",
 	update_transaction: "/transactions",
+	create_transfer: "/transactions",
 	create_saving: "/savings",
 	create_payment_account: "/accounts",
 	update_payment_account: "/accounts",
@@ -107,6 +113,7 @@ const ACTION_ROUTE_MAP: Partial<Record<string, string>> = {
 const ACTION_LINK_LABELS: Partial<Record<string, string>> = {
 	create_transaction: "View in Expenses",
 	update_transaction: "View in Expenses",
+	create_transfer: "View in Transactions",
 	create_saving: "View in Savings",
 	create_payment_account: "View Accounts",
 	update_payment_account: "View Accounts",
@@ -279,7 +286,7 @@ function buildAssistantThreadMessage(
  */
 interface AiProgressEvent {
 	phase: "thinking" | "step" | "done";
-	action?: string;
+	message?: string;
 	index?: number;
 	total?: number;
 }
@@ -919,7 +926,8 @@ export function AiTransactionPanel({
 									) : message.ok && message.action ? (
 										<div className="mt-1 flex items-center justify-between gap-2 border-t border-emerald-200/60 pt-1.5 dark:border-emerald-800/60">
 											<span className="text-[10px] font-medium uppercase tracking-wide opacity-60">
-												{ACTION_LABELS[message.action] ?? message.action}
+												{ACTION_LABELS[message.action] ??
+													getAiActionDisplayLabel(message.action)}
 											</span>
 											{ACTION_ROUTE_MAP[message.action] ? (
 												<Link
@@ -955,9 +963,9 @@ export function AiTransactionPanel({
 							>
 								{aiProgress?.phase === "step" ? (
 									<span className="text-xs">
-										{ACTION_LABELS[aiProgress.action ?? ""] ?? aiProgress.action}
+										{aiProgress.message ?? "Working on it"}
 										{aiProgress.total && aiProgress.total > 1
-											? ` ${aiProgress.index ?? 1} of ${aiProgress.total}`
+											? ` (${aiProgress.index ?? 1} of ${aiProgress.total})`
 											: null}
 										{"…"}
 									</span>

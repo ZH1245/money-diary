@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  convertTransactionToTransfer,
   deleteTransfer,
   deleteUserTransaction,
   getUserTransactionById,
   isCategoryAccessibleByUser,
+  resolveOptionalTransferCategoryId,
   updateTransfer,
   updateUserTransaction,
 } from '#/features/transactions/server/transactions-repository'
@@ -54,8 +56,17 @@ export const Route = createFileRoute('/api/transactions/$id')({
           return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
         }
 
-        if (isTransferBody(body) && existing.transferGroupId) {
-          return updateTransferHandler(userContext, existing.transferGroupId, body)
+        if (isTransferBody(body)) {
+          if (existing.transferGroupId) {
+            return updateTransferHandler(
+              userContext,
+              existing.transferGroupId,
+              existing.categoryId,
+              body,
+            )
+          }
+
+          return convertToTransferHandler(userContext, transactionId, existing, body)
         }
 
         const parsed = updateTransactionSchema.safeParse(body)
@@ -74,7 +85,7 @@ export const Route = createFileRoute('/api/transactions/$id')({
 
         if (requiresTransactionCategory(nextType) && nextCategoryId === null) {
           return Response.json(
-            { success: false, error: 'Category is required for expense and transfer' },
+            { success: false, error: 'Category is required for expense entries' },
             { status: 400 },
           )
         }
@@ -206,6 +217,7 @@ function isTransferBody(body: unknown): boolean {
 async function updateTransferHandler(
   userContext: { id: string; currency: string },
   transferGroupId: string,
+  existingCategoryId: number | null,
   body: unknown,
 ): Promise<Response> {
   const parsed = updateTransferSchema.safeParse(body)
@@ -237,6 +249,13 @@ async function updateTransferHandler(
     }
   }
 
+  const categoryInput =
+    parsed.data.categoryId !== undefined ? parsed.data.categoryId : existingCategoryId
+  const categoryId = await resolveOptionalTransferCategoryId(userContext.id, categoryInput)
+  if (categoryId === 'not_found') {
+    return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
+  }
+
   const rows = await updateTransfer({
     userId: userContext.id,
     transferGroupId,
@@ -247,9 +266,82 @@ async function updateTransferHandler(
     exchangeRate: amountResult.data.exchangeRate,
     fromPaymentAccountId: parsed.data.fromPaymentAccountId,
     toPaymentAccountId: parsed.data.toPaymentAccountId,
+    categoryId,
     note: parsed.data.note ?? null,
     happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
   })
 
   return Response.json({ success: true, data: rows[0] })
+}
+
+/**
+ * Replaces a single income/expense row with a two-leg transfer.
+ */
+async function convertToTransferHandler(
+  userContext: { id: string; currency: string },
+  transactionId: number,
+  existing: NonNullable<Awaited<ReturnType<typeof getUserTransactionById>>>,
+  body: unknown,
+): Promise<Response> {
+  const parsed = updateTransferSchema.safeParse(body)
+  if (!parsed.success) {
+    return Response.json(
+      { success: false, error: 'Invalid transfer payload', details: parsed.error.flatten() },
+      { status: 400 },
+    )
+  }
+
+  const amountResult = normalizeTransactionAmount({
+    amount: parsed.data.amount ?? existing.amount,
+    currency: parsed.data.currency ?? existing.sourceCurrency ?? userContext.currency,
+    userCurrency: userContext.currency,
+    exchangeRate: parsed.data.exchangeRate ?? existing.exchangeRate,
+  })
+
+  if (!amountResult.ok) {
+    return Response.json({ success: false, error: amountResult.error }, { status: 400 })
+  }
+
+  for (const accountId of [parsed.data.fromPaymentAccountId, parsed.data.toPaymentAccountId]) {
+    const canUseAccount = await isPaymentAccountAccessibleByUser({
+      userId: userContext.id,
+      paymentAccountId: accountId,
+    })
+    if (!canUseAccount) {
+      return Response.json({ success: false, error: 'Payment account not found' }, { status: 404 })
+    }
+  }
+
+  const categoryInput =
+    parsed.data.categoryId !== undefined ? parsed.data.categoryId : existing.categoryId
+  const categoryId = await resolveOptionalTransferCategoryId(userContext.id, categoryInput)
+  if (categoryId === 'not_found') {
+    return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
+  }
+
+  try {
+    const rows = await convertTransactionToTransfer({
+      userId: userContext.id,
+      transactionId,
+      title: parsed.data.title?.trim() ?? existing.title,
+      amount: amountResult.data.normalizedAmount,
+      sourceAmount: amountResult.data.sourceAmount,
+      sourceCurrency: amountResult.data.sourceCurrency,
+      exchangeRate: amountResult.data.exchangeRate,
+      fromPaymentAccountId: parsed.data.fromPaymentAccountId,
+      toPaymentAccountId: parsed.data.toPaymentAccountId,
+      categoryId,
+      note: parsed.data.note ?? existing.note ?? null,
+      happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : existing.happenedAt,
+    })
+
+    if (!rows) {
+      return Response.json({ success: false, error: 'Transaction not found' }, { status: 404 })
+    }
+
+    return Response.json({ success: true, data: rows[0] })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to convert transaction to transfer'
+    return Response.json({ success: false, error: message }, { status: 400 })
+  }
 }

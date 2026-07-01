@@ -75,6 +75,7 @@ export interface TransferInput {
   exchangeRate?: string
   fromPaymentAccountId: number
   toPaymentAccountId: number
+  categoryId?: number | null
   note?: string | null
   happenedAt?: string
 }

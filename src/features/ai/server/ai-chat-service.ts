@@ -36,6 +36,7 @@ import {
 import { formatAiProviderError } from '#/features/ai/server/format-ai-provider-error'
 import { resolveBulkChatRuntimeLimits } from '#/features/ai/utils/ai-bulk-paste'
 import { triggerPusher } from '#/lib/server/pusher'
+import { buildAiToolProgressMessage } from '#/features/ai/utils/ai-progress-message'
 
 interface ProviderGenerationLimits {
   maxOutputTokens: number
@@ -457,7 +458,7 @@ async function emitAiProgress(
   userId: string,
   data:
     | { phase: 'thinking' }
-    | { phase: 'step'; action: string; index: number; total: number }
+    | { phase: 'step'; message: string; index: number; total: number }
     | { phase: 'done' },
 ): Promise<void> {
   await triggerPusher(`private-user-${userId}`, 'ai_progress', data).catch(() => undefined)
@@ -635,6 +636,13 @@ export async function runAiChat({
       if (step === 0 && isWeakAssistantReply(reply)) {
         const fallback = resolveFallbackToolInvocation(messages, today)
         if (fallback) {
+          void emitAiProgress(userId, {
+            phase: 'step',
+            message: buildAiToolProgressMessage(fallback.toolName, fallback.toolArgs),
+            index: 1,
+            total: 1,
+          })
+
           const stepResult = await executeAiTool({
             toolName: fallback.toolName,
             toolArgs: fallback.toolArgs,
@@ -675,6 +683,14 @@ export async function runAiChat({
 
     for (let toolIndex = 0; toolIndex < toolCalls.length; toolIndex += 1) {
       const toolCall = toolCalls[toolIndex]!
+
+      void emitAiProgress(userId, {
+        phase: 'step',
+        message: buildAiToolProgressMessage(toolCall.name, toolCall.arguments),
+        index: toolIndex + 1,
+        total,
+      })
+
       const stepResult = await executeAiTool({
         toolName: toolCall.name,
         toolArgs: toolCall.arguments,
@@ -693,13 +709,6 @@ export async function runAiChat({
         entityId: stepResult.entityId,
         navigateTo: stepResult.navigateTo,
         duplicate: stepResult.duplicate,
-      })
-
-      void emitAiProgress(userId, {
-        phase: 'step',
-        action: stepResult.action,
-        index: executedSteps.length,
-        total,
       })
 
       toolResults.push({

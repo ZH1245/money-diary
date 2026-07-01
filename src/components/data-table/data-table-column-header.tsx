@@ -27,10 +27,10 @@ export function DataTableColumnHeader<TData, TValue>({
       type="button"
       variant="ghost"
       size="sm"
-      className={`h-8 gap-1 px-2 ${className ?? ''}`}
+      className={`h-8 max-w-full gap-1 px-2 ${className ?? ''}`}
       onClick={() => column.toggleSorting(sorted === 'asc')}
     >
-      <span>{title}</span>
+      <span className="truncate">{title}</span>
       {sorted === 'asc' ? <ArrowUp className="size-3.5" /> : null}
       {sorted === 'desc' ? <ArrowDown className="size-3.5" /> : null}
       {!sorted ? <ArrowUpDown className="size-3.5 opacity-50" /> : null}

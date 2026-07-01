@@ -70,7 +70,7 @@ function DateFilterField({ id, label, value, placeholder, onChange }: DateFilter
       <Label htmlFor={id} className="text-xs text-muted-foreground">
         {label}
       </Label>
-      <div className="flex gap-2">
+      <div className="relative">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -79,6 +79,7 @@ function DateFilterField({ id, label, value, placeholder, onChange }: DateFilter
               variant="outline"
               className={cn(
                 'h-9 w-full justify-start gap-2 font-normal',
+                value && 'pr-10',
                 !value && 'text-muted-foreground',
               )}
             >
@@ -103,9 +104,9 @@ function DateFilterField({ id, label, value, placeholder, onChange }: DateFilter
         {value ? (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="size-9 shrink-0"
+            className="absolute right-1 top-1/2 z-10 size-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             aria-label={`Clear ${label.toLowerCase()} date`}
             onClick={handleClear}
           >

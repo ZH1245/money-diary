@@ -184,9 +184,10 @@ export function DataTable<TData>({
 			<div className="rounded-xl border border-border w-full">
 				<div
 					ref={scrollContainerRef}
-					className={
-						maxBodyHeight != null ? "overflow-auto" : "overflow-x-auto"
-					}
+					className={cn(
+						maxBodyHeight != null ? "overflow-auto" : "overflow-x-auto",
+						maxBodyHeight != null && "scrollbar-gutter-stable",
+					)}
 					style={
 						maxBodyHeight != null
 							? { maxHeight: `${maxBodyHeight}px` }
@@ -194,7 +195,12 @@ export function DataTable<TData>({
 					}
 				>
 					<Table
-						className={fillWidth ? "w-full table-fixed" : "min-w-[720px]"}
+						className={cn(
+							"w-full",
+							fillWidth || maxBodyHeight != null
+								? "table-fixed"
+								: "min-w-[720px]",
+						)}
 					>
 						<TableHeader>
 							{table.getHeaderGroups().map((headerGroup) => (
@@ -202,7 +208,14 @@ export function DataTable<TData>({
 									{headerGroup.headers.map((header) => (
 										<TableHead
 											key={header.id}
-											className="sticky top-0 z-10 bg-background px-3 shadow-[inset_0_-1px_0_var(--border)]"
+											className={cn(
+												"sticky top-0 z-10 bg-background px-3 shadow-[inset_0_-1px_0_var(--border)]",
+												(
+													header.column.columnDef.meta as
+														| { headerClassName?: string }
+														| undefined
+												)?.headerClassName,
+											)}
 										>
 											{header.isPlaceholder
 												? null

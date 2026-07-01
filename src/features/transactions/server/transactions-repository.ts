@@ -76,6 +76,30 @@ export async function isCategoryAccessibleByUser({
 }
 
 /**
+ * Validates an optional transfer category and returns the stored id (or null).
+ */
+export async function resolveOptionalTransferCategoryId(
+  userId: string,
+  categoryId: number | null | undefined,
+): Promise<number | null | 'not_found'> {
+  const resolved = categoryId ?? null
+  if (resolved === null) {
+    return null
+  }
+
+  const canUseCategory = await isCategoryAccessibleByUser({
+    userId,
+    categoryId: resolved,
+  })
+
+  if (!canUseCategory) {
+    return 'not_found'
+  }
+
+  return resolved
+}
+
+/**
  * Loads confirmed transactions for one user on a single calendar day.
  * Excludes drafts so they cannot block real duplicate detection.
  */
@@ -217,6 +241,7 @@ interface CreateTransferParams {
   exchangeRate: string
   fromPaymentAccountId: number
   toPaymentAccountId: number
+  categoryId: number | null
   note: string | null
   happenedAt: Date
 }
@@ -235,7 +260,7 @@ export async function createTransfer(params: CreateTransferParams) {
     sourceCurrency: params.sourceCurrency,
     exchangeRate: params.exchangeRate,
     type: 'transfer' as const,
-    categoryId: null,
+    categoryId: params.categoryId,
     note: params.note,
     transferGroupId,
     happenedAt: params.happenedAt,
@@ -260,6 +285,80 @@ export async function createTransfer(params: CreateTransferParams) {
   return rows
 }
 
+interface ConvertTransactionToTransferParams extends CreateTransferParams {
+  transactionId: number
+}
+
+/**
+ * Replaces a single income/expense row with a two-leg transfer atomically.
+ */
+export async function convertTransactionToTransfer(
+  params: ConvertTransactionToTransferParams,
+) {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, params.userId),
+          eq(transactions.id, params.transactionId),
+        ),
+      )
+      .limit(1)
+
+    if (!existing) {
+      return null
+    }
+
+    if (existing.transferGroupId || existing.type === 'transfer') {
+      throw new Error('Transaction is already a transfer')
+    }
+
+    const transferGroupId = randomUUID()
+    const shared = {
+      userId: params.userId,
+      title: params.title,
+      amount: params.amount,
+      sourceAmount: params.sourceAmount,
+      sourceCurrency: params.sourceCurrency,
+      exchangeRate: params.exchangeRate,
+      type: 'transfer' as const,
+      categoryId: params.categoryId,
+      note: params.note,
+      transferGroupId,
+      happenedAt: params.happenedAt,
+    }
+
+    const rows = await tx
+      .insert(transactions)
+      .values([
+        {
+          ...shared,
+          paymentAccountId: params.fromPaymentAccountId,
+          source: TRANSFER_SOURCE_OUT,
+        },
+        {
+          ...shared,
+          paymentAccountId: params.toPaymentAccountId,
+          source: TRANSFER_SOURCE_IN,
+        },
+      ])
+      .returning()
+
+    await tx
+      .delete(transactions)
+      .where(
+        and(
+          eq(transactions.userId, params.userId),
+          eq(transactions.id, params.transactionId),
+        ),
+      )
+
+    return rows
+  })
+}
+
 interface UpdateTransferParams {
   userId: string
   transferGroupId: string
@@ -270,6 +369,7 @@ interface UpdateTransferParams {
   exchangeRate: string
   fromPaymentAccountId: number
   toPaymentAccountId: number
+  categoryId: number | null
   note: string | null
   happenedAt: Date
 }
@@ -285,6 +385,7 @@ export async function updateTransfer(params: UpdateTransferParams) {
       sourceAmount: params.sourceAmount,
       sourceCurrency: params.sourceCurrency,
       exchangeRate: params.exchangeRate,
+      categoryId: params.categoryId,
       note: params.note,
       happenedAt: params.happenedAt,
       updatedAt: new Date(),
