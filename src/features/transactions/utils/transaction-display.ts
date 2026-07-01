@@ -7,7 +7,7 @@ import {
   TRANSFER_SOURCE_IN,
   TRANSFER_SOURCE_OUT,
 } from '#/features/transactions/utils/transfer-direction'
-import { formatTransactionHappenedAtLabel } from '#/lib/date-input'
+import { formatTransactionHappenedAtCompact, formatTransactionHappenedAtLabel } from '#/lib/date-input'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 
 export interface TransactionFormState {
@@ -45,6 +45,7 @@ export interface TransactionTableRow {
   note: string
   happenedAt: string
   happenedAtLabel: string
+  happenedAtCompactLabel: string
 }
 
 /**
@@ -172,6 +173,7 @@ export function buildTransactionTableRows(
     note: transaction.note ?? '',
     happenedAt: transaction.happenedAt,
     happenedAtLabel: formatTransactionHappenedAtLabel(transaction.happenedAt),
+    happenedAtCompactLabel: formatTransactionHappenedAtCompact(transaction.happenedAt),
   }))
 }
 

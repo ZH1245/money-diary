@@ -37,6 +37,7 @@ const AiTransactionPanel = lazy(() =>
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { QueryRefreshButton } from "#/components/feedback/query-refresh-button";
 import { DashboardDateRangeFilter } from "#/components/layout/dashboard-date-range-filter";
+import { ensureDashboardDateRangeInitialized } from "#/features/dashboard/store/dashboard-date-range-store";
 import { SiteFooter } from "#/components/layout/site-footer";
 import { ThemeControls } from "#/components/layout/theme-toggle";
 import { WorkspaceHeaderToolbar } from "#/components/layout/workspace-header-toolbar";
@@ -121,6 +122,10 @@ export function AuthenticatedAppShell({
 	}, [collapsed]);
 
 	/** One scroll container in the shell — prevent body/html from scrolling too. */
+	useEffect(() => {
+		ensureDashboardDateRangeInitialized();
+	}, []);
+
 	useEffect(() => {
 		const html = document.documentElement;
 		const previousHtmlOverflow = html.style.overflow;
@@ -282,15 +287,14 @@ export function AuthenticatedAppShell({
 		return (
 			<div className="flex h-svh flex-col overflow-hidden bg-canvas text-foreground">
 				<header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-					<Link
-						to="/dashboard"
-						aria-label="Dashboard"
-						className="flex items-center no-underline"
+					<button
+						type="button"
+						onClick={() => setMobileNavOpen(true)}
+						aria-label="Open menu"
+						className="flex size-9 shrink-0 items-center justify-center rounded-lg text-foreground hover:bg-nav-hover"
 					>
-						<span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-							<CircleDollarSign className="size-4" />
-						</span>
-					</Link>
+						<Menu className="size-5" />
+					</button>
 					<span className="truncate text-[15px] font-extrabold tracking-tight">
 						{pageTitle}
 					</span>
@@ -328,7 +332,6 @@ export function AuthenticatedAppShell({
 
 				<MobileBottomNav
 					pathname={pathname}
-					onMore={() => setMobileNavOpen(true)}
 					onAdd={() => openQuickAddTransaction()}
 				/>
 
@@ -502,18 +505,19 @@ interface BottomTab {
 
 function MobileBottomNav({
 	pathname,
-	onMore,
 	onAdd,
 }: {
 	pathname: string;
-	onMore: () => void;
 	onAdd: () => void;
 }) {
 	const left: BottomTab[] = [
 		{ title: "Home", to: "/dashboard", icon: LayoutDashboard },
 		{ title: "Txns", to: "/transactions", icon: ReceiptText },
 	];
-	const right: BottomTab[] = [{ title: "Goals", to: "/goals", icon: Goal }];
+	const right: BottomTab[] = [
+		{ title: "Analytics", to: "/analytics", icon: BarChart3 },
+		{ title: "Goals", to: "/goals", icon: Goal },
+	];
 
 	return (
 		<nav className="flex shrink-0 items-center gap-1 border-t border-border bg-sidebar px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5">
@@ -540,14 +544,6 @@ function MobileBottomNav({
 					active={isActivePath(pathname, tab.to)}
 				/>
 			))}
-			<button
-				type="button"
-				onClick={onMore}
-				className="flex flex-1 flex-col items-center gap-0.5 text-muted-foreground"
-			>
-				<Menu className="size-[21px]" />
-				<span className="text-[9px] font-semibold">More</span>
-			</button>
 		</nav>
 	);
 }
@@ -563,7 +559,7 @@ function BottomTabLink({ tab, active }: { tab: BottomTab; active: boolean }) {
 			)}
 		>
 			<Icon className="size-[21px]" />
-			<span className="text-[9px] font-semibold">{tab.title}</span>
+			<span className="max-w-full truncate text-[9px] font-semibold">{tab.title}</span>
 		</Link>
 	);
 }

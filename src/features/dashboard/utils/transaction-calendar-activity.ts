@@ -1,5 +1,5 @@
 import type { TransactionDto } from '#/features/transactions/types/transaction'
-import { format, parseISO } from 'date-fns'
+import { toInputDate } from '#/lib/date-input'
 
 export interface DayTransactionActivity {
   income: boolean
@@ -19,7 +19,7 @@ export function buildTransactionCalendarActivity(
   const activityByDate: Record<string, DayTransactionActivity> = {}
 
   for (const transaction of transactions) {
-    const dateKey = format(parseISO(transaction.happenedAt), 'yyyy-MM-dd')
+    const dateKey = toInputDate(transaction.happenedAt)
     const current = activityByDate[dateKey] ?? {
       income: false,
       expense: false,

@@ -1,10 +1,10 @@
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import { formatInstantInTimeZone, getClientTimeZone } from '#/lib/timezone'
 
 const CALENDAR_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * Parses a calendar date string (yyyy-MM-dd) as local midnight.
+ * Parses a calendar date string (yyyy-MM-dd) as local noon to avoid DST/UTC shifts.
  */
 export function parseCalendarDate(value: string): Date {
   if (!CALENDAR_DATE_PATTERN.test(value)) {
@@ -12,22 +12,36 @@ export function parseCalendarDate(value: string): Date {
   }
 
   const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, month - 1, day)
+  return new Date(year, month - 1, day, 12, 0, 0, 0)
 }
 
 /**
- * Formats a Date as a calendar date string in the user's local timezone.
+ * Formats a Date as a calendar date string (yyyy-MM-dd) in local time.
  */
 export function formatCalendarDate(date: Date): string {
-  return format(date, 'yyyy-MM-dd')
+  return new Intl.DateTimeFormat('en-CA').format(date)
+}
+
+/**
+ * Formats a calendar date string for compact UI labels.
+ */
+export function formatCalendarLabel(
+  dateValue: string,
+  options?: { includeYear?: boolean },
+): string {
+  const date = parseCalendarDate(dateValue)
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(options?.includeYear ? { year: 'numeric' } : {}),
+  }).format(date)
 }
 
 /**
  * Returns today's calendar date in the user's local timezone.
  */
 export function getCalendarToday(): string {
-  const now = new Date()
-  return formatCalendarDate(new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+  return new Intl.DateTimeFormat('en-CA').format(new Date())
 }
 
 /**
@@ -91,6 +105,31 @@ export function formatTransactionHappenedAtLabel(
     dateStyle: 'medium',
     timeStyle: 'short',
   })
+}
+
+/**
+ * Compact transaction timestamp for narrow table rows (omits year when current).
+ */
+export function formatTransactionHappenedAtCompact(
+  iso: string,
+  timeZone = getClientTimeZone(),
+): string {
+  const parsed = new Date(iso)
+  if (Number.isNaN(parsed.getTime())) {
+    return iso
+  }
+
+  const now = new Date()
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    month: 'short',
+    day: 'numeric',
+    ...(parsed.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
+  return formatter.format(parsed)
 }
 
 /**

@@ -13,6 +13,16 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.7',
+    date: '2026-07-01',
+    title: 'Date range fix',
+    highlights: [
+      'Workspace date range now matches your local calendar day correctly',
+      'Last 30 days ends on today instead of showing a shifted range',
+      'Transaction titles stay visible on mobile in the transactions list',
+    ],
+  },
+  {
     version: '0.1.6',
     date: '2026-07-01',
     title: 'UTC timestamps',

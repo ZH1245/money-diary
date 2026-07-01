@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '#/lib/date-input'
 import {
   addDays,
   differenceInCalendarDays,
@@ -7,7 +8,6 @@ import {
   endOfDay,
   format,
   isWithinInterval,
-  parseISO,
   startOfDay,
 } from 'date-fns'
 import { getSavingLedgerDelta, type SavingEntryType } from '#/features/savings/utils/saving-ledger'
@@ -38,8 +38,8 @@ export function buildSavingsTrendSeries(
   from: string,
   to: string,
 ): SavingsTrendPoint[] {
-  const fromDate = startOfDay(parseISO(from))
-  const toDate = endOfDay(parseISO(to))
+  const fromDate = startOfDay(parseCalendarDate(from))
+  const toDate = endOfDay(parseCalendarDate(to))
   const dayCount = differenceInCalendarDays(toDate, fromDate) + 1
 
   if (!dayCount || dayCount < 1) {

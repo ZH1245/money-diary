@@ -2,8 +2,8 @@ import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '#/components/ui/popover'
 import { cn } from '#/lib/utils'
-import { format } from 'date-fns'
-import { formatCalendarDate, parseCalendarDate } from '#/lib/date-input'
+import { formatCalendarDate, formatCalendarLabel, parseCalendarDate } from '#/lib/date-input'
+import { getClientTimeZone } from '#/lib/timezone'
 import { CalendarIcon, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -79,11 +79,17 @@ export function DatePickerField({
               className={cn('flex-1 justify-start text-left font-normal', !value && 'text-muted-foreground')}
             >
               <CalendarIcon className="size-4 opacity-70" />
-              {value ? format(selectedDate!, 'MMM d, yyyy') : placeholder}
+              {value ? formatCalendarLabel(value, { includeYear: true }) : placeholder}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] overflow-hidden p-0" align="start">
-            <Calendar mode="single" selected={selectedDate} onSelect={handleSelect} defaultMonth={selectedDate} />
+            <Calendar
+              mode="single"
+              timeZone={getClientTimeZone()}
+              selected={selectedDate}
+              onSelect={handleSelect}
+              defaultMonth={selectedDate}
+            />
           </PopoverContent>
         </Popover>
         {optional && value ? (
