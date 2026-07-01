@@ -76,34 +76,34 @@ type TransactionFlowType = TransactionTableRow["type"];
 
 const TRANSACTION_TABLE_COLUMN = {
 	transaction: {
-		headerClassName:
-			"min-w-[14rem] w-[62%] max-w-none sm:min-w-[11rem] sm:w-[42%] sm:max-w-[16rem]",
-		cellClassName:
-			"min-w-[14rem] w-[62%] max-w-none sm:min-w-[11rem] sm:w-[42%] sm:max-w-[16rem]",
+		headerClassName: "min-w-[11rem] w-[11rem] max-w-[11rem]",
+		cellClassName: "min-w-[11rem] w-[11rem] max-w-[11rem]",
 	},
 	category: {
-		headerClassName: "hidden lg:table-cell w-[8.5rem] max-w-[8.5rem]",
-		cellClassName: "hidden lg:table-cell w-[8.5rem] max-w-[8.5rem]",
+		headerClassName: "min-w-[8.5rem] w-[8.5rem] max-w-[8.5rem]",
+		cellClassName: "min-w-[8.5rem] w-[8.5rem] max-w-[8.5rem]",
 	},
 	date: {
-		headerClassName: "hidden md:table-cell w-[7.25rem] max-w-[7.25rem]",
-		cellClassName: "hidden md:table-cell w-[7.25rem] max-w-[7.25rem]",
+		headerClassName:
+			"min-w-[7.25rem] w-[7.25rem] max-w-[7.25rem] whitespace-nowrap",
+		cellClassName:
+			"min-w-[7.25rem] w-[7.25rem] max-w-[7.25rem] whitespace-nowrap",
 	},
 	account: {
-		headerClassName: "hidden lg:table-cell w-[9rem] max-w-[9rem]",
-		cellClassName: "hidden lg:table-cell w-[9rem] max-w-[9rem]",
+		headerClassName: "min-w-[9rem] w-[9rem] max-w-[9rem]",
+		cellClassName: "min-w-[9rem] w-[9rem] max-w-[9rem]",
 	},
 	amount: {
 		headerClassName:
-			"w-[5.25rem] max-w-[5.25rem] text-right sm:w-[7rem] sm:max-w-[7rem]",
+			"min-w-[6.5rem] w-[6.5rem] max-w-[6.5rem] shrink-0 whitespace-nowrap text-right",
 		cellClassName:
-			"w-[5.25rem] max-w-[5.25rem] text-right sm:w-[7rem] sm:max-w-[7rem]",
+			"min-w-[6.5rem] w-[6.5rem] max-w-[6.5rem] shrink-0 whitespace-nowrap text-right",
 	},
 	actions: {
 		headerClassName:
-			"w-[4.25rem] max-w-[4.25rem] text-right sm:w-[6.5rem] sm:max-w-[6.5rem]",
+			"min-w-[6.5rem] w-[6.5rem] max-w-[6.5rem] shrink-0 whitespace-nowrap text-right",
 		cellClassName:
-			"w-[4.25rem] max-w-[4.25rem] text-right sm:w-[6.5rem] sm:max-w-[6.5rem]",
+			"min-w-[6.5rem] w-[6.5rem] max-w-[6.5rem] shrink-0 whitespace-nowrap text-right",
 	},
 } as const;
 
@@ -207,22 +207,13 @@ function TransactionTypeIcon({ type }: { type: TransactionFlowType }) {
  */
 function TransactionNameCell({ row }: { row: TransactionTableRow }) {
 	return (
-		<div className="flex min-w-0 items-start gap-2.5 sm:items-center sm:gap-3">
+		<div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
 			<TransactionTypeIcon type={row.type} />
 			<div className="min-w-0 flex-1">
 				<SensitiveText
 					text={row.title}
 					className="block truncate font-medium text-foreground"
 				/>
-				<time
-					dateTime={row.happenedAt}
-					className={cn(
-						"mt-0.5 block text-[11px] leading-snug whitespace-normal md:hidden",
-						TRANSACTION_TABLE_NOTE_TEXT,
-					)}
-				>
-					{row.happenedAtCompactLabel}
-				</time>
 				{row.note ? (
 					<SensitiveText
 						text={row.note}
@@ -481,7 +472,7 @@ export function TransactionsPageContent({
 					<DataTableColumnHeader
 						column={column}
 						title="Amount"
-						className="ml-auto justify-end max-sm:[&_span]:sr-only"
+						className="ml-auto justify-end"
 					/>
 				),
 				cell: ({ row }) => (
@@ -498,11 +489,7 @@ export function TransactionsPageContent({
 				id: "actions",
 				enableSorting: false,
 				enableGlobalFilter: false,
-				header: () => (
-					<div className="text-right">
-						<span className="sr-only sm:not-sr-only">Actions</span>
-					</div>
-				),
+				header: () => <div className="text-right">Actions</div>,
 				meta: TRANSACTION_TABLE_COLUMN.actions,
 				cell: ({ row }) => (
 					<TableRowActions
@@ -689,7 +676,7 @@ export function TransactionsPageContent({
 							</div>
 						</div>
 
-						<div className="md-panel p-5">
+						<div className="md-panel min-w-0 p-5">
 							<TransactionTableFilters
 								categories={categories}
 								paymentAccounts={paymentAccounts}
