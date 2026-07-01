@@ -95,12 +95,24 @@ export function toIsoFromDateAndTime(dateValue: string, timeValue: string): stri
 }
 
 /**
+ * True when the instant is exactly 12:00 in the given timezone (date-only placeholder time).
+ */
+function isCalendarNoonInTimeZone(iso: string, timeZone: string): boolean {
+  return toInputTime(iso, timeZone) === '12:00'
+}
+
+/**
  * Formats a transaction timestamp for display (date + time) in local timezone.
+ * Omits time when the value is the default noon placeholder (12:00).
  */
 export function formatTransactionHappenedAtLabel(
   iso: string,
   timeZone = getClientTimeZone(),
 ): string {
+  if (isCalendarNoonInTimeZone(iso, timeZone)) {
+    return formatInstantInTimeZone(iso, timeZone, { dateStyle: 'medium' })
+  }
+
   return formatInstantInTimeZone(iso, timeZone, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -109,6 +121,7 @@ export function formatTransactionHappenedAtLabel(
 
 /**
  * Compact transaction timestamp for narrow table rows (omits year when current).
+ * Omits time when the value is the default noon placeholder (12:00).
  */
 export function formatTransactionHappenedAtCompact(
   iso: string,
@@ -125,8 +138,9 @@ export function formatTransactionHappenedAtCompact(
     month: 'short',
     day: 'numeric',
     ...(parsed.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
-    hour: 'numeric',
-    minute: '2-digit',
+    ...(!isCalendarNoonInTimeZone(iso, timeZone)
+      ? { hour: 'numeric', minute: '2-digit' }
+      : {}),
   })
 
   return formatter.format(parsed)
