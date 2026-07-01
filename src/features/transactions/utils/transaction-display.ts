@@ -7,6 +7,7 @@ import {
   TRANSFER_SOURCE_IN,
   TRANSFER_SOURCE_OUT,
 } from '#/features/transactions/utils/transfer-direction'
+import { formatTransactionHappenedAtLabel } from '#/lib/date-input'
 import { transactionTypeChartColors } from '#/lib/chart-colors'
 
 export interface TransactionFormState {
@@ -22,6 +23,7 @@ export interface TransactionFormState {
   source: string
   note: string
   happenedAt: string
+  happenedAtTime: string
 }
 
 export interface TransactionTableRow {
@@ -62,6 +64,7 @@ export function getDefaultTransactionForm(userCurrency: string): TransactionForm
     source: '',
     note: '',
     happenedAt: format(new Date(), 'yyyy-MM-dd'),
+    happenedAtTime: format(new Date(), 'HH:mm'),
   }
 }
 
@@ -168,9 +171,7 @@ export function buildTransactionTableRows(
       : null,
     note: transaction.note ?? '',
     happenedAt: transaction.happenedAt,
-    happenedAtLabel: new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-    }).format(new Date(transaction.happenedAt)),
+    happenedAtLabel: formatTransactionHappenedAtLabel(transaction.happenedAt),
   }))
 }
 

@@ -54,6 +54,7 @@ const ROUTE_QUERY_SLOT_KEYS = {
   wishlist: queryKeys.wishlist.all,
   goals: queryKeys.goals.all,
   recurring: queryKeys.recurring.all,
+  drafts: queryKeys.transactions.drafts,
   tickets: queryKeys.tickets.all,
   adminBans: queryKeys.admin.bans,
   adminTickets: queryKeys.admin.tickets,

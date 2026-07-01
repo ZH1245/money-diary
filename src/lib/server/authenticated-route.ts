@@ -8,7 +8,7 @@ import { getUserGoals } from '#/features/goals/server/goals-repository'
 import { getUserPaymentAccounts } from '#/features/payment-accounts/server/payment-accounts-repository'
 import { getUserRecurringRules } from '#/features/recurring/server/recurring-repository'
 import { getUserSavings } from '#/features/savings/server/savings-repository'
-import { getUserTransactions } from '#/features/transactions/server/transactions-repository'
+import { getUserDraftTransactions, getUserTransactions } from '#/features/transactions/server/transactions-repository'
 import { getUserWishlistItems } from '#/features/wishlist/server/wishlist-repository'
 import { auth } from '#/lib/auth'
 import { AUTH_ROLES } from '#/lib/auth-roles'
@@ -44,6 +44,7 @@ type RouteQuerySlot =
   | 'wishlist'
   | 'goals'
   | 'recurring'
+  | 'drafts'
   | 'tickets'
   | 'adminBans'
   | 'adminTickets'
@@ -111,6 +112,7 @@ async function fetchRouteQueryData(
         wishlist,
         goals,
         recurring,
+        drafts,
       ] = await Promise.all([
         getUserTransactions(userId),
         getVisibleCategoriesForUser(userId),
@@ -119,6 +121,7 @@ async function fetchRouteQueryData(
         getUserWishlistItems(userId),
         getUserGoals(userId),
         getUserRecurringRules(userId),
+        getUserDraftTransactions(userId),
       ])
       return [
         { slot: 'transactions', data: transactions },
@@ -128,6 +131,7 @@ async function fetchRouteQueryData(
         { slot: 'wishlist', data: wishlist },
         { slot: 'goals', data: goals },
         { slot: 'recurring', data: recurring },
+        { slot: 'drafts', data: drafts },
       ]
     }
     case 'transactions': {
@@ -185,13 +189,17 @@ async function fetchRouteQueryData(
       return [{ slot: 'categories', data: categories }]
     }
     case 'analytics': {
-      const [transactions, categories] = await Promise.all([
+      const [transactions, categories, paymentAccounts, savings] = await Promise.all([
         getUserTransactions(userId),
         getVisibleCategoriesForUser(userId),
+        getUserPaymentAccounts(userId),
+        getUserSavings(userId),
       ])
       return [
         { slot: 'transactions', data: transactions },
         { slot: 'categories', data: categories },
+        { slot: 'paymentAccounts', data: paymentAccounts },
+        { slot: 'savings', data: savings },
       ]
     }
     case 'settings': {

@@ -2,15 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import {
 	ArrowRight,
-	Ban,
 	Receipt,
-	RotateCcw,
 	TrendingDown,
 	TrendingUp,
 	Wallet,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { DashboardLoadingSkeleton } from "#/components/feedback/page-state";
 import { SensitiveText } from "#/components/privacy/sensitive-text";
 import {
@@ -20,7 +17,7 @@ import {
 import { Button } from "#/components/ui/button";
 import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { AccountCardsRow } from "#/features/dashboard/components/account-cards-row";
-import { PendingTransactionsSection } from "#/features/transactions/components/pending-transactions-section";
+import { UpcomingSection } from "#/features/dashboard/components/upcoming-section";
 import { InsightMiniCard } from "#/features/dashboard/components/insight-mini-card";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
@@ -31,10 +28,6 @@ import {
 	buildPaymentAccountBalances,
 	findCashPaymentAccountId,
 } from "#/features/payment-accounts/utils/payment-account-balance";
-import {
-	useRecurringRulesQuery,
-	useUpdateRecurringMutation,
-} from "#/features/recurring/hooks/use-recurring";
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { useTransactionsQuery } from "#/features/transactions/hooks/use-transactions";
 import { useWishlistQuery } from "#/features/wishlist/hooks/use-wishlist";
@@ -228,49 +221,6 @@ export function DashboardPageContent({
 				? goalsError
 				: null;
 
-	const { data: recurringRules = [] } = useRecurringRulesQuery();
-	const updateRecurringMutation = useUpdateRecurringMutation();
-
-	const handleSetRecurringActive = (
-		id: number,
-		title: string,
-		isActive: boolean,
-	) => {
-		const promise = updateRecurringMutation.mutateAsync({
-			id,
-			input: { isActive },
-		});
-		toast.promise(promise, {
-			loading: isActive ? "Resuming…" : "Canceling…",
-			success: isActive
-				? `Resumed "${title}"`
-				: `Canceled "${title}" — it won't repeat`,
-			error: (error) =>
-				error instanceof Error ? error.message : "Could not update bill",
-		});
-	};
-
-	const toBill = (rule: (typeof recurringRules)[number]) => ({
-		id: rule.id,
-		name: rule.title,
-		badge: rule.title.slice(0, 2).toUpperCase(),
-		dueLabel: new Intl.DateTimeFormat(undefined, {
-			month: "short",
-			day: "numeric",
-		}).format(new Date(rule.nextRunAt)),
-		amount: Number(rule.amount),
-		cadence: rule.cadence,
-	});
-
-	const upcomingBills = useMemo(
-		() => recurringRules.filter((rule) => rule.isActive).map(toBill),
-		[recurringRules],
-	);
-	const canceledBills = useMemo(
-		() => recurringRules.filter((rule) => !rule.isActive).map(toBill),
-		[recurringRules],
-	);
-
 	return (
 		<main className="w-full max-w-full overflow-x-hidden p-4 sm:p-6 lg:p-8">
 			<section className="space-y-6">
@@ -287,9 +237,6 @@ export function DashboardPageContent({
 
 				{!isStatsPending && !statsError ? (
 					<>
-						{/* 0) Pending / scheduled transactions */}
-						<PendingTransactionsSection userCurrency={userCurrency} />
-
 						{/* 1) Account cards row */}
 						<AccountCardsRow
 							accounts={paymentAccounts}
@@ -426,132 +373,8 @@ export function DashboardPageContent({
 							</div>
 						</div>
 
-						{/* 3) Upcoming bills — real recurring rules, soonest first. */}
-						<div className="md-panel p-5 sm:p-6">
-							<div className="flex items-center justify-between gap-2">
-								<p className="text-base font-bold text-foreground">
-									Upcoming bills
-								</p>
-								<span className="shrink-0 text-xs text-muted-foreground">
-									{upcomingBills.length
-										? `${upcomingBills.length} scheduled`
-										: "Set up a repeat"}
-								</span>
-							</div>
-							{upcomingBills.length === 0 && canceledBills.length === 0 ? (
-								<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
-									No recurring items yet. Add a transaction and turn on “Repeat
-									this” to schedule bills and subscriptions.
-								</p>
-							) : (
-								<>
-									{upcomingBills.length === 0 ? (
-										<p className="mt-4 px-2 py-6 text-center text-sm text-muted-foreground">
-											All bills are canceled.
-										</p>
-									) : (
-										<ul className="mt-4 space-y-1">
-											{upcomingBills.map((bill) => (
-												<li
-													key={bill.id}
-													className="md-row flex flex-col gap-2.5 px-2 py-3 sm:flex-row sm:items-center sm:gap-3 sm:py-2.5"
-												>
-													<div className="flex min-w-0 items-start gap-3 sm:flex-1 sm:items-center">
-														<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-soft-accent text-xs font-bold text-primary">
-															{bill.badge}
-														</span>
-														<div className="min-w-0 flex-1">
-															<p className="text-sm font-medium break-words text-foreground sm:truncate">
-																<SensitiveText text={bill.name} />
-															</p>
-															<p className="text-xs capitalize break-words text-muted-foreground sm:truncate">
-																{bill.cadence} · next {bill.dueLabel}
-															</p>
-														</div>
-													</div>
-													<div className="flex items-center justify-between gap-2 pl-12 sm:shrink-0 sm:justify-end sm:pl-0">
-														<span className="font-num text-base font-extrabold tabular-nums text-foreground sm:text-sm">
-															<SensitiveText
-																text={formatSensitiveCurrency(
-																	bill.amount,
-																	userCurrency,
-																	isPrivacyMode,
-																)}
-															/>
-														</span>
-														<Button
-															variant="ghost"
-															size="sm"
-															className="shrink-0 text-muted-foreground hover:text-expense"
-															disabled={updateRecurringMutation.isPending}
-															onClick={() =>
-																handleSetRecurringActive(bill.id, bill.name, false)
-															}
-														>
-															<Ban className="size-4" />
-															Cancel
-														</Button>
-													</div>
-												</li>
-											))}
-										</ul>
-									)}
-
-									{canceledBills.length > 0 ? (
-										<div className="mt-4 border-t border-border-faint pt-3">
-											<p className="px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-												Canceled
-											</p>
-											<ul className="mt-1 space-y-1">
-												{canceledBills.map((bill) => (
-													<li
-														key={bill.id}
-														className="md-row flex flex-col gap-2.5 px-2 py-3 opacity-70 sm:flex-row sm:items-center sm:gap-3 sm:py-2.5"
-													>
-														<div className="flex min-w-0 items-start gap-3 sm:flex-1 sm:items-center">
-															<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-track text-xs font-bold text-muted-foreground">
-																{bill.badge}
-															</span>
-															<div className="min-w-0 flex-1">
-																<p className="text-sm font-medium break-words text-foreground line-through sm:truncate">
-																	<SensitiveText text={bill.name} />
-																</p>
-																<p className="text-xs capitalize break-words text-muted-foreground sm:truncate">
-																	{bill.cadence} · canceled
-																</p>
-															</div>
-														</div>
-														<div className="flex items-center justify-between gap-2 pl-12 sm:shrink-0 sm:justify-end sm:pl-0">
-															<span className="font-num text-base font-extrabold tabular-nums text-muted-foreground sm:text-sm">
-																<SensitiveText
-																	text={formatSensitiveCurrency(
-																		bill.amount,
-																		userCurrency,
-																		isPrivacyMode,
-																	)}
-																/>
-															</span>
-															<Button
-																variant="ghost"
-																size="sm"
-																className="shrink-0 text-muted-foreground hover:text-income"
-																disabled={updateRecurringMutation.isPending}
-																onClick={() =>
-																	handleSetRecurringActive(bill.id, bill.name, true)
-																}
-															>
-																<RotateCcw className="size-4" />
-																Resume
-															</Button>
-														</div>
-													</li>
-												))}
-											</ul>
-										</div>
-									) : null}
-								</>
-							)}
-						</div>
+						{/* 3) Upcoming — planned drafts + recurring bills */}
+						<UpcomingSection userCurrency={userCurrency} />
 
 						{/* 4) Two-up: Recent activity + Spending by category */}
 						<div className="grid gap-4 lg:grid-cols-2">

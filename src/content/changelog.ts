@@ -13,6 +13,17 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.4',
+    date: '2026-07-01',
+    title: 'Planned transactions',
+    highlights: [
+      'Save income or expenses as planned so they stay off your balance until you confirm',
+      'Pick date and time when logging a transaction',
+      'Dashboard Upcoming combines planned items and recurring bills in one place',
+      'Confirm or discard planned transactions from the dashboard',
+    ],
+  },
+  {
     version: '0.1.3',
     date: '2026-07-01',
     title: 'Transfers and polish',
