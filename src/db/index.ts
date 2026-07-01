@@ -1,5 +1,5 @@
-import { neon } from '@neondatabase/serverless'
-import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http'
+import { Pool } from '@neondatabase/serverless'
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless'
 import { drizzle as drizzleNode } from 'drizzle-orm/node-postgres'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { serverEnv } from '#/env.server'
@@ -27,11 +27,11 @@ function isNeonDatabaseUrl(databaseUrl: string) {
 
 function createDatabase(): AppDatabase {
   if (isNeonDatabaseUrl(connectionString)) {
-    return drizzleNeon(neon(connectionString), { schema: dbSchema }) as unknown as AppDatabase
+    return drizzleNeon(new Pool({ connectionString }), { schema: dbSchema }) as unknown as AppDatabase
   }
 
   return drizzleNode(connectionString, { schema: dbSchema })
 }
 
-/** Neon HTTP on Vercel; node-postgres for local Docker/native Postgres. */
+/** Neon serverless on Vercel; node-postgres for local Docker/native Postgres. */
 export const db = createDatabase()
