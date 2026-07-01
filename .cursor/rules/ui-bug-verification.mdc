@@ -1,0 +1,36 @@
+---
+description: Verify UI bug fixes in dev with browser screenshots before shipping
+alwaysApply: true
+---
+
+# UI bug verification workflow
+
+When fixing a **UI bug**, **layout issue**, or **visual regression**, do not rely on code review alone. Verify in a real browser before marking the task done.
+
+## Required loop
+
+1. **Reproduce** — identify route, viewport (mobile vs desktop), and steps.
+2. **Run dev** — `pnpm dev` (port 3000) if not already running; wait until the app responds.
+3. **Browse** — use browser MCP: navigate to the affected page, set viewport if mobile (`375×812` or similar), apply filters/state needed to show the bug.
+4. **Screenshot** — `browser_take_screenshot` after the view is stable; save only under `.cursor/ui-verify/` if persistence is needed.
+5. **Judge** — inspect the screenshot yourself: alignment, truncation, scroll, empty states, headers, touch targets. Compare to the user report.
+6. **Iterate** — if not fixed, adjust code and repeat steps 3–5 (max ~3 focused attempts; then report what you see and what blocks progress).
+7. **Clean up** — delete `.cursor/ui-verify/` screenshots and stop any dev server **you** started when verification is complete. Do not leave temp assets in the repo.
+
+## Viewport defaults
+
+| Context | Size |
+|---------|------|
+| Mobile bug | 390×844 or 375×812 |
+| Desktop bug | 1280×800 |
+| Unsure | test mobile first |
+
+## When to skip
+
+- Server-only, API, DB, or copy-only changes with no visual impact
+- User explicitly says not to run dev/browser
+
+## Before commit/PR on UI fixes
+
+- At least one post-fix screenshot reviewed by you
+- Note viewport and route in the PR test plan (no need to commit screenshots)
