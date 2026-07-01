@@ -108,6 +108,31 @@ export function formatTransactionHappenedAtLabel(
 }
 
 /**
+ * Compact transaction timestamp for narrow table rows (omits year when current).
+ */
+export function formatTransactionHappenedAtCompact(
+  iso: string,
+  timeZone = getClientTimeZone(),
+): string {
+  const parsed = new Date(iso)
+  if (Number.isNaN(parsed.getTime())) {
+    return iso
+  }
+
+  const now = new Date()
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    month: 'short',
+    day: 'numeric',
+    ...(parsed.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
+  return formatter.format(parsed)
+}
+
+/**
  * Returns true when the combined date/time is after the current moment.
  */
 export function isFutureDateAndTime(dateValue: string, timeValue: string): boolean {
