@@ -74,6 +74,33 @@ interface TransactionsPageContentProps {
 
 type TransactionFlowType = TransactionTableRow["type"];
 
+const TRANSACTION_TABLE_COLUMN = {
+	transaction: {
+		headerClassName: "min-w-0",
+		cellClassName: "min-w-0",
+	},
+	category: {
+		headerClassName: "w-[8.5rem] max-w-[8.5rem]",
+		cellClassName: "w-[8.5rem] max-w-[8.5rem]",
+	},
+	date: {
+		headerClassName: "w-[7.25rem] max-w-[7.25rem]",
+		cellClassName: "w-[7.25rem] max-w-[7.25rem]",
+	},
+	account: {
+		headerClassName: "w-[9rem] max-w-[9rem]",
+		cellClassName: "w-[9rem] max-w-[9rem]",
+	},
+	amount: {
+		headerClassName: "w-[7rem] max-w-[7rem] text-right",
+		cellClassName: "w-[7rem] max-w-[7rem] text-right",
+	},
+	actions: {
+		headerClassName: "w-[6.5rem] max-w-[6.5rem] text-right",
+		cellClassName: "w-[6.5rem] max-w-[6.5rem]",
+	},
+} as const;
+
 const TRANSACTION_TABLE_SECONDARY_TEXT =
 	"text-sm text-foreground/78 dark:text-foreground/90";
 const TRANSACTION_TABLE_NOTE_TEXT =
@@ -365,28 +392,37 @@ export function TransactionsPageContent({
 					<DataTableColumnHeader column={column} title="Transaction" />
 				),
 				cell: ({ row }) => <TransactionNameCell row={row.original} />,
+				meta: TRANSACTION_TABLE_COLUMN.transaction,
 			},
 			{
 				id: "category",
 				accessorFn: (row) => row.categoryLabel,
 				header: ({ column }) => (
-					<DataTableColumnHeader column={column} title="Category" />
+					<DataTableColumnHeader
+						column={column}
+						title="Category"
+						className="max-w-full justify-start"
+					/>
 				),
 				cell: ({ row }) => {
 					if (
 						row.original.type === "income" ||
-						row.original.type === "transfer"
+						row.original.categoryId == null
 					) {
 						return (
 							<span className={TRANSACTION_TABLE_SECONDARY_TEXT}>—</span>
 						);
 					}
 					return (
-						<span className="inline-flex rounded-full border border-border/70 bg-soft-accent px-2.5 py-0.5 text-xs font-semibold text-foreground/85 dark:text-foreground/92">
-							<SensitiveText text={row.original.categoryLabel} />
+						<span className="inline-flex max-w-full truncate rounded-full border border-border/70 bg-soft-accent px-2.5 py-0.5 text-xs font-semibold text-foreground/85 dark:text-foreground/92">
+							<SensitiveText
+								text={row.original.categoryLabel}
+								className="truncate"
+							/>
 						</span>
 					);
 				},
+				meta: TRANSACTION_TABLE_COLUMN.category,
 			},
 			{
 				accessorKey: "happenedAt",
@@ -401,6 +437,7 @@ export function TransactionsPageContent({
 				sortingFn: (first, second) =>
 					new Date(first.original.happenedAt).getTime() -
 					new Date(second.original.happenedAt).getTime(),
+				meta: TRANSACTION_TABLE_COLUMN.date,
 			},
 			{
 				id: "account",
@@ -409,18 +446,28 @@ export function TransactionsPageContent({
 					<DataTableColumnHeader column={column} title="Account" />
 				),
 				cell: ({ row }) => (
-					<span className={TRANSACTION_TABLE_SECONDARY_TEXT}>
+					<span
+						className={cn(
+							TRANSACTION_TABLE_SECONDARY_TEXT,
+							"block truncate",
+						)}
+					>
 						{row.original.transferRouteLabel ||
 							row.original.accountLabel ||
 							"—"}
 					</span>
 				),
+				meta: TRANSACTION_TABLE_COLUMN.account,
 			},
 			{
 				id: "amount",
 				accessorFn: (row) => Number(row.amount),
 				header: ({ column }) => (
-					<DataTableColumnHeader column={column} title="Amount" />
+					<DataTableColumnHeader
+						column={column}
+						title="Amount"
+						className="ml-auto justify-end"
+					/>
 				),
 				cell: ({ row }) => (
 					<TransactionAmountCell
@@ -430,13 +477,14 @@ export function TransactionsPageContent({
 						source={row.original.source}
 					/>
 				),
+				meta: TRANSACTION_TABLE_COLUMN.amount,
 			},
 			{
 				id: "actions",
 				enableSorting: false,
 				enableGlobalFilter: false,
 				header: () => <div className="text-right">Actions</div>,
-				meta: { cellClassName: "w-[6.5rem]" },
+				meta: TRANSACTION_TABLE_COLUMN.actions,
 				cell: ({ row }) => (
 					<TableRowActions
 						label={row.original.title}

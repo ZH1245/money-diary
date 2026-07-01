@@ -4,6 +4,7 @@ import {
   createUserTransaction,
   getUserTransactions,
   isCategoryAccessibleByUser,
+  resolveOptionalTransferCategoryId,
 } from '#/features/transactions/server/transactions-repository'
 import {
   createTransactionSchema,
@@ -81,7 +82,7 @@ export const Route = createFileRoute('/api/transactions')({
         const categoryId = resolveTransactionCategoryId(parsed.data.type, parsed.data.categoryId)
 
         if (requiresTransactionCategory(parsed.data.type) && categoryId === null) {
-          return Response.json({ success: false, error: 'Category is required for expense and transfer' }, { status: 400 })
+          return Response.json({ success: false, error: 'Category is required for expense entries' }, { status: 400 })
         }
 
         if (categoryId !== null) {
@@ -188,6 +189,14 @@ async function createTransferHandler(
     }
   }
 
+  const categoryId = await resolveOptionalTransferCategoryId(
+    userContext.id,
+    parsed.data.categoryId,
+  )
+  if (categoryId === 'not_found') {
+    return Response.json({ success: false, error: 'Category not found' }, { status: 404 })
+  }
+
   const rows = await createTransfer({
     userId: userContext.id,
     title: parsed.data.title,
@@ -197,6 +206,7 @@ async function createTransferHandler(
     exchangeRate: amountResult.data.exchangeRate,
     fromPaymentAccountId: parsed.data.fromPaymentAccountId,
     toPaymentAccountId: parsed.data.toPaymentAccountId,
+    categoryId,
     note: parsed.data.note ?? null,
     happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
   })

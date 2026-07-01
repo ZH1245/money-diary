@@ -125,7 +125,7 @@ export function getTransactionCategoryLabel(
   }
 
   if (categoryId == null) {
-    return 'Uncategorized'
+    return type === 'transfer' ? '—' : 'Uncategorized'
   }
 
   return categories.find((category) => category.id === categoryId)?.name ?? 'Unknown'

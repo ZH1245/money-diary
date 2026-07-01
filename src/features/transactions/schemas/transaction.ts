@@ -40,6 +40,7 @@ export const createTransferSchema = z
     exchangeRate: z.string().trim().min(1).optional(),
     fromPaymentAccountId: z.number().int().positive(),
     toPaymentAccountId: z.number().int().positive(),
+    categoryId: z.number().int().positive().nullable().optional(),
     note: z.string().optional(),
     happenedAt: z.string().datetime().optional(),
   })
@@ -56,6 +57,7 @@ export const updateTransferSchema = z
     exchangeRate: z.string().trim().min(1).optional(),
     fromPaymentAccountId: z.number().int().positive(),
     toPaymentAccountId: z.number().int().positive(),
+    categoryId: z.number().int().positive().nullable().optional(),
     note: apiNoteSchema.nullable().optional(),
     happenedAt: z.string().datetime().optional(),
   })

@@ -268,7 +268,8 @@ export function TransactionFormSheet({
 		updateTransactionMutation.isPending ||
 		createTransferMutation.isPending ||
 		updateTransferMutation.isPending;
-	const showCategoryField = createForm.type === "expense";
+	const showCategoryField =
+		createForm.type === "expense" || createForm.type === "transfer";
 
 	async function handleCurrencyChange(currency: string) {
 		if (currency === userCurrency) {
@@ -329,6 +330,9 @@ export function TransactionFormSheet({
 				: undefined,
 			fromPaymentAccountId: Number(createForm.fromPaymentAccountId),
 			toPaymentAccountId: Number(createForm.toPaymentAccountId),
+			categoryId: createForm.categoryId
+				? Number(createForm.categoryId)
+				: null,
 			note: createForm.note.trim() || null,
 			happenedAt: toIsoDateAtNoon(createForm.happenedAt),
 		};
@@ -340,12 +344,16 @@ export function TransactionFormSheet({
 			});
 
 			await toast.promise(updatePromise, {
-				loading: "Updating transfer...",
-				success: "Transfer updated",
+				loading: editingRow?.transferGroupId
+					? "Updating transfer..."
+					: "Converting to transfer...",
+				success: editingRow?.transferGroupId
+					? "Transfer updated"
+					: "Converted to transfer",
 				error: (message) =>
 					message instanceof Error
 						? message.message
-						: "Unable to update transfer",
+						: "Unable to save transfer",
 			});
 		} else {
 			const createPromise = createTransferMutation.mutateAsync(transferInput);
@@ -657,7 +665,11 @@ export function TransactionFormSheet({
 					{showCategoryField ? (
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between gap-2">
-								<span className="text-sm font-medium">Category</span>
+								<span className="text-sm font-medium">
+									{createForm.type === "transfer"
+										? "Category (optional)"
+										: "Category"}
+								</span>
 								<Link
 									to="/categories"
 									onClick={() => onOpenChange(false)}
