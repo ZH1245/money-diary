@@ -1,17 +1,16 @@
 import { LegalPageLayout } from '#/components/layout/legal-page-layout'
 import { PrivacyPolicyContent } from '#/features/legal/components/privacy-policy-content'
 import { PRIVACY_POLICY_LAST_UPDATED } from '#/features/legal/content/privacy-policy'
+import { buildPublicPageHead, PRIVACY_SEO } from '#/lib/seo/public-seo'
 import { authClient } from '#/lib/auth-client'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/privacy')({
-  head: () => ({
-    meta: [
-      {
-        title: 'Privacy Policy | Money Diary',
-      },
-    ],
-  }),
+  head: () =>
+    buildPublicPageHead({
+      ...PRIVACY_SEO,
+      path: '/privacy',
+    }),
   component: PrivacyPage,
 })
 

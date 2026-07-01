@@ -5,6 +5,7 @@ import {
   OPENROUTER_DEFAULT_MODEL,
   OPENROUTER_MAX_OUTPUT_TOKENS,
 } from '#/features/settings/constants/openrouter-defaults'
+import { PRODUCTION_SITE_ORIGIN } from '#/lib/seo/site-url'
 
 export const DEFAULT_OPENROUTER_BASE_URL = OPENROUTER_DEFAULT_BASE_URL
 export const DEFAULT_OPENROUTER_MODEL = OPENROUTER_DEFAULT_MODEL
@@ -63,7 +64,7 @@ function buildOpenRouterHeaders(apiKey: string): Record<string, string> {
   return {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${apiKey}`,
-    'HTTP-Referer': 'https://money-diary.app',
+    'HTTP-Referer': PRODUCTION_SITE_ORIGIN,
     'X-OpenRouter-Title': 'Money Diary',
   }
 }

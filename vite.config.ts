@@ -9,6 +9,7 @@ import { nitro } from 'nitro/vite'
 import neon from './neon-vite-plugin.ts'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
+import { PRODUCTION_SITE_ORIGIN } from './src/lib/seo/site-url.ts'
 
 /** Stamps a unique build ID into sw.js so the browser detects a new SW on every deploy. */
 function stampServiceWorker(): import('vite').Plugin {
@@ -54,9 +55,12 @@ function stampServiceWorker(): import('vite').Plugin {
 
 const buildSiteUrl =
   process.env.VITE_SITE_URL?.trim() ||
+  process.env.SERVER_URL?.trim() ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : undefined)
+    : process.env.VERCEL || process.env.NODE_ENV === 'production'
+      ? PRODUCTION_SITE_ORIGIN
+      : undefined)
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },

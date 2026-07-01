@@ -1,8 +1,16 @@
+import {
+  PRODUCTION_SITE_HOST,
+  ROOT_DOMAIN,
+} from '#/lib/seo/site-url'
+
 const DEFAULT_ALLOWED_HOSTS = [
   'localhost',
   '127.0.0.1',
   'localhost:*',
   '*.vercel.app',
+  PRODUCTION_SITE_HOST,
+  ROOT_DOMAIN,
+  `*.${ROOT_DOMAIN}`,
 ] as const
 
 /**

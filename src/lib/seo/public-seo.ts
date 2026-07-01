@@ -1,4 +1,4 @@
-import { DEFAULT_SITE_URL } from '#/lib/seo/site-url'
+import { DEFAULT_SITE_URL, PRODUCTION_SITE_ORIGIN } from '#/lib/seo/site-url'
 
 export const SITE_NAME = 'Money Diary'
 
@@ -22,7 +22,18 @@ export const SIGN_UP_SEO = {
 } as const
 
 /** Public indexable paths included in the sitemap. */
-export const SITEMAP_PATHS = ['/', '/sign-in', '/sign-up'] as const
+export const SITEMAP_PATHS = ['/', '/sign-in', '/sign-up', '/privacy', '/terms'] as const
+
+export const PRIVACY_SEO = {
+  title: 'Privacy Policy',
+  description:
+    'How Money Diary collects, uses, and protects your personal and financial data.',
+} as const
+
+export const TERMS_SEO = {
+  title: 'Terms of Service',
+  description: 'Terms of use for the Money Diary personal finance app.',
+} as const
 
 interface PublicPageSeoInput {
   title: string
@@ -37,6 +48,9 @@ export function getClientSiteUrl(): string {
   if (typeof fromEnv === 'string' && fromEnv.trim()) {
     const trimmed = fromEnv.trim().replace(/\/$/, '')
     return trimmed.startsWith('http') ? trimmed : `https://${trimmed}`
+  }
+  if (import.meta.env.PROD) {
+    return PRODUCTION_SITE_ORIGIN
   }
   return DEFAULT_SITE_URL
 }

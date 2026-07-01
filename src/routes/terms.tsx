@@ -1,17 +1,16 @@
 import { LegalPageLayout } from '#/components/layout/legal-page-layout'
 import { TermsOfServiceContent } from '#/features/legal/components/terms-of-service-content'
 import { TERMS_LAST_UPDATED } from '#/features/legal/content/terms-of-service'
+import { buildPublicPageHead, TERMS_SEO } from '#/lib/seo/public-seo'
 import { authClient } from '#/lib/auth-client'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/terms')({
-  head: () => ({
-    meta: [
-      {
-        title: 'Terms of Service | Money Diary',
-      },
-    ],
-  }),
+  head: () =>
+    buildPublicPageHead({
+      ...TERMS_SEO,
+      path: '/terms',
+    }),
   component: TermsPage,
 })
 
