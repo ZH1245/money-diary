@@ -103,8 +103,8 @@ export function DataTable<TData>({
 			minSize: 40,
 			maxSize: 40,
 			meta: {
-				headerClassName: "w-10 max-w-10 px-3 pr-0",
-				cellClassName: "w-10 max-w-10 px-3 pr-0",
+				headerClassName: "min-w-10 w-10 max-w-10 shrink-0 px-3 pr-0",
+				cellClassName: "min-w-10 w-10 max-w-10 shrink-0 px-3 pr-0",
 			},
 		}),
 		[],
@@ -187,10 +187,11 @@ export function DataTable<TData>({
 				</div>
 			) : null}
 
-			<div className="rounded-xl border border-border w-full">
+			<div className="rounded-xl border border-border w-full min-w-0">
 				<div
 					ref={scrollContainerRef}
 					className={cn(
+						"overscroll-x-contain",
 						maxBodyHeight != null ? "overflow-auto" : "overflow-x-auto",
 						maxBodyHeight != null && "scrollbar-gutter-stable",
 					)}
@@ -200,14 +201,7 @@ export function DataTable<TData>({
 							: undefined
 					}
 				>
-					<Table
-						className={cn(
-							"w-full",
-							fillWidth || maxBodyHeight != null
-								? "table-fixed"
-								: "min-w-0 w-full md:min-w-[720px]",
-						)}
-					>
+					<Table className="w-max min-w-[720px] table-fixed md:w-full">
 						{enableRowSelection ? (
 							<colgroup>
 								<col style={{ width: 40 }} />
