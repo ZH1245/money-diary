@@ -35,13 +35,14 @@ export function GoogleAnalyticsScripts() {
 
 /** Reports TanStack Router navigations as GA4 page views. */
 export function GoogleAnalyticsRouteReporter() {
-  const pagePath = useRouterState({
-    select: (state) => `${state.location.pathname}${state.location.search}`,
+  const pathname = useRouterState({
+    // TanStack Router stores parsed search params as an object, not a query string.
+    select: (state) => state.location.pathname,
   })
 
   useEffect(() => {
-    trackGoogleAnalyticsPageView(pagePath)
-  }, [pagePath])
+    trackGoogleAnalyticsPageView(pathname)
+  }, [pathname])
 
   return null
 }
