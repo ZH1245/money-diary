@@ -352,7 +352,7 @@ export function TransactionFormSheet({
 			categoryId: createForm.categoryId
 				? Number(createForm.categoryId)
 				: null,
-			note: createForm.note.trim() || null,
+			note: createForm.note.trim() || undefined,
 			happenedAt: toIsoFromDateAndTime(
 				createForm.happenedAt,
 				createForm.happenedAtTime,

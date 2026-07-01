@@ -41,7 +41,7 @@ export const createTransferSchema = z
     fromPaymentAccountId: z.number().int().positive(),
     toPaymentAccountId: z.number().int().positive(),
     categoryId: z.number().int().positive().nullable().optional(),
-    note: z.string().optional(),
+    note: apiNoteSchema.nullable().optional(),
     happenedAt: z.string().datetime().optional(),
   })
   .refine((data) => data.fromPaymentAccountId !== data.toPaymentAccountId, {
