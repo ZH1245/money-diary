@@ -38,7 +38,7 @@ src/
   db/               # schema, migrations index
 docs/
   domain-knowledge.md      # business rules (this file's companion)
-  feature-modules.md       # module map
+  modules/                 # per-module context files (tree, model, rules)
   ai-agent-reference.md    # this file
 drizzle/              # SQL migrations
 ```
@@ -158,6 +158,7 @@ Helpers: `pnpm issue:feature`, `pnpm pr:open`, `pnpm pr:merge`.
 ## Related docs
 
 - [Domain knowledge](./domain-knowledge.md) — business rules and entity semantics
-- [Feature modules](./feature-modules.md) — module ownership and routes
+- [Module context files](./modules/README.md) — per-module tree, model, routes, rules
+- [Agents index](../AGENTS.md) — global rules + module index
 - [Product foundation](./requirements/001-product-foundation.md)
 - [Account recovery](./requirements/002-account-recovery-and-encryption.md)

@@ -92,7 +92,8 @@ pnpm db:studio
 
 ## References
 
+- [Agents index](./AGENTS.md) — start here for agent context
+- [Module context files](./docs/modules/README.md)
 - [AI agent reference](./docs/ai-agent-reference.md)
 - [Domain knowledge](./docs/domain-knowledge.md)
-- [Feature modules](./docs/feature-modules.md)
 - [TanStack Start docs](https://tanstack.com/start/latest)
