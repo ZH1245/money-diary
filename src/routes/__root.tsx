@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Analytics } from "@vercel/analytics/react";
+import { GoogleAnalyticsRouteReporter, GoogleAnalyticsScripts } from "#/components/observability/google-analytics";
 import { SpeedInsightsRouteReporter } from "#/components/observability/speed-insights-route-reporter";
 import { Toaster } from "sonner";
 import { NotFoundPage } from "#/components/layout/not-found-page";
@@ -102,6 +103,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 				<script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
+				<GoogleAnalyticsScripts />
 			</head>
 			<body>
 				<ThemeProvider>
@@ -113,6 +115,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<ServiceWorkerRegistration />
 				<AppUpdateNotifier />
 				<Analytics />
+				<GoogleAnalyticsRouteReporter />
 				<SpeedInsightsRouteReporter />
 				{import.meta.env.DEV ? (
 					<TanStackDevtools
