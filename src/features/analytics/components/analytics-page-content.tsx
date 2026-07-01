@@ -1,6 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import { format } from "date-fns";
-import { parseCalendarDate } from "#/lib/date-input";
+import { formatCalendarLabel, parseCalendarDate } from "#/lib/date-input";
 import { CreditCard } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -175,7 +174,7 @@ export function AnalyticsPageContent({
 		(sum, entry) => sum + entry.amount,
 		0,
 	);
-	const dateRangeLabel = `${format(parseCalendarDate(dateRange.from), "MMM d, yyyy")} – ${format(parseCalendarDate(dateRange.to), "MMM d, yyyy")}`;
+	const dateRangeLabel = `${formatCalendarLabel(dateRange.from, { includeYear: true })} – ${formatCalendarLabel(dateRange.to, { includeYear: true })}`;
 	const hasExpenseData = stats.expense > 0;
 	const hasTrend = trendData.some(
 		(point) => point.income > 0 || point.expense > 0,

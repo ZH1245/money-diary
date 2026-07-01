@@ -40,16 +40,18 @@ function commitDateRange(nextRange: DashboardDateRangeState) {
 
 /**
  * Central date range store for workspace-wide filtering.
- * Initialized empty on SSR; synced to local today on the client.
+ * Starts empty; client code initializes from the local calendar today.
  */
-export const dashboardDateRangeStore = new Store<DashboardDateRangeState>(
-  typeof window !== 'undefined' ? getDefaultDateRange() : EMPTY_DATE_RANGE,
-)
+export const dashboardDateRangeStore = new Store<DashboardDateRangeState>(EMPTY_DATE_RANGE)
 
 /**
  * Initializes or repairs the range using the client's local calendar today.
  */
 export function ensureDashboardDateRangeInitialized() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
   const state = dashboardDateRangeStore.state
   const today = getCalendarToday()
 

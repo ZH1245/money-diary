@@ -14,9 +14,9 @@ import {
 } from '#/features/dashboard/store/dashboard-date-range-store'
 import { buildTransactionCalendarActivity } from '#/features/dashboard/utils/transaction-calendar-activity'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
-import { formatCalendarDate, parseCalendarDate } from '#/lib/date-input'
+import { formatCalendarDate, formatCalendarLabel, parseCalendarDate } from '#/lib/date-input'
+import { getClientTimeZone } from '#/lib/timezone'
 import { useStore } from '@tanstack/react-store'
-import { format } from 'date-fns'
 import { CalendarRange } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
@@ -30,6 +30,7 @@ export function DashboardDateRangeFilter() {
   const [isCompact, setIsCompact] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const hasRange = Boolean(dateRange.from && dateRange.to)
+  const clientTimeZone = getClientTimeZone()
   const selectedRange: DateRange | undefined = hasRange
     ? {
         from: parseCalendarDate(dateRange.from),
@@ -81,10 +82,10 @@ export function DashboardDateRangeFilter() {
   }
 
   const compactLabel = hasRange
-    ? `${format(selectedRange!.from!, 'MMM d')} – ${format(selectedRange!.to!, 'MMM d')}`
+    ? `${formatCalendarLabel(dateRange.from)} – ${formatCalendarLabel(dateRange.to)}`
     : 'Last 30 days'
   const fullLabel = hasRange
-    ? `${format(selectedRange!.from!, 'MMM d, yyyy')} – ${format(selectedRange!.to!, 'MMM d, yyyy')}`
+    ? `${formatCalendarLabel(dateRange.from, { includeYear: true })} – ${formatCalendarLabel(dateRange.to, { includeYear: true })}`
     : 'Last 30 days'
   const dateLabel = isCompact ? compactLabel : fullLabel
 
@@ -109,6 +110,7 @@ export function DashboardDateRangeFilter() {
           <div className="space-y-2 p-2">
             <Calendar
               mode="range"
+              timeZone={clientTimeZone}
               defaultMonth={selectedRange?.from}
               selected={selectedRange}
               onSelect={handleRangeSelect}

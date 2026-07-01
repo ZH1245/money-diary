@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-store'
-import { format } from 'date-fns'
-import { formatCalendarDate, parseCalendarDate } from '#/lib/date-input'
+import { formatCalendarDate, formatCalendarLabel, parseCalendarDate } from '#/lib/date-input'
+import { getClientTimeZone } from '#/lib/timezone'
 import { CalendarIcon, ListFilter, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
@@ -86,7 +86,7 @@ function DateFilterField({ id, label, value, placeholder, onChange }: DateFilter
             >
               <CalendarIcon className="size-4 shrink-0 opacity-70" aria-hidden="true" />
               <span className="truncate">
-                {value ? format(selectedDate!, 'MMM d, yyyy') : placeholder}
+                {value ? formatCalendarLabel(value, { includeYear: true }) : placeholder}
               </span>
             </Button>
           </PopoverTrigger>
@@ -96,6 +96,7 @@ function DateFilterField({ id, label, value, placeholder, onChange }: DateFilter
           >
             <Calendar
               mode="single"
+              timeZone={getClientTimeZone()}
               selected={selectedDate}
               onSelect={handleSelect}
               defaultMonth={selectedDate}

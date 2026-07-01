@@ -205,7 +205,7 @@ export function DataTable<TData>({
 							"w-full",
 							fillWidth || maxBodyHeight != null
 								? "table-fixed"
-								: "min-w-[720px]",
+								: "min-w-0 w-full md:min-w-[720px]",
 						)}
 					>
 						{enableRowSelection ? (

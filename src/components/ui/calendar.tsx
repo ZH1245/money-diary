@@ -13,6 +13,7 @@ import {
 } from "react-day-picker"
 
 import { cn } from "#/lib/utils.ts"
+import { formatCalendarDate } from "#/lib/date-input"
 import { Button, buttonVariants } from "#/components/ui/button.tsx"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "#/components/ui/tooltip.tsx"
 import { format } from "date-fns"
@@ -218,7 +219,7 @@ function CalendarDayButton({
 }: React.ComponentProps<typeof DayButton>) {
   const defaultClassNames = getDefaultClassNames()
   const { dayActivityByDate, onDayDoubleClick, currency, isPrivacyMode } = React.useContext(CalendarActivityContext)
-  const dateKey = format(day.date, 'yyyy-MM-dd')
+  const dateKey = formatCalendarDate(day.date)
   const activity = dayActivityByDate?.[dateKey]
 
   const ref = React.useRef<HTMLButtonElement>(null)

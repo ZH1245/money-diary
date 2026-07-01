@@ -76,28 +76,28 @@ type TransactionFlowType = TransactionTableRow["type"];
 
 const TRANSACTION_TABLE_COLUMN = {
 	transaction: {
-		headerClassName: "min-w-0",
-		cellClassName: "min-w-0",
+		headerClassName: "min-w-[9.5rem] w-[38%] max-w-[14rem]",
+		cellClassName: "min-w-[9.5rem] w-[38%] max-w-[14rem]",
 	},
 	category: {
-		headerClassName: "w-[8.5rem] max-w-[8.5rem]",
-		cellClassName: "w-[8.5rem] max-w-[8.5rem]",
+		headerClassName: "hidden lg:table-cell w-[8.5rem] max-w-[8.5rem]",
+		cellClassName: "hidden lg:table-cell w-[8.5rem] max-w-[8.5rem]",
 	},
 	date: {
-		headerClassName: "w-[7.25rem] max-w-[7.25rem]",
-		cellClassName: "w-[7.25rem] max-w-[7.25rem]",
+		headerClassName: "hidden md:table-cell w-[7.25rem] max-w-[7.25rem]",
+		cellClassName: "hidden md:table-cell w-[7.25rem] max-w-[7.25rem]",
 	},
 	account: {
-		headerClassName: "w-[9rem] max-w-[9rem]",
-		cellClassName: "w-[9rem] max-w-[9rem]",
+		headerClassName: "hidden lg:table-cell w-[9rem] max-w-[9rem]",
+		cellClassName: "hidden lg:table-cell w-[9rem] max-w-[9rem]",
 	},
 	amount: {
-		headerClassName: "w-[7rem] max-w-[7rem] text-right",
-		cellClassName: "w-[7rem] max-w-[7rem] text-right",
+		headerClassName: "w-[6.5rem] max-w-[6.5rem] text-right sm:w-[7rem] sm:max-w-[7rem]",
+		cellClassName: "w-[6.5rem] max-w-[6.5rem] text-right sm:w-[7rem] sm:max-w-[7rem]",
 	},
 	actions: {
-		headerClassName: "w-[6.5rem] max-w-[6.5rem] text-right",
-		cellClassName: "w-[6.5rem] max-w-[6.5rem]",
+		headerClassName: "w-[5.5rem] max-w-[5.5rem] text-right sm:w-[6.5rem] sm:max-w-[6.5rem]",
+		cellClassName: "w-[5.5rem] max-w-[5.5rem] sm:w-[6.5rem] sm:max-w-[6.5rem]",
 	},
 } as const;
 
@@ -208,6 +208,14 @@ function TransactionNameCell({ row }: { row: TransactionTableRow }) {
 					text={row.title}
 					className="block truncate font-medium text-foreground"
 				/>
+				<span
+					className={cn(
+						"block truncate md:hidden",
+						TRANSACTION_TABLE_NOTE_TEXT,
+					)}
+				>
+					{row.happenedAtLabel}
+				</span>
 				{row.note ? (
 					<SensitiveText
 						text={row.note}

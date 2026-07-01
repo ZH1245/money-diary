@@ -37,6 +37,7 @@ const AiTransactionPanel = lazy(() =>
 import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { QueryRefreshButton } from "#/components/feedback/query-refresh-button";
 import { DashboardDateRangeFilter } from "#/components/layout/dashboard-date-range-filter";
+import { ensureDashboardDateRangeInitialized } from "#/features/dashboard/store/dashboard-date-range-store";
 import { SiteFooter } from "#/components/layout/site-footer";
 import { ThemeControls } from "#/components/layout/theme-toggle";
 import { WorkspaceHeaderToolbar } from "#/components/layout/workspace-header-toolbar";
@@ -121,6 +122,10 @@ export function AuthenticatedAppShell({
 	}, [collapsed]);
 
 	/** One scroll container in the shell — prevent body/html from scrolling too. */
+	useEffect(() => {
+		ensureDashboardDateRangeInitialized();
+	}, []);
+
 	useEffect(() => {
 		const html = document.documentElement;
 		const previousHtmlOverflow = html.style.overflow;
