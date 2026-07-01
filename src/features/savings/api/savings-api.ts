@@ -1,11 +1,12 @@
 import type { ApiListResponse } from '#/types/api'
+import { apiFetch } from '#/lib/api-fetch'
 import type { CreateSavingInput, SavingDto, UpdateSavingInput } from '../types/saving'
 
 /**
  * Loads savings for the active user context.
  */
 export async function getSavings(): Promise<SavingDto[]> {
-  const response = await fetch('/api/savings')
+  const response = await apiFetch('/api/savings')
   const json = (await response.json()) as ApiListResponse<SavingDto>
 
   if (!response.ok || !json.success) {
@@ -19,7 +20,7 @@ export async function getSavings(): Promise<SavingDto[]> {
  * Creates a new savings entry.
  */
 export async function createSaving(input: CreateSavingInput): Promise<SavingDto> {
-  const response = await fetch('/api/savings', {
+  const response = await apiFetch('/api/savings', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -40,7 +41,7 @@ export async function createSaving(input: CreateSavingInput): Promise<SavingDto>
  * Updates an existing savings entry.
  */
 export async function updateSaving(id: number, input: UpdateSavingInput): Promise<SavingDto> {
-  const response = await fetch(`/api/savings/${id}`, {
+  const response = await apiFetch(`/api/savings/${id}`, {
     method: 'PATCH',
     headers: {
       'content-type': 'application/json',
@@ -61,7 +62,7 @@ export async function updateSaving(id: number, input: UpdateSavingInput): Promis
  * Deletes a savings entry.
  */
 export async function deleteSaving(id: number): Promise<void> {
-  const response = await fetch(`/api/savings/${id}`, { method: 'DELETE' })
+  const response = await apiFetch(`/api/savings/${id}`, { method: 'DELETE' })
   const json = (await response.json()) as { success: boolean; error?: string }
 
   if (!response.ok || !json.success) {

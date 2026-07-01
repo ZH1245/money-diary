@@ -17,11 +17,13 @@ import {
 import { Button } from "#/components/ui/button";
 import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { AccountCardsRow } from "#/features/dashboard/components/account-cards-row";
+import { DashboardWealthRow } from "#/features/dashboard/components/dashboard-wealth-row";
 import { UpcomingSection } from "#/features/dashboard/components/upcoming-section";
 import { InsightMiniCard } from "#/features/dashboard/components/insight-mini-card";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
 import { buildDashboardStats } from "#/features/dashboard/utils/dashboard-stats";
+import { buildDashboardWealthStats } from "#/features/dashboard/utils/dashboard-wealth-stats";
 import { useGoalsQuery } from "#/features/goals/hooks/use-goals";
 import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
 import {
@@ -120,6 +122,39 @@ export function DashboardPageContent({
 				})),
 			}),
 		[paymentAccounts, transactions, savings],
+	);
+
+	const wealthStats = useMemo(
+		() =>
+			buildDashboardWealthStats({
+				paymentAccountIds: paymentAccounts.map((account) => account.id),
+				transactions: transactions.map((transaction) => ({
+					amount: transaction.amount,
+					type: transaction.type,
+					paymentAccountId: transaction.paymentAccountId,
+					source: transaction.source,
+				})),
+				savings: savings.map((entry) => ({
+					amount: entry.amount,
+					goalId: entry.goalId,
+					paymentAccountId: entry.paymentAccountId,
+					entryType: entry.entryType,
+				})),
+				goals: goals.map((goal) => ({
+					id: goal.id,
+					targetAmount: goal.targetAmount,
+					currentAmount: goal.currentAmount,
+					savingsAmount: goal.savingsAmount,
+					status: goal.status,
+					targetDate: goal.targetDate,
+				})),
+				wishlist: wishlist.map((item) => ({
+					targetAmount: item.targetAmount,
+					currentAmount: item.currentAmount,
+					status: item.status,
+				})),
+			}),
+		[paymentAccounts, transactions, savings, goals, wishlist],
 	);
 
 	const stats = useMemo(
@@ -247,7 +282,7 @@ export function DashboardPageContent({
 							isPrivacyMode={isPrivacyMode}
 						/>
 
-						{/* 2) Big balance + change% + mini-stats + 12-bar mini chart */}
+						{/* 2) Big balance + change% + mini-stats + chart + wealth row */}
 						<div className="md-panel p-5 sm:p-6">
 							<div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
 								<div className="lg:w-2/5">
@@ -371,6 +406,11 @@ export function DashboardPageContent({
 									</div>
 								</div>
 							</div>
+
+							<DashboardWealthRow
+								userCurrency={userCurrency}
+								stats={wealthStats}
+							/>
 						</div>
 
 						{/* 3) Upcoming — planned drafts + recurring bills */}

@@ -73,6 +73,7 @@ interface AuthenticatedAppShellProps {
 
 type NavTo =
 	| "/"
+	| "/dashboard"
 	| "/transactions"
 	| "/accounts"
 	| "/savings"
@@ -118,6 +119,19 @@ export function AuthenticatedAppShell({
 		if (typeof window === "undefined") return;
 		window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
 	}, [collapsed]);
+
+	/** One scroll container in the shell — prevent body/html from scrolling too. */
+	useEffect(() => {
+		const html = document.documentElement;
+		const previousHtmlOverflow = html.style.overflow;
+		const previousBodyOverflow = document.body.style.overflow;
+		html.style.overflow = "hidden";
+		document.body.style.overflow = "hidden";
+		return () => {
+			html.style.overflow = previousHtmlOverflow;
+			document.body.style.overflow = previousBodyOverflow;
+		};
+	}, []);
 	const isAdmin = user.role === AUTH_ROLES.admin;
 	const fallbackText =
 		user.name?.charAt(0).toUpperCase() ||
@@ -304,8 +318,11 @@ export function AuthenticatedAppShell({
 					</div>
 				</header>
 
-				<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
-					<div className="min-w-0 flex-1">{children}</div>
+				<div
+					data-app-scroll-root
+					className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain"
+				>
+					{children}
 					<SiteFooter showAuthLinks={false} />
 				</div>
 
@@ -430,8 +447,11 @@ export function AuthenticatedAppShell({
 					</div>
 					<WorkspaceHeaderToolbar onOpenAiPanel={() => setAiPanelOpen(true)} />
 				</header>
-				<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-					<div className="min-w-0 flex-1">{children}</div>
+				<div
+					data-app-scroll-root
+					className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain"
+				>
+					{children}
 					<SiteFooter showAuthLinks={false} />
 				</div>
 			</div>

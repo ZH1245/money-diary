@@ -44,6 +44,7 @@ import {
 	buildGoalsPageStats,
 	buildLinkedSavingsByGoalId,
 } from "#/features/goals/utils/goal-progress";
+import { GoalsAnalyticsSection } from "#/features/goals/components/goals-analytics-section";
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { toInputDate } from "#/lib/date-input";
 import {
@@ -238,6 +239,14 @@ export function GoalsPageContent({ userCurrency }: GoalsPageContentProps) {
 							)}
 						/>
 					</div>
+				) : null}
+
+				{!isPending && !isError ? (
+					<GoalsAnalyticsSection
+						userCurrency={userCurrency}
+						goals={goals}
+						savings={savings}
+					/>
 				) : null}
 
 				{isPending ? (

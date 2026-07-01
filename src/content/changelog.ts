@@ -13,6 +13,29 @@ export interface ChangelogRelease {
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
+    version: '0.1.6',
+    date: '2026-07-01',
+    title: 'UTC timestamps',
+    highlights: [
+      'Transaction and savings dates are stored in UTC for consistent reporting',
+      'Dates and times display in your browser timezone automatically',
+      'Date pickers send proper UTC timestamps when you log entries',
+    ],
+  },
+  {
+    version: '0.1.5',
+    date: '2026-07-01',
+    title: 'Wealth insights',
+    highlights: [
+      'Compact wealth tiles on the dashboard for savings, goals, wishlist, and net worth',
+      'Monthly review lets you log savings from a specific account and choose how much to move',
+      'Date range filter now uses your local calendar date correctly',
+      'Savings page charts deposits vs withdrawals and savings by goal',
+      'Goals page shows progress bars and on-track vs behind summary',
+      'Analytics Wealth section rolls up net worth, savings rate, and goal progress',
+    ],
+  },
+  {
     version: '0.1.4',
     date: '2026-07-01',
     title: 'Planned transactions',

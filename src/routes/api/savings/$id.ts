@@ -13,6 +13,7 @@ import {
 } from '#/lib/server/api-guards'
 import { parseRouteId } from '#/lib/server/parse-route-id'
 import { parseJsonBody } from '#/lib/server/request-body'
+import { parseUtcDateTimeInput } from '#/lib/server/datetime'
 import { updateSavingSchema } from '#/features/savings/schemas/saving'
 import { parsePositiveAmount } from '#/lib/server/validation-schemas'
 
@@ -78,7 +79,9 @@ export const Route = createFileRoute('/api/savings/$id')({
           title: parsed.data.title?.trim(),
           amount,
           note: parsed.data.note,
-          savedAt: parsed.data.savedAt ? new Date(parsed.data.savedAt) : undefined,
+          savedAt: parsed.data.savedAt
+            ? parseUtcDateTimeInput(parsed.data.savedAt)
+            : undefined,
           ...(parsed.data.entryType !== undefined ? { entryType: parsed.data.entryType } : {}),
           ...(parsed.data.goalId !== undefined ? { goalId: parsed.data.goalId } : {}),
           ...(parsed.data.paymentAccountId !== undefined ? { paymentAccountId: parsed.data.paymentAccountId } : {}),

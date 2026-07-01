@@ -17,6 +17,7 @@ import {
 } from "#/features/settings/components/settings-page-layout";
 import { createAuthenticatedRouteLoader } from "#/lib/authenticated-route";
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from "#/lib/currency";
+import { apiFetch } from "#/lib/api-fetch";
 import { useAuthSession } from "#/lib/use-auth-session";
 
 export const Route = createFileRoute("/settings")({
@@ -132,7 +133,7 @@ function SettingsPage() {
 
 		setIsCurrencySubmitting(true);
 
-		const requestPromise = fetch("/api/settings/currency", {
+		const requestPromise = apiFetch("/api/settings/currency", {
 			method: "PATCH",
 			headers: {
 				"content-type": "application/json",
@@ -226,7 +227,8 @@ function SettingsPage() {
 										<button
 											type="submit"
 											disabled={
-												isCurrencySubmitting || currency === selectedCurrency
+												isCurrencySubmitting ||
+												currency === selectedCurrency
 											}
 											className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
 										>

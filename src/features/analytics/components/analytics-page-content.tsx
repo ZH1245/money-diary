@@ -1,6 +1,7 @@
 import { useStore } from "@tanstack/react-store";
-import { format, parseISO } from "date-fns";
-import { PiggyBank, CreditCard, TrendingDown, Wallet } from "lucide-react";
+import { format } from "date-fns";
+import { parseCalendarDate } from "#/lib/date-input";
+import { CreditCard } from "lucide-react";
 import { useMemo } from "react";
 import {
 	Bar,
@@ -22,6 +23,8 @@ import {
 import { SensitiveText } from "#/components/privacy/sensitive-text";
 import { CategoryExpenseGroups } from "#/features/analytics/components/category-expense-groups";
 import { InsightTable } from "#/features/analytics/components/insight-table";
+import { AnalyticsWealthSection } from "#/features/analytics/components/analytics-wealth-section";
+import { MonthlyReviewSection } from "#/features/analytics/components/monthly-review-section";
 import {
 	buildAnalyticsStats,
 	buildCategoryExpenseGroups,
@@ -34,6 +37,7 @@ import {
 	type AnalyticsInsightRow,
 } from "#/features/analytics/utils/analytics-stats";
 import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
+import { useGoalsQuery } from "#/features/goals/hooks/use-goals";
 import { formatPaymentAccountLabel } from "#/features/payment-accounts/utils/account-label";
 import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
@@ -69,6 +73,7 @@ export function AnalyticsPageContent({
 	const { data: categories = [] } = useCategoriesQuery();
 	const { data: paymentAccounts = [] } = usePaymentAccountsQuery();
 	const { data: savings = [] } = useSavingsQuery();
+	const { data: goals = [] } = useGoalsQuery();
 	const currency = userCurrency.toUpperCase();
 	const isPrivacyMode = usePrivacyModeEnabled();
 
@@ -125,8 +130,8 @@ export function AnalyticsPageContent({
 
 	// Number of distinct months covered by the selected range, for the average.
 	const monthSpan = useMemo(() => {
-		const from = parseISO(dateRange.from);
-		const to = parseISO(dateRange.to);
+		const from = parseCalendarDate(dateRange.from);
+		const to = parseCalendarDate(dateRange.to);
 		const months =
 			(to.getFullYear() - from.getFullYear()) * 12 +
 			(to.getMonth() - from.getMonth()) +
@@ -170,7 +175,7 @@ export function AnalyticsPageContent({
 		(sum, entry) => sum + entry.amount,
 		0,
 	);
-	const dateRangeLabel = `${format(parseISO(dateRange.from), "MMM d, yyyy")} – ${format(parseISO(dateRange.to), "MMM d, yyyy")}`;
+	const dateRangeLabel = `${format(parseCalendarDate(dateRange.from), "MMM d, yyyy")} – ${format(parseCalendarDate(dateRange.to), "MMM d, yyyy")}`;
 	const hasExpenseData = stats.expense > 0;
 	const hasTrend = trendData.some(
 		(point) => point.income > 0 || point.expense > 0,
@@ -201,39 +206,48 @@ export function AnalyticsPageContent({
 
 				{!isPending && !isError ? (
 					<>
-						{/* (a) KPI tiles */}
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-							<KpiTile
-								icon={<Wallet className="size-4" />}
-								label="Net worth"
-								value={formatSensitiveCurrency(
-									netWorth.netWorth,
-									currency,
-									isPrivacyMode,
-								)}
-								hint="Account balances plus savings ledger"
-								isSensitive
-							/>
-							<KpiTile
-								icon={<TrendingDown className="size-4" />}
-								label="Avg monthly spend"
-								value={formatSensitiveCurrency(
-									avgMonthlySpend,
-									currency,
-									isPrivacyMode,
-								)}
-								hint={`Over ${monthSpan} ${monthSpan === 1 ? "month" : "months"}`}
-								isSensitive
-							/>
-							<KpiTile
-								icon={<PiggyBank className="size-4" />}
-								label="Savings rate"
-								value={`${savingsRate.percent.toFixed(0)}%`}
-								hint={savingsRate.hint}
-							/>
+						<AnalyticsWealthSection
+							userCurrency={currency}
+							netWorth={netWorth.netWorth}
+							savingsRate={savingsRate}
+							goals={goals}
+							savings={savings}
+						/>
+
+						<MonthlyReviewSection
+							userCurrency={currency}
+							transactions={transactions}
+							savings={savings}
+							paymentAccounts={paymentAccounts}
+						/>
+
+						<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
+							<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+								Spending
+							</p>
+							<div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+								<div>
+									<p className="text-sm font-semibold text-foreground">
+										Avg monthly spend
+									</p>
+									<p className="font-num mt-1 text-2xl font-extrabold tabular-nums text-foreground">
+										<SensitiveText
+											text={formatSensitiveCurrency(
+												avgMonthlySpend,
+												currency,
+												isPrivacyMode,
+											)}
+										/>
+									</p>
+									<p className="mt-1 text-xs text-muted-foreground">
+										Over {monthSpan} {monthSpan === 1 ? "month" : "months"} in the
+										selected range
+									</p>
+								</div>
+							</div>
 						</div>
 
-						{/* (b) Income vs spending grouped bars */}
+						{/* Income vs spending grouped bars */}
 						<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
 							<div className="flex items-baseline justify-between gap-3">
 								<div>
@@ -513,37 +527,6 @@ const tooltipStyle = {
 	fontSize: 12,
 	color: "var(--fg)",
 } as const;
-
-interface KpiTileProps {
-	icon: React.ReactNode;
-	label: string;
-	value: string;
-	hint: string;
-	isSensitive?: boolean;
-}
-
-function KpiTile({
-	icon,
-	label,
-	value,
-	hint,
-	isSensitive = false,
-}: KpiTileProps) {
-	return (
-		<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
-			<div className="flex items-center gap-2 text-muted-foreground">
-				<span className="bg-soft-accent text-primary flex size-7 items-center justify-center rounded-full">
-					{icon}
-				</span>
-				<p className="text-xs font-medium uppercase tracking-wide">{label}</p>
-			</div>
-			<p className="font-num mt-4 text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
-				{isSensitive ? <SensitiveText text={value} /> : value}
-			</p>
-			<p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-		</div>
-	);
-}
 
 function LegendDot({ color, label }: { color: string; label: string }) {
 	return (

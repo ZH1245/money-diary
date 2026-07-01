@@ -2,6 +2,7 @@ import { Pool } from '@neondatabase/serverless'
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless'
 import { drizzle as drizzleNode } from 'drizzle-orm/node-postgres'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
+import pg from 'pg'
 import { serverEnv } from '#/env.server'
 
 import * as authSchema from './auth-schema'
@@ -25,12 +26,27 @@ function isNeonDatabaseUrl(databaseUrl: string) {
   }
 }
 
+/**
+ * Ensures every pooled connection uses UTC for timestamp interpretation.
+ */
+async function configureUtcSession(client: { query: (sql: string) => Promise<unknown> }) {
+  await client.query("SET TIME ZONE 'UTC'")
+}
+
 function createDatabase(): AppDatabase {
   if (isNeonDatabaseUrl(connectionString)) {
-    return drizzleNeon(new Pool({ connectionString }), { schema: dbSchema }) as unknown as AppDatabase
+    const pool = new Pool({ connectionString })
+    pool.on('connect', (client: { query: (sql: string) => Promise<unknown> }) => {
+      void configureUtcSession(client)
+    })
+    return drizzleNeon(pool, { schema: dbSchema }) as unknown as AppDatabase
   }
 
-  return drizzleNode(connectionString, { schema: dbSchema })
+  const pool = new pg.Pool({ connectionString })
+  pool.on('connect', (client: pg.PoolClient) => {
+    void configureUtcSession(client)
+  })
+  return drizzleNode(pool, { schema: dbSchema })
 }
 
 /** Neon serverless on Vercel; node-postgres for local Docker/native Postgres. */

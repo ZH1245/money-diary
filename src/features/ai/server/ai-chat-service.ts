@@ -13,6 +13,7 @@ import {
 } from '#/features/ai/server/ai-security'
 import { executeAiTool, loadUserAiContext } from '#/features/ai/server/ai-tool-executor'
 import type { AiToolAction } from '#/features/ai/server/ai-tools'
+import { getCalendarTodayInTimeZone } from '#/lib/timezone'
 import {
   buildOllamaRequestHeaders,
   extractOllamaAssistantText,
@@ -470,10 +471,12 @@ async function emitAiProgress(
 export async function runAiChat({
   userId,
   currency,
+  timezone,
   messages,
 }: {
   userId: string
   currency: string
+  timezone: string
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
 }): Promise<AiChatServiceResult> {
   const abuseState = await evaluateAbuseState(userId)
@@ -507,7 +510,7 @@ export async function runAiChat({
   }
 
   const lastUserMessage = messages.filter((message) => message.role === 'user').at(-1)
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCalendarTodayInTimeZone(timezone)
   const bulkRuntime = resolveBulkChatRuntimeLimits(lastUserMessage?.content ?? '')
   const generationLimits: ProviderGenerationLimits = {
     maxOutputTokens: bulkRuntime.maxOutputTokens,
@@ -649,6 +652,7 @@ export async function runAiChat({
             context: {
               userId,
               currency,
+              timezone,
               today,
               userGoals: userContext.userGoals,
             },
@@ -697,6 +701,7 @@ export async function runAiChat({
         context: {
           userId,
           currency,
+          timezone,
           today,
           userGoals: userContext.userGoals,
         },

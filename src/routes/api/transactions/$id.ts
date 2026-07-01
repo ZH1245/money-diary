@@ -22,6 +22,7 @@ import {
   requiresTransactionCategory,
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
+import { parseUtcDateTimeInput } from '#/lib/server/datetime'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
 import {
   updateTransactionSchema,
@@ -158,7 +159,7 @@ export const Route = createFileRoute('/api/transactions/$id')({
           ...(parsed.data.paymentAccountId !== undefined ? { paymentAccountId: parsed.data.paymentAccountId } : {}),
           source: parsed.data.source,
           note: parsed.data.note,
-          happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : undefined,
+          happenedAt: parsed.data.happenedAt ? parseUtcDateTimeInput(parsed.data.happenedAt) : undefined,
         })
 
         return Response.json({ success: true, data: row })
@@ -268,7 +269,7 @@ async function updateTransferHandler(
     toPaymentAccountId: parsed.data.toPaymentAccountId,
     categoryId,
     note: parsed.data.note ?? null,
-    happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
+    happenedAt: parsed.data.happenedAt ? parseUtcDateTimeInput(parsed.data.happenedAt) : new Date(),
   })
 
   return Response.json({ success: true, data: rows[0] })
@@ -332,7 +333,7 @@ async function convertToTransferHandler(
       toPaymentAccountId: parsed.data.toPaymentAccountId,
       categoryId,
       note: parsed.data.note ?? existing.note ?? null,
-      happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : existing.happenedAt,
+      happenedAt: parsed.data.happenedAt ? parseUtcDateTimeInput(parsed.data.happenedAt) : existing.happenedAt,
     })
 
     if (!rows) {

@@ -1,9 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import { SensitiveText } from "#/components/privacy/sensitive-text";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "#/components/ui/tooltip";
+import { cn } from "#/lib/utils";
 
 interface InsightMiniCardProps {
 	icon: React.ReactNode;
@@ -12,6 +14,8 @@ interface InsightMiniCardProps {
 	isSensitive?: boolean;
 	/** Optional explanation shown on hover/focus. */
 	tooltip?: string;
+	/** When set, the tile links to this route. */
+	to?: string;
 }
 
 /** Compact stat tile used on the dashboard balance card. */
@@ -21,6 +25,7 @@ export function InsightMiniCard({
 	value,
 	isSensitive = false,
 	tooltip,
+	to,
 }: InsightMiniCardProps) {
 	const card = (
 		<div className="md-stat min-w-0">
@@ -36,12 +41,38 @@ export function InsightMiniCard({
 		</div>
 	);
 
-	if (!tooltip) return card;
+	const interactiveClassName = cn(
+		"block min-w-0 rounded-lg transition-colors",
+		to && "hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+	);
+
+	if (to) {
+		const link = (
+			<Link to={to} className={interactiveClassName}>
+				{card}
+			</Link>
+		);
+
+		if (!tooltip) {
+			return link;
+		}
+
+		return (
+			<Tooltip>
+				<TooltipTrigger asChild>{link}</TooltipTrigger>
+				<TooltipContent>{tooltip}</TooltipContent>
+			</Tooltip>
+		);
+	}
+
+	if (!tooltip) {
+		return card;
+	}
 
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<button type="button" className="block w-full text-left">
+				<button type="button" className={cn("block w-full text-left", interactiveClassName)}>
 					{card}
 				</button>
 			</TooltipTrigger>

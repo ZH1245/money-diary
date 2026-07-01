@@ -189,17 +189,19 @@ async function fetchRouteQueryData(
       return [{ slot: 'categories', data: categories }]
     }
     case 'analytics': {
-      const [transactions, categories, paymentAccounts, savings] = await Promise.all([
+      const [transactions, categories, paymentAccounts, savings, goals] = await Promise.all([
         getUserTransactions(userId),
         getVisibleCategoriesForUser(userId),
         getUserPaymentAccounts(userId),
         getUserSavings(userId),
+        getUserGoals(userId),
       ])
       return [
         { slot: 'transactions', data: transactions },
         { slot: 'categories', data: categories },
         { slot: 'paymentAccounts', data: paymentAccounts },
         { slot: 'savings', data: savings },
+        { slot: 'goals', data: goals },
       ]
     }
     case 'settings': {

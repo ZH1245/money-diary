@@ -55,6 +55,12 @@ import { resolveAiNavigateTo } from '#/features/ai/utils/ai-navigation'
 import { queryUserData, DEFAULT_QUERY_USER_DATA_LIMIT } from '#/features/ai/server/ai-user-data-query'
 import { formatTransferSource, isTransferDirectionEncoded } from '#/features/transactions/utils/transfer-direction'
 import { formatTransactionDuplicateMessage } from '#/features/transactions/utils/transaction-duplicate'
+import {
+  calendarDateNoonToUtc,
+  hasExplicitUtcOffset,
+  parseUtcDateTimeInput,
+  zonedDateTimeToUtc,
+} from '#/lib/server/datetime'
 
 const createTransactionArgsSchema = z.object({
   title: z.string().min(1),
@@ -236,6 +242,7 @@ const getExchangeRateArgsSchema = z.object({
 export interface AiToolExecutionContext {
   userId: string
   currency: string
+  timezone: string
   today: string
   userGoals: Array<{ id: number; title: string }>
 }
@@ -315,7 +322,7 @@ export async function executeAiTool({
       paymentAccountId = rawAccId
     }
 
-    const happenedAt = resolveToolDate(date, context.today)
+    const happenedAt = resolveToolDate(date, context.today, context.timezone)
     if (!happenedAt) {
       return { action: 'create_transaction', success: false, message: `Invalid date: ${date ?? context.today}` }
     }
@@ -464,7 +471,7 @@ export async function executeAiTool({
 
     let happenedAtUpdate: Date | undefined
     if (args.data.date !== undefined) {
-      const parsedDate = resolveToolDate(args.data.date, context.today)
+      const parsedDate = resolveToolDate(args.data.date, context.today, context.timezone)
       if (!parsedDate) {
         return { action: 'update_transaction', success: false, message: `Invalid date: ${args.data.date}` }
       }
@@ -550,7 +557,7 @@ export async function executeAiTool({
       return { action: 'create_transfer', success: false, message: 'Destination account not accessible.' }
     }
 
-    const happenedAt = resolveToolDate(date, context.today)
+    const happenedAt = resolveToolDate(date, context.today, context.timezone)
     if (!happenedAt) {
       return { action: 'create_transfer', success: false, message: `Invalid date: ${date ?? context.today}` }
     }
@@ -620,7 +627,7 @@ export async function executeAiTool({
       paymentAccountId = rawAccId
     }
 
-    const startAt = resolveToolDate(startDate, context.today)
+    const startAt = resolveToolDate(startDate, context.today, context.timezone)
     if (!startAt) {
       return { action: 'create_recurring_rule', success: false, message: `Invalid date: ${startDate ?? context.today}` }
     }
@@ -711,7 +718,7 @@ export async function executeAiTool({
     const cadence = (args.data.cadence ?? existing.cadence) as RecurringCadence
     let nextRunAt: Date | undefined
     if (args.data.nextRunDate !== undefined) {
-      const parsed = resolveToolDate(args.data.nextRunDate, context.today)
+      const parsed = resolveToolDate(args.data.nextRunDate, context.today, context.timezone)
       if (!parsed) {
         return { action: 'update_recurring_rule', success: false, message: `Invalid date: ${args.data.nextRunDate}` }
       }
@@ -770,7 +777,7 @@ export async function executeAiTool({
       paymentAccountId = rawAccId
     }
 
-    const savedAt = resolveToolDate(date, context.today)
+    const savedAt = resolveToolDate(date, context.today, context.timezone)
     if (!savedAt) {
       return { action: 'create_saving', success: false, message: `Invalid date: ${date ?? context.today}` }
     }
@@ -1125,7 +1132,7 @@ export async function executeAiTool({
       paymentAccountId = rawAccId
     }
 
-    const happenedAt = resolveScheduledDate(scheduledAt)
+    const happenedAt = resolveScheduledDate(scheduledAt, context.timezone)
     if (!happenedAt) {
       return { action: 'create_scheduled_transaction', success: false, message: `Invalid scheduled date: ${scheduledAt}` }
     }
@@ -1332,32 +1339,50 @@ async function resolveAiCategoryId({
 
 /**
  * Resolves YYYY-MM-DD tool date, defaulting to calendar today when omitted.
- * Uses noon local time to match form-created transactions so same-day entries
- * sort correctly when ordered by happenedAt DESC.
+ * Uses noon in the user's timezone so same-day entries sort correctly.
  */
-function resolveToolDate(rawDate: string | undefined, today: string): Date | null {
+function resolveToolDate(
+  rawDate: string | undefined,
+  today: string,
+  timeZone: string,
+): Date | null {
   const value = rawDate?.trim() || today
-  const parsed = new Date(`${value}T12:00:00`)
-  if (Number.isNaN(parsed.getTime())) {
+  try {
+    return calendarDateNoonToUtc(value, timeZone)
+  } catch {
     return null
   }
-  return parsed
 }
 
 /**
  * Resolves a scheduled datetime string. Accepts full ISO datetimes (with time)
- * or YYYY-MM-DD dates (defaulting to noon). Used by create_scheduled_transaction
- * so the AI can pass an exact time (e.g. "today 10PM" → "2026-06-30T22:00:00").
+ * or YYYY-MM-DD dates (defaulting to noon in the user's timezone).
  */
-function resolveScheduledDate(rawDate: string): Date | null {
+function resolveScheduledDate(rawDate: string, timeZone: string): Date | null {
   const value = rawDate.trim()
-  // If it already contains a time component (T or space-delimited), parse as-is.
-  const hasTime = value.includes('T') || /\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(value)
-  const parsed = hasTime ? new Date(value) : new Date(`${value}T12:00:00`)
-  if (Number.isNaN(parsed.getTime())) {
+  const dateTimeMatch = value.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/)
+  if (dateTimeMatch) {
+    const [, datePart, timePart] = dateTimeMatch
+    try {
+      return zonedDateTimeToUtc(datePart, timePart, timeZone)
+    } catch {
+      return null
+    }
+  }
+
+  if (hasExplicitUtcOffset(value)) {
+    try {
+      return parseUtcDateTimeInput(value)
+    } catch {
+      return null
+    }
+  }
+
+  try {
+    return calendarDateNoonToUtc(value, timeZone)
+  } catch {
     return null
   }
-  return parsed
 }
 
 /**

@@ -1,5 +1,6 @@
 import { useStore } from '@tanstack/react-store'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
+import { formatCalendarDate, parseCalendarDate } from '#/lib/date-input'
 import { CalendarIcon, ListFilter, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
@@ -49,14 +50,14 @@ interface DateFilterFieldProps {
  */
 function DateFilterField({ id, label, value, placeholder, onChange }: DateFilterFieldProps) {
   const [open, setOpen] = useState(false)
-  const selectedDate = value ? parseISO(value) : undefined
+  const selectedDate = value ? parseCalendarDate(value) : undefined
 
   function handleSelect(date: Date | undefined) {
     if (!date) {
       return
     }
 
-    onChange(format(date, 'yyyy-MM-dd'))
+    onChange(formatCalendarDate(date))
     setOpen(false)
   }
 

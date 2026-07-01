@@ -1,4 +1,5 @@
 import type { ApiListResponse } from '#/types/api'
+import { apiFetch } from '#/lib/api-fetch'
 import type {
   CreateScheduledTransactionInput,
   CreateTransactionInput,
@@ -11,7 +12,7 @@ import type {
  * Loads transactions for the active user context.
  */
 export async function getTransactions(): Promise<TransactionDto[]> {
-  const response = await fetch('/api/transactions')
+  const response = await apiFetch('/api/transactions')
   const json = (await response.json()) as ApiListResponse<TransactionDto>
 
   if (!response.ok || !json.success) {
@@ -25,7 +26,7 @@ export async function getTransactions(): Promise<TransactionDto[]> {
  * Creates a new transaction entry.
  */
 export async function createTransaction(input: CreateTransactionInput): Promise<TransactionDto> {
-  const response = await fetch('/api/transactions', {
+  const response = await apiFetch('/api/transactions', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -46,7 +47,7 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
  * Updates an existing transaction entry.
  */
 export async function updateTransaction(id: number, input: UpdateTransactionInput): Promise<TransactionDto> {
-  const response = await fetch(`/api/transactions/${id}`, {
+  const response = await apiFetch(`/api/transactions/${id}`, {
     method: 'PATCH',
     headers: {
       'content-type': 'application/json',
@@ -67,7 +68,7 @@ export async function updateTransaction(id: number, input: UpdateTransactionInpu
  * Creates a two-leg transfer between payment accounts.
  */
 export async function createTransfer(input: TransferInput): Promise<TransactionDto> {
-  const response = await fetch('/api/transactions', {
+  const response = await apiFetch('/api/transactions', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -88,7 +89,7 @@ export async function createTransfer(input: TransferInput): Promise<TransactionD
  * Updates both legs of an existing transfer.
  */
 export async function updateTransfer(id: number, input: TransferInput): Promise<TransactionDto> {
-  const response = await fetch(`/api/transactions/${id}`, {
+  const response = await apiFetch(`/api/transactions/${id}`, {
     method: 'PATCH',
     headers: {
       'content-type': 'application/json',
@@ -109,7 +110,7 @@ export async function updateTransfer(id: number, input: TransferInput): Promise<
  * Deletes a transaction entry.
  */
 export async function deleteTransaction(id: number): Promise<void> {
-  const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+  const response = await apiFetch(`/api/transactions/${id}`, { method: 'DELETE' })
   const json = (await response.json()) as { success: boolean; error?: string }
 
   if (!response.ok || !json.success) {
@@ -121,7 +122,7 @@ export async function deleteTransaction(id: number): Promise<void> {
  * Fetches all pending draft transactions for the active user.
  */
 export async function getDraftTransactions(): Promise<TransactionDto[]> {
-  const response = await fetch('/api/transactions/drafts')
+  const response = await apiFetch('/api/transactions/drafts')
   const json = (await response.json()) as ApiListResponse<TransactionDto>
 
   if (!response.ok || !json.success) {
@@ -137,7 +138,7 @@ export async function getDraftTransactions(): Promise<TransactionDto[]> {
 export async function createScheduledTransaction(
   input: CreateScheduledTransactionInput,
 ): Promise<TransactionDto> {
-  const response = await fetch('/api/transactions/drafts', {
+  const response = await apiFetch('/api/transactions/drafts', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),
@@ -156,7 +157,7 @@ export async function createScheduledTransaction(
  * Confirms a draft transaction, committing it to balances.
  */
 export async function confirmDraftTransaction(id: number): Promise<TransactionDto> {
-  const response = await fetch(`/api/transactions/drafts/${id}`, { method: 'POST' })
+  const response = await apiFetch(`/api/transactions/drafts/${id}`, { method: 'POST' })
   const json = (await response.json()) as { success: boolean; data: TransactionDto; error?: string }
 
   if (!response.ok || !json.success) {
@@ -170,7 +171,7 @@ export async function confirmDraftTransaction(id: number): Promise<TransactionDt
  * Discards a draft transaction permanently.
  */
 export async function discardDraftTransaction(id: number): Promise<void> {
-  const response = await fetch(`/api/transactions/drafts/${id}`, { method: 'DELETE' })
+  const response = await apiFetch(`/api/transactions/drafts/${id}`, { method: 'DELETE' })
   const json = (await response.json()) as { success: boolean; error?: string }
 
   if (!response.ok || !json.success) {

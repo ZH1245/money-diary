@@ -7,9 +7,9 @@ import {
   endOfDay,
   format,
   isWithinInterval,
-  parseISO,
   startOfDay,
 } from 'date-fns'
+import { parseCalendarDate } from '#/lib/date-input'
 
 /**
  * Returns true when a date string falls inside the inclusive range.
@@ -19,8 +19,8 @@ export function isDateInRange(value: string, from: string, to: string): boolean 
   if (Number.isNaN(date.getTime())) return false
 
   return isWithinInterval(date, {
-    start: startOfDay(parseISO(from)),
-    end: endOfDay(parseISO(to)),
+    start: startOfDay(parseCalendarDate(from)),
+    end: endOfDay(parseCalendarDate(to)),
   })
 }
 
@@ -33,8 +33,8 @@ export function buildTrendSeriesForDateRange(
   to: string,
   parseAmount: (amount: string) => number,
 ): Array<{ week: string; income: number; expense: number }> {
-  const fromDate = startOfDay(parseISO(from))
-  const toDate = endOfDay(parseISO(to))
+  const fromDate = startOfDay(parseCalendarDate(from))
+  const toDate = endOfDay(parseCalendarDate(to))
   const dayCount = differenceInCalendarDays(toDate, fromDate) + 1
 
   if (!dayCount || dayCount < 1) {

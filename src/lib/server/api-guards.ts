@@ -2,12 +2,14 @@ import { auth } from '#/lib/auth'
 import { AUTH_ROLES } from '#/lib/auth-roles'
 import { DEFAULT_CURRENCY } from '#/lib/currency'
 import { enforceRateLimit } from '#/lib/server/rate-limit'
+import { resolveRequestTimeZone } from '#/lib/server/request-timezone'
 import { enforceSameOrigin } from '#/lib/server/same-origin'
 
 interface AuthenticatedUserContext {
   id: string
   currency: string
   role: string
+  timezone: string
 }
 
 interface SessionUserFields {
@@ -64,6 +66,7 @@ export async function requireUserContext(request: Request): Promise<Authenticate
     id: user.id,
     currency: (user.currency ?? DEFAULT_CURRENCY).toUpperCase(),
     role,
+    timezone: resolveRequestTimeZone(request),
   }
 }
 

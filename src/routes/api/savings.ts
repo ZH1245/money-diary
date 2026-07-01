@@ -10,6 +10,7 @@ import {
   requireUserContext,
 } from '#/lib/server/api-guards'
 import { parseJsonBody } from '#/lib/server/request-body'
+import { parseUtcDateTimeInput } from '#/lib/server/datetime'
 import { parsePositiveAmount } from '#/lib/server/validation-schemas'
 
 export const Route = createFileRoute('/api/savings')({
@@ -94,7 +95,9 @@ export const Route = createFileRoute('/api/savings')({
           amount: amount.toString(),
           entryType,
           note: parsed.data.note?.trim() || null,
-          savedAt: parsed.data.savedAt ? new Date(parsed.data.savedAt) : new Date(),
+          savedAt: parsed.data.savedAt
+            ? parseUtcDateTimeInput(parsed.data.savedAt)
+            : new Date(),
         })
 
         return Response.json({ success: true, data: row }, { status: 201 })

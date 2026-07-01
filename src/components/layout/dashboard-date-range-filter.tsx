@@ -9,12 +9,14 @@ import {
 } from '#/components/ui/dropdown-menu'
 import {
   dashboardDateRangeStore,
+  ensureDashboardDateRangeInitialized,
   setDashboardDateRange,
 } from '#/features/dashboard/store/dashboard-date-range-store'
 import { buildTransactionCalendarActivity } from '#/features/dashboard/utils/transaction-calendar-activity'
 import { useTransactionsQuery } from '#/features/transactions/hooks/use-transactions'
+import { formatCalendarDate, parseCalendarDate } from '#/lib/date-input'
 import { useStore } from '@tanstack/react-store'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { CalendarRange } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
@@ -27,14 +29,21 @@ export function DashboardDateRangeFilter() {
   const { data: transactions = [] } = useTransactionsQuery()
   const [isCompact, setIsCompact] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const selectedRange: DateRange = {
-    from: parseISO(dateRange.from),
-    to: parseISO(dateRange.to),
-  }
+  const hasRange = Boolean(dateRange.from && dateRange.to)
+  const selectedRange: DateRange | undefined = hasRange
+    ? {
+        from: parseCalendarDate(dateRange.from),
+        to: parseCalendarDate(dateRange.to),
+      }
+    : undefined
   const dayActivityByDate = useMemo(
     () => buildTransactionCalendarActivity(transactions),
     [transactions],
   )
+
+  useEffect(() => {
+    ensureDashboardDateRangeInitialized()
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -58,8 +67,8 @@ export function DashboardDateRangeFilter() {
   function handleRangeSelect(range: DateRange | undefined) {
     if (!range?.from) return
 
-    const nextFrom = format(range.from, 'yyyy-MM-dd')
-    const nextTo = range.to ? format(range.to, 'yyyy-MM-dd') : nextFrom
+    const nextFrom = formatCalendarDate(range.from)
+    const nextTo = range.to ? formatCalendarDate(range.to) : nextFrom
 
     if (nextFrom === dateRange.from && nextTo === dateRange.to) return
 
@@ -67,12 +76,16 @@ export function DashboardDateRangeFilter() {
   }
 
   function handleDayDoubleClick(day: Date) {
-    const isoDate = format(day, 'yyyy-MM-dd')
+    const isoDate = formatCalendarDate(day)
     setDashboardDateRange({ from: isoDate, to: isoDate })
   }
 
-  const compactLabel = `${format(selectedRange.from!, 'MMM d')} – ${format(selectedRange.to!, 'MMM d')}`
-  const fullLabel = `${format(selectedRange.from!, 'MMM d, yyyy')} – ${format(selectedRange.to!, 'MMM d, yyyy')}`
+  const compactLabel = hasRange
+    ? `${format(selectedRange!.from!, 'MMM d')} – ${format(selectedRange!.to!, 'MMM d')}`
+    : 'Last 30 days'
+  const fullLabel = hasRange
+    ? `${format(selectedRange!.from!, 'MMM d, yyyy')} – ${format(selectedRange!.to!, 'MMM d, yyyy')}`
+    : 'Last 30 days'
   const dateLabel = isCompact ? compactLabel : fullLabel
 
   return (
@@ -96,7 +109,7 @@ export function DashboardDateRangeFilter() {
           <div className="space-y-2 p-2">
             <Calendar
               mode="range"
-              defaultMonth={selectedRange.from}
+              defaultMonth={selectedRange?.from}
               selected={selectedRange}
               onSelect={handleRangeSelect}
               numberOfMonths={isMobile ? 1 : 2}
