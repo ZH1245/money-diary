@@ -99,7 +99,13 @@ export function DataTable<TData>({
 			),
 			enableSorting: false,
 			enableGlobalFilter: false,
-			meta: { cellClassName: "w-10 pr-0" },
+			size: 40,
+			minSize: 40,
+			maxSize: 40,
+			meta: {
+				headerClassName: "w-10 max-w-10 px-3 pr-0",
+				cellClassName: "w-10 max-w-10 px-3 pr-0",
+			},
 		}),
 		[],
 	);
@@ -202,6 +208,11 @@ export function DataTable<TData>({
 								: "min-w-[720px]",
 						)}
 					>
+						{enableRowSelection ? (
+							<colgroup>
+								<col style={{ width: 40 }} />
+							</colgroup>
+						) : null}
 						<TableHeader>
 							{table.getHeaderGroups().map((headerGroup) => (
 								<TableRow key={headerGroup.id}>
