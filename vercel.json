@@ -3,6 +3,14 @@
   "crons": [
     { "path": "/api/cron/run-recurring", "schedule": "0 6 * * *" }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "money-diary-eight.vercel.app" }],
+      "destination": "https://money-diary.zainharoon.com/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/sw.js",

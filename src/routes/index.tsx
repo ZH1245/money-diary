@@ -1,5 +1,4 @@
 import { Navigate, createFileRoute } from "@tanstack/react-router";
-import { SessionLoadingSkeleton } from "#/components/feedback/page-state";
 import { LandingPage } from "#/features/landing/components/landing-page";
 import { buildPublicPageHead, LANDING_SEO } from "#/lib/seo/public-seo";
 import { useAuthSession } from "#/lib/use-auth-session";
@@ -14,17 +13,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-	const { data: session, isInitialPending } = useAuthSession();
+	const { data: session, isPending } = useAuthSession();
 
-	if (isInitialPending) {
-		return <SessionLoadingSkeleton />;
-	}
-
-	// Signed-in users skip the marketing page and go straight to the app.
-	if (session?.user) {
+	// Redirect signed-in users once the session is known; never block crawlers on auth.
+	if (!isPending && session?.user) {
 		return <Navigate to="/dashboard" />;
 	}
 
-	// Public landing page — intentionally NOT behind the auth redirect.
 	return <LandingPage />;
 }

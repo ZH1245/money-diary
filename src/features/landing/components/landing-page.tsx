@@ -177,7 +177,17 @@ export function LandingPage() {
 							Personal finance, made beautiful.
 						</p>
 					</div>
-					<nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
+					<nav
+						className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm text-muted-foreground"
+						aria-label="Footer"
+					>
+						<Link
+							to="/"
+							hash="features"
+							className="no-underline transition-colors hover:text-foreground"
+						>
+							Features
+						</Link>
 						<Link
 							to="/privacy"
 							className="no-underline transition-colors hover:text-foreground"
@@ -189,6 +199,12 @@ export function LandingPage() {
 							className="no-underline transition-colors hover:text-foreground"
 						>
 							Terms
+						</Link>
+						<Link
+							to="/sign-up"
+							className="no-underline transition-colors hover:text-foreground"
+						>
+							Sign up
 						</Link>
 						<Link
 							to="/sign-in"

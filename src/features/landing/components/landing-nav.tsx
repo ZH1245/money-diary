@@ -21,7 +21,23 @@ export function LandingNav() {
 				</Link>
 
 				{/* Actions */}
-				<nav className="flex shrink-0 items-center gap-2">
+				<nav
+					className="flex shrink-0 items-center gap-2"
+					aria-label="Landing page"
+				>
+					<Link
+						to="/"
+						hash="features"
+						className="hidden text-sm font-medium text-muted-foreground no-underline transition-colors hover:text-foreground md:inline"
+					>
+						Features
+					</Link>
+					<Link
+						to="/privacy"
+						className="hidden text-sm font-medium text-muted-foreground no-underline transition-colors hover:text-foreground md:inline"
+					>
+						Privacy
+					</Link>
 					<ThemeToggle />
 					<Button variant="ghost" size="sm" asChild>
 						<Link to="/sign-in" className="no-underline">
