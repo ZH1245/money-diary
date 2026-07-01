@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ShieldCheck, Sparkles } from "lucide-react";
 import { useTheme } from "#/components/layout/theme-provider";
 import { Button } from "#/components/ui/button";
+import { LandingJsonLd } from "#/lib/seo/landing-json-ld";
+import { LANDING_SEO } from "#/lib/seo/public-seo";
 import { cn } from "#/lib/utils";
 import { DeviceMockups } from "./device-mockups";
 import { FeatureGrid } from "./feature-grid";
@@ -63,6 +65,7 @@ function HeroThemeSwitcher() {
 export function LandingPage() {
 	return (
 		<div className="min-h-screen bg-canvas text-foreground">
+			<LandingJsonLd description={LANDING_SEO.description} />
 			<LandingNav />
 
 			{/* ── Hero ───────────────────────────────────────────────── */}
@@ -76,7 +79,7 @@ export function LandingPage() {
 					<div className="mx-auto max-w-3xl text-center">
 						<span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm">
 							<Sparkles className="size-3.5 text-primary" />
-							Personal finance, made simple
+							Personal finance &amp; expense tracker
 						</span>
 						<h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
 							Your money,{" "}

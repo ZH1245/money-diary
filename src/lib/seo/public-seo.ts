@@ -5,9 +5,9 @@ export const SITE_NAME = 'Money Diary'
 export const DEFAULT_OG_IMAGE_PATH = '/landing/dashboard-desktop-calm-light.webp'
 
 export const LANDING_SEO = {
-  title: 'Money Diary — your money, finally in focus',
+  title: 'Money Diary — personal finance & expense tracker',
   description:
-    'Track income, expenses, savings, and goals. Log transactions in plain English with AI. Free to start — your data stays private.',
+    'Personal finance app to track income, expenses, savings, and budgets. Log transactions in plain English with AI, manage recurring bills, and reach your goals. Free to start.',
 } as const
 
 export const SIGN_IN_SEO = {

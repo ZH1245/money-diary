@@ -79,7 +79,7 @@ export function FeatureGrid() {
 					id="features-heading"
 					className="text-2xl font-bold text-foreground sm:text-3xl"
 				>
-					Everything you need to stay in control
+					Personal finance tools to stay in control
 				</h2>
 				<p className="mt-3 text-muted-foreground">
 					One place for all your personal finance — simple, private, powerful.

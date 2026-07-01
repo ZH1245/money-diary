@@ -70,10 +70,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				as: "style",
 			},
 			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-			{
 				rel: "icon",
 				href: "/favicon.ico",
 			},
@@ -101,6 +97,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
+				<link rel="preload" href={appCss} as="style" />
+				<link
+					rel="stylesheet"
+					href={appCss}
+					media="print"
+					id="app-stylesheet"
+				/>
+				<script
+					dangerouslySetInnerHTML={{
+						__html:
+							"document.getElementById('app-stylesheet').onload=function(){this.media='all'}",
+					}}
+				/>
+				<noscript>
+					<link rel="stylesheet" href={appCss} />
+				</noscript>
 				<script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
 			</head>
 			<body>

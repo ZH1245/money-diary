@@ -9,9 +9,27 @@
       "has": [{ "type": "host", "value": "money-diary-eight.vercel.app" }],
       "destination": "https://money-diary.zainharoon.com/:path*",
       "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.money-diary.zainharoon.com" }],
+      "destination": "https://money-diary.zainharoon.com/:path*",
+      "permanent": true
     }
   ],
   "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/landing/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
     {
       "source": "/sw.js",
       "headers": [
