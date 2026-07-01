@@ -1,5 +1,12 @@
 const CACHE_VERSION = 'money-diary-v2'
-const PRECACHE_URLS = ['/offline.html', '/manifest.json', '/favicon.ico', '/favicon.png']
+const PRECACHE_URLS = [
+  '/offline.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/favicon.png',
+  '/logo192.png',
+  '/logo512.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

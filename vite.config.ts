@@ -7,7 +7,8 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { nitro } from 'nitro/vite'
 import neon from './neon-vite-plugin.ts'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { resolve } from 'path'
 
 /** Stamps a unique build ID into sw.js so the browser detects a new SW on every deploy. */
 function stampServiceWorker(): import('vite').Plugin {
@@ -16,13 +17,36 @@ function stampServiceWorker(): import('vite').Plugin {
     apply: 'build',
     closeBundle() {
       const buildId = (process.env.VERCEL_GIT_COMMIT_SHA ?? Date.now().toString(36)).slice(0, 10)
-      const candidates = ['.output/public/sw.js', 'dist/public/sw.js', 'dist/sw.js']
-      for (const p of candidates) {
-        if (existsSync(p)) {
-          const content = readFileSync(p, 'utf8')
-          writeFileSync(p, content.replace(/money-diary-[^\s'"]+/, `money-diary-${buildId}`))
-          break
+      const swSource = resolve('public/sw.js')
+      if (!existsSync(swSource)) {
+        return
+      }
+
+      const stamped = readFileSync(swSource, 'utf8').replace(
+        /const CACHE_VERSION = '[^']+'/,
+        `const CACHE_VERSION = 'money-diary-${buildId}'`,
+      )
+
+      const candidates = [
+        '.output/public/sw.js',
+        'dist/public/sw.js',
+        'dist/sw.js',
+        '.vercel/output/static/sw.js',
+      ]
+
+      let wrote = false
+      for (const candidate of candidates) {
+        if (!existsSync(candidate)) {
+          continue
         }
+        writeFileSync(candidate, stamped)
+        wrote = true
+      }
+
+      if (!wrote) {
+        const fallbackDir = resolve('.output/public')
+        mkdirSync(fallbackDir, { recursive: true })
+        writeFileSync(resolve(fallbackDir, 'sw.js'), stamped)
       }
     },
   }

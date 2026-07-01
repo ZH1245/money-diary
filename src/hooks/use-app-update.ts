@@ -65,10 +65,18 @@ export function useAppUpdate() {
       void checkForUpdate()
     }
 
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        void checkForUpdate()
+      }
+    }
+
     window.addEventListener(APP_UPDATE_EVENT, handleServiceWorkerUpdate)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => {
       window.clearInterval(intervalId)
       window.removeEventListener(APP_UPDATE_EVENT, handleServiceWorkerUpdate)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [checkForUpdate])
 
