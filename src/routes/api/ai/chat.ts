@@ -94,6 +94,7 @@ export const Route = createFileRoute('/api/ai/chat')({
         const result = await runAiChat({
           userId: userContext.id,
           currency: userContext.currency,
+          timezone: userContext.timezone,
           messages,
         })
 

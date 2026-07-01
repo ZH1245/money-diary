@@ -36,6 +36,7 @@ import { parseLedgerAmount } from "#/features/goals/utils/goal-progress";
 import { PaymentAccountSelect } from "#/features/payment-accounts/components/payment-account-select";
 import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
 import { GoalSelect } from "#/features/savings/components/goal-select";
+import { SavingsAnalyticsSection } from "#/features/savings/components/savings-analytics-section";
 import {
 	useCreateSavingMutation,
 	useDeleteSavingMutation,
@@ -309,43 +310,53 @@ export function SavingsPageContent({ userCurrency }: SavingsPageContentProps) {
 				</header>
 
 				{!isPending && !isError ? (
-					<section
-						className="mt-6 overflow-hidden rounded-panel border border-border p-[26px] text-primary-foreground"
-						style={{
-							background:
-								"linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 62%, #000))",
-						}}
-					>
-						<p className="text-sm font-medium opacity-90">Total saved</p>
-						<p className="mt-1 truncate font-num text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums">
-							{formatSensitiveCurrency(
-								pageStats.totalSaved,
-								userCurrency,
-								isPrivacyMode,
-							)}
-						</p>
-						<div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-							<span className="inline-flex items-center gap-1.5 opacity-90">
-								<TrendingUp className="size-4" />
-								{thisMonthDelta >= 0 ? "+" : "−"}
+					<>
+						<section
+							className="mt-6 overflow-hidden rounded-panel border border-border p-[26px] text-primary-foreground"
+							style={{
+								background:
+									"linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 62%, #000))",
+							}}
+						>
+							<p className="text-sm font-medium opacity-90">Total saved</p>
+							<p className="mt-1 truncate font-num text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums">
 								{formatSensitiveCurrency(
-									Math.abs(thisMonthDelta),
+									pageStats.totalSaved,
 									userCurrency,
 									isPrivacyMode,
-								)}{" "}
-								this month
-							</span>
-							<span className="opacity-90">
-								{formatSensitiveCurrency(
-									pageStats.linkedToGoals,
-									userCurrency,
-									isPrivacyMode,
-								)}{" "}
-								linked to goals
-							</span>
-							<span className="opacity-75">{pageStats.entryCount} entries</span>
-						</div>
-					</section>
+								)}
+							</p>
+							<div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+								<span className="inline-flex items-center gap-1.5 opacity-90">
+									<TrendingUp className="size-4" />
+									{thisMonthDelta >= 0 ? "+" : "−"}
+									{formatSensitiveCurrency(
+										Math.abs(thisMonthDelta),
+										userCurrency,
+										isPrivacyMode,
+									)}{" "}
+									this month
+								</span>
+								<span className="opacity-90">
+									{formatSensitiveCurrency(
+										pageStats.linkedToGoals,
+										userCurrency,
+										isPrivacyMode,
+									)}{" "}
+									linked to goals
+								</span>
+								<span className="opacity-75">{pageStats.entryCount} entries</span>
+							</div>
+						</section>
+
+						<SavingsAnalyticsSection
+							userCurrency={userCurrency}
+							savings={filteredSavings}
+							goals={goals}
+							dateRangeFrom={dateRange.from}
+							dateRangeTo={dateRange.to}
+						/>
+					</>
 				) : null}
 
 				{isPending ? (

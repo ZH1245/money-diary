@@ -18,6 +18,7 @@ import {
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
+import { parseUtcDateTimeInput } from '#/lib/server/datetime'
 
 export const Route = createFileRoute('/api/transactions/drafts')({
   server: {
@@ -102,7 +103,7 @@ export const Route = createFileRoute('/api/transactions/drafts')({
           categoryId,
           paymentAccountId,
           note: parsed.data.note ?? null,
-          happenedAt: new Date(parsed.data.happenedAt),
+          happenedAt: parseUtcDateTimeInput(parsed.data.happenedAt),
         })
 
         return Response.json({ success: true, data: row }, { status: 201 })

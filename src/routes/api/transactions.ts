@@ -22,6 +22,7 @@ import {
   requiresTransactionCategory,
   resolveTransactionCategoryId,
 } from '#/features/transactions/utils/transaction-category'
+import { parseUtcDateTimeInput } from '#/lib/server/datetime'
 import { normalizeTransactionAmount } from '#/features/transactions/utils/transaction-currency'
 
 export const Route = createFileRoute('/api/transactions')({
@@ -119,7 +120,9 @@ export const Route = createFileRoute('/api/transactions')({
           paymentAccountId,
           source: parsed.data.source ?? null,
           note: parsed.data.note ?? null,
-          happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
+          happenedAt: parsed.data.happenedAt
+            ? parseUtcDateTimeInput(parsed.data.happenedAt)
+            : new Date(),
         })
 
         return Response.json({ success: true, data: row }, { status: 201 })
@@ -208,7 +211,9 @@ async function createTransferHandler(
     toPaymentAccountId: parsed.data.toPaymentAccountId,
     categoryId,
     note: parsed.data.note ?? null,
-    happenedAt: parsed.data.happenedAt ? new Date(parsed.data.happenedAt) : new Date(),
+    happenedAt: parsed.data.happenedAt
+      ? parseUtcDateTimeInput(parsed.data.happenedAt)
+      : new Date(),
   })
 
   return Response.json({ success: true, data: rows[0] }, { status: 201 })

@@ -1,5 +1,5 @@
 import { Store } from '@tanstack/react-store'
-import { format, subDays } from 'date-fns'
+import { getCalendarToday, subtractCalendarDays } from '#/lib/date-input'
 
 /**
  * Dashboard date range filter state shared with the top bar.
@@ -9,11 +9,13 @@ interface DashboardDateRangeState {
   to: string
 }
 
+const EMPTY_DATE_RANGE: DashboardDateRangeState = { from: '', to: '' }
+
 function getDefaultDateRange(): DashboardDateRangeState {
-  const today = new Date()
+  const today = getCalendarToday()
   return {
-    from: format(subDays(today, 29), 'yyyy-MM-dd'),
-    to: format(today, 'yyyy-MM-dd'),
+    from: subtractCalendarDays(today, 29),
+    to: today,
   }
 }
 
@@ -38,8 +40,23 @@ function commitDateRange(nextRange: DashboardDateRangeState) {
 
 /**
  * Central date range store for workspace-wide filtering.
+ * Initialized empty on SSR; synced to local today on the client.
  */
-export const dashboardDateRangeStore = new Store<DashboardDateRangeState>(getDefaultDateRange())
+export const dashboardDateRangeStore = new Store<DashboardDateRangeState>(
+  typeof window !== 'undefined' ? getDefaultDateRange() : EMPTY_DATE_RANGE,
+)
+
+/**
+ * Initializes or repairs the range using the client's local calendar today.
+ */
+export function ensureDashboardDateRangeInitialized() {
+  const state = dashboardDateRangeStore.state
+  const today = getCalendarToday()
+
+  if (!state.from || !state.to || state.to > today) {
+    dashboardDateRangeStore.setState(() => getDefaultDateRange())
+  }
+}
 
 /**
  * Updates the dashboard range start date.

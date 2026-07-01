@@ -37,6 +37,7 @@ import {
 } from "#/features/recurring/utils/recurring-schedule";
 import {
 	useCreateTransactionMutation,
+	useCreateScheduledTransactionMutation,
 	useCreateTransferMutation,
 	useDeleteTransactionMutation,
 	useTransactionsQuery,
@@ -57,7 +58,12 @@ import {
 	resolveTransactionSourceForSave,
 } from "#/features/transactions/utils/transaction-display";
 import { SUPPORTED_CURRENCIES } from "#/lib/currency";
-import { toInputDate, toIsoDateAtNoon } from "#/lib/date-input";
+import {
+	toInputDate,
+	toInputTime,
+	toIsoFromDateAndTime,
+	isFutureDateAndTime,
+} from "#/lib/date-input";
 import { cn } from "#/lib/utils";
 
 /** Segmented tabs in the create/edit drawer; drive the createForm.type field. */
@@ -128,6 +134,7 @@ function buildEditFormState(
 		source: row.source,
 		note: row.note,
 		happenedAt: toInputDate(row.happenedAt),
+		happenedAtTime: toInputTime(row.happenedAt),
 	};
 }
 
@@ -155,6 +162,8 @@ export function TransactionFormSheet({
 	const { data: paymentAccounts = [] } = usePaymentAccountsQuery();
 	const { data: allTransactions = [] } = useTransactionsQuery();
 	const createTransactionMutation = useCreateTransactionMutation();
+	const createScheduledTransactionMutation =
+		useCreateScheduledTransactionMutation();
 	const updateTransactionMutation = useUpdateTransactionMutation();
 	const createTransferMutation = useCreateTransferMutation();
 	const updateTransferMutation = useUpdateTransferMutation();
@@ -169,6 +178,7 @@ export function TransactionFormSheet({
 	const [isCurrencyPickerOpen, setIsCurrencyPickerOpen] = useState(false);
 	const [isRecurring, setIsRecurring] = useState(false);
 	const [cadence, setCadence] = useState<RecurringCadence>("monthly");
+	const [saveAsPlanned, setSaveAsPlanned] = useState(false);
 
 	const editingTransactionId = editingRow?.id ?? null;
 	const isEditing = editingTransactionId !== null;
@@ -210,6 +220,7 @@ export function TransactionFormSheet({
 		}
 		setIsRecurring(false);
 		setCadence("monthly");
+		setSaveAsPlanned(false);
 	}, [open, editingTransactionId, userCurrency]);
 
 	const isForeignCurrency = createForm.currency !== userCurrency;
@@ -265,11 +276,19 @@ export function TransactionFormSheet({
 
 	const isSaving =
 		createTransactionMutation.isPending ||
+		createScheduledTransactionMutation.isPending ||
 		updateTransactionMutation.isPending ||
 		createTransferMutation.isPending ||
 		updateTransferMutation.isPending;
 	const showCategoryField =
 		createForm.type === "expense" || createForm.type === "transfer";
+	const canSaveAsPlanned =
+		!isEditing && createForm.type !== "transfer" && !isRecurring;
+	const isFutureEntry = useMemo(
+		() =>
+			isFutureDateAndTime(createForm.happenedAt, createForm.happenedAtTime),
+		[createForm.happenedAt, createForm.happenedAtTime],
+	);
 
 	async function handleCurrencyChange(currency: string) {
 		if (currency === userCurrency) {
@@ -334,7 +353,10 @@ export function TransactionFormSheet({
 				? Number(createForm.categoryId)
 				: null,
 			note: createForm.note.trim() || null,
-			happenedAt: toIsoDateAtNoon(createForm.happenedAt),
+			happenedAt: toIsoFromDateAndTime(
+				createForm.happenedAt,
+				createForm.happenedAtTime,
+			),
 		};
 
 		if (isEditing && editingTransactionId) {
@@ -436,7 +458,45 @@ export function TransactionFormSheet({
 			return;
 		}
 
-		const happenedAt = toIsoDateAtNoon(createForm.happenedAt);
+		const happenedAt = toIsoFromDateAndTime(
+			createForm.happenedAt,
+			createForm.happenedAtTime,
+		);
+
+		if (saveAsPlanned && !isEditing) {
+			const scheduledPromise = createScheduledTransactionMutation.mutateAsync({
+				title: createForm.title.trim(),
+				amount: createForm.amount.trim(),
+				currency: createForm.currency,
+				exchangeRate: isForeignCurrency
+					? createForm.exchangeRate.trim()
+					: undefined,
+				type: createForm.type,
+				categoryId: resolveTransactionCategoryId(
+					createForm.type,
+					createForm.categoryId ? Number(createForm.categoryId) : null,
+				),
+				paymentAccountId:
+					createForm.paymentAccountId === "none"
+						? null
+						: Number(createForm.paymentAccountId),
+				note: createForm.note.trim() || undefined,
+				happenedAt,
+			});
+
+			await toast.promise(scheduledPromise, {
+				loading: "Saving planned transaction...",
+				success: "Planned — confirm on the dashboard when it happens",
+				error: (message) =>
+					message instanceof Error
+						? message.message
+						: "Unable to save planned transaction",
+			});
+
+			onOpenChange(false);
+			return;
+		}
+
 		const resolvedSource = resolveTransactionSourceForSave(createForm);
 		const payload = {
 			title: createForm.title.trim(),
@@ -793,21 +853,79 @@ export function TransactionFormSheet({
 						</div>
 					)}
 
-					<DatePickerField
-						id="transaction-date"
-						label="Date"
-						value={createForm.happenedAt}
-						onChange={(happenedAt) =>
-							setCreateForm((state) => ({ ...state, happenedAt }))
-						}
-					/>
+					<div className="grid grid-cols-2 gap-3">
+						<DatePickerField
+							id="transaction-date"
+							label="Date"
+							value={createForm.happenedAt}
+							onChange={(happenedAt) =>
+								setCreateForm((state) => ({ ...state, happenedAt }))
+							}
+						/>
+						<div className="grid gap-2">
+							<label
+								htmlFor="transaction-time"
+								className="text-sm font-medium"
+							>
+								Time
+							</label>
+							<Input
+								id="transaction-time"
+								type="time"
+								value={createForm.happenedAtTime}
+								onChange={(event) =>
+									setCreateForm((state) => ({
+										...state,
+										happenedAtTime: event.target.value,
+									}))
+								}
+								className="bg-input-bg"
+							/>
+						</div>
+					</div>
+
+					{canSaveAsPlanned ? (
+						<div className="grid gap-2 rounded-panel border border-border bg-input-bg p-3">
+							<label className="flex items-center justify-between gap-3">
+								<span className="grid gap-0.5">
+									<span className="text-sm font-medium">Save as planned</span>
+									<span className="text-xs text-muted-foreground">
+										Keep it off your balance until you confirm on the dashboard.
+									</span>
+								</span>
+								<input
+									type="checkbox"
+									checked={saveAsPlanned}
+									onChange={(event) => {
+										const checked = event.target.checked;
+										setSaveAsPlanned(checked);
+										if (checked) {
+											setIsRecurring(false);
+										}
+									}}
+									className="size-4 shrink-0 accent-primary"
+								/>
+							</label>
+							{isFutureEntry && !saveAsPlanned ? (
+								<p className="text-xs text-muted-foreground">
+									This date and time are in the future — planned is
+									recommended so balances stay accurate.
+								</p>
+							) : null}
+						</div>
+					) : createForm.type === "transfer" && !isEditing ? (
+						<p className="text-xs text-muted-foreground">
+							Planned transfers are not supported yet — transfers save as
+							confirmed.
+						</p>
+					) : null}
 
 					{createForm.type !== "transfer" && hasExistingRecurringRule ? (
 						<p className="rounded-panel border border-border bg-input-bg px-3 py-2 text-xs text-muted-foreground">
 							This transaction already repeats on a schedule. Manage it from the
 							recurring view.
 						</p>
-					) : createForm.type !== "transfer" ? (
+					) : createForm.type !== "transfer" && !saveAsPlanned ? (
 						<div className="grid gap-3 rounded-panel border border-border bg-input-bg p-3">
 							<label className="flex items-center justify-between gap-3">
 								<span className="grid gap-0.5">
@@ -902,7 +1020,9 @@ export function TransactionFormSheet({
 								? "Saving..."
 								: isEditing
 									? "Update transaction"
-									: "Save transaction"}
+									: saveAsPlanned
+										? "Save as planned"
+										: "Save transaction"}
 						</Button>
 					</SheetFooter>
 				</form>

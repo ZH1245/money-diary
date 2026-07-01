@@ -2,7 +2,8 @@ import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '#/components/ui/popover'
 import { cn } from '#/lib/utils'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
+import { formatCalendarDate, parseCalendarDate } from '#/lib/date-input'
 import { CalendarIcon, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -32,14 +33,14 @@ export function DatePickerField({
   disabled = false,
 }: DatePickerFieldProps) {
   const [open, setOpen] = useState(false)
-  const selectedDate = value ? parseISO(value) : undefined
+  const selectedDate = value ? parseCalendarDate(value) : undefined
 
   function handleSelect(date: Date | undefined) {
     if (!date) {
       return
     }
 
-    onChange(format(date, 'yyyy-MM-dd'))
+    onChange(formatCalendarDate(date))
     setOpen(false)
   }
 

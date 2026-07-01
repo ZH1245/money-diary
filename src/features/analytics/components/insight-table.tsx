@@ -4,6 +4,7 @@ import { formatSensitiveCurrency } from "#/lib/privacy/sensitive-format";
 
 interface InsightTableProps {
 	title: string;
+	description?: string;
 	rows: AnalyticsInsightRow[];
 	currency: string;
 	colors: string[];
@@ -13,6 +14,7 @@ interface InsightTableProps {
 /** Ranked insight list with share bars for analytics breakdowns. */
 export function InsightTable({
 	title,
+	description,
 	rows,
 	currency,
 	colors,
@@ -23,6 +25,9 @@ export function InsightTable({
 	return (
 		<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
 			<p className="text-sm font-semibold text-foreground">{title}</p>
+			{description ? (
+				<p className="mt-1 text-xs text-muted-foreground">{description}</p>
+			) : null}
 			{rows.length ? (
 				<ul className="mt-4 space-y-3">
 					{rows.map((row, index) => {

@@ -1,6 +1,7 @@
 import { useStore } from "@tanstack/react-store";
-import { format, parseISO } from "date-fns";
-import { PiggyBank, Store, TrendingDown, Wallet } from "lucide-react";
+import { format } from "date-fns";
+import { parseCalendarDate } from "#/lib/date-input";
+import { CreditCard } from "lucide-react";
 import { useMemo } from "react";
 import {
 	Bar,
@@ -22,14 +23,24 @@ import {
 import { SensitiveText } from "#/components/privacy/sensitive-text";
 import { CategoryExpenseGroups } from "#/features/analytics/components/category-expense-groups";
 import { InsightTable } from "#/features/analytics/components/insight-table";
+import { AnalyticsWealthSection } from "#/features/analytics/components/analytics-wealth-section";
+import { MonthlyReviewSection } from "#/features/analytics/components/monthly-review-section";
 import {
 	buildAnalyticsStats,
 	buildCategoryExpenseGroups,
+	buildNetWorth,
+	buildRangeSavingsRate,
+	buildSpendingByPaymentAccount,
 	buildTopCategories,
 	buildTopIncome,
 	buildTopTitles,
+	type AnalyticsInsightRow,
 } from "#/features/analytics/utils/analytics-stats";
 import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
+import { useGoalsQuery } from "#/features/goals/hooks/use-goals";
+import { formatPaymentAccountLabel } from "#/features/payment-accounts/utils/account-label";
+import { usePaymentAccountsQuery } from "#/features/payment-accounts/hooks/use-payment-accounts";
+import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
 import {
 	buildTrendSeriesForDateRange,
@@ -49,24 +60,6 @@ interface AnalyticsPageContentProps {
 	userCurrency: string;
 }
 
-// TODO(api): no backing query yet for net worth. Stubbed with a typed constant
-// until an accounts/balances endpoint exposes the aggregate figure.
-const STUBBED_NET_WORTH = 28450;
-
-// TODO(api): no backing query yet for top merchants. Spending data is keyed by
-// transaction title/category, not a normalized merchant entity. Stubbed below.
-interface MerchantRow {
-	label: string;
-	amount: number;
-}
-const STUBBED_TOP_MERCHANTS: MerchantRow[] = [
-	{ label: "Whole Foods", amount: 412.38 },
-	{ label: "Amazon", amount: 289.1 },
-	{ label: "Shell", amount: 174.5 },
-	{ label: "Netflix", amount: 92.97 },
-	{ label: "Starbucks", amount: 68.4 },
-];
-
 export function AnalyticsPageContent({
 	userCurrency,
 }: AnalyticsPageContentProps) {
@@ -78,6 +71,9 @@ export function AnalyticsPageContent({
 		error,
 	} = useTransactionsQuery();
 	const { data: categories = [] } = useCategoriesQuery();
+	const { data: paymentAccounts = [] } = usePaymentAccountsQuery();
+	const { data: savings = [] } = useSavingsQuery();
+	const { data: goals = [] } = useGoalsQuery();
 	const currency = userCurrency.toUpperCase();
 	const isPrivacyMode = usePrivacyModeEnabled();
 
@@ -111,6 +107,13 @@ export function AnalyticsPageContent({
 		() => buildTopTitles(filteredTransactions),
 		[filteredTransactions],
 	);
+	const spendingByCard = useMemo(
+		() =>
+			buildSpendingByPaymentAccount(filteredTransactions, paymentAccounts, (account) =>
+				formatPaymentAccountLabel(account),
+			),
+		[filteredTransactions, paymentAccounts],
+	);
 	const categoryExpenseGroups = useMemo(
 		() => buildCategoryExpenseGroups(filteredTransactions, categories),
 		[filteredTransactions, categories],
@@ -127,8 +130,8 @@ export function AnalyticsPageContent({
 
 	// Number of distinct months covered by the selected range, for the average.
 	const monthSpan = useMemo(() => {
-		const from = parseISO(dateRange.from);
-		const to = parseISO(dateRange.to);
+		const from = parseCalendarDate(dateRange.from);
+		const to = parseCalendarDate(dateRange.to);
 		const months =
 			(to.getFullYear() - from.getFullYear()) * 12 +
 			(to.getMonth() - from.getMonth()) +
@@ -137,19 +140,42 @@ export function AnalyticsPageContent({
 	}, [dateRange.from, dateRange.to]);
 
 	const avgMonthlySpend = stats.expense / monthSpan;
-	// Savings rate derives from income/expense, but a true rate also needs prior
-	// balances and transfers we don't model yet.
-	// TODO(api): refine savings-rate once a savings/transfers aggregate exists.
-	const savingsRate =
-		stats.income > 0
-			? Math.max(0, (stats.income - stats.expense) / stats.income) * 100
-			: 0;
+	const netWorth = useMemo(
+		() =>
+			buildNetWorth({
+				accountIds: paymentAccounts.map((account) => account.id),
+				transactions: transactions.map((transaction) => ({
+					amount: transaction.amount,
+					type: transaction.type,
+					paymentAccountId: transaction.paymentAccountId,
+					source: transaction.source,
+				})),
+				savings: savings.map((entry) => ({
+					amount: entry.amount,
+					paymentAccountId: entry.paymentAccountId,
+					entryType: entry.entryType,
+					goalId: entry.goalId,
+				})),
+			}),
+		[paymentAccounts, transactions, savings],
+	);
+	const savingsInRange = useMemo(
+		() =>
+			savings.filter((entry) =>
+				isDateInRange(entry.savedAt, dateRange.from, dateRange.to),
+			),
+		[savings, dateRange.from, dateRange.to],
+	);
+	const savingsRate = useMemo(
+		() => buildRangeSavingsRate(stats.income, stats.expense, savingsInRange),
+		[stats.income, stats.expense, savingsInRange],
+	);
 
 	const categoryTotal = categoryChartData.reduce(
 		(sum, entry) => sum + entry.amount,
 		0,
 	);
-	const dateRangeLabel = `${format(parseISO(dateRange.from), "MMM d, yyyy")} – ${format(parseISO(dateRange.to), "MMM d, yyyy")}`;
+	const dateRangeLabel = `${format(parseCalendarDate(dateRange.from), "MMM d, yyyy")} – ${format(parseCalendarDate(dateRange.to), "MMM d, yyyy")}`;
 	const hasExpenseData = stats.expense > 0;
 	const hasTrend = trendData.some(
 		(point) => point.income > 0 || point.expense > 0,
@@ -180,39 +206,48 @@ export function AnalyticsPageContent({
 
 				{!isPending && !isError ? (
 					<>
-						{/* (a) KPI tiles */}
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-							<KpiTile
-								icon={<Wallet className="size-4" />}
-								label="Net worth"
-								value={formatSensitiveCurrency(
-									STUBBED_NET_WORTH,
-									currency,
-									isPrivacyMode,
-								)}
-								hint="Across all accounts"
-								isSensitive
-							/>
-							<KpiTile
-								icon={<TrendingDown className="size-4" />}
-								label="Avg monthly spend"
-								value={formatSensitiveCurrency(
-									avgMonthlySpend,
-									currency,
-									isPrivacyMode,
-								)}
-								hint={`Over ${monthSpan} ${monthSpan === 1 ? "month" : "months"}`}
-								isSensitive
-							/>
-							<KpiTile
-								icon={<PiggyBank className="size-4" />}
-								label="Savings rate"
-								value={`${savingsRate.toFixed(0)}%`}
-								hint="Income kept this range"
-							/>
+						<AnalyticsWealthSection
+							userCurrency={currency}
+							netWorth={netWorth.netWorth}
+							savingsRate={savingsRate}
+							goals={goals}
+							savings={savings}
+						/>
+
+						<MonthlyReviewSection
+							userCurrency={currency}
+							transactions={transactions}
+							savings={savings}
+							paymentAccounts={paymentAccounts}
+						/>
+
+						<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
+							<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+								Spending
+							</p>
+							<div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+								<div>
+									<p className="text-sm font-semibold text-foreground">
+										Avg monthly spend
+									</p>
+									<p className="font-num mt-1 text-2xl font-extrabold tabular-nums text-foreground">
+										<SensitiveText
+											text={formatSensitiveCurrency(
+												avgMonthlySpend,
+												currency,
+												isPrivacyMode,
+											)}
+										/>
+									</p>
+									<p className="mt-1 text-xs text-muted-foreground">
+										Over {monthSpan} {monthSpan === 1 ? "month" : "months"} in the
+										selected range
+									</p>
+								</div>
+							</div>
 						</div>
 
-						{/* (b) Income vs spending grouped bars */}
+						{/* Income vs spending grouped bars */}
 						<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
 							<div className="flex items-baseline justify-between gap-3">
 								<div>
@@ -289,45 +324,28 @@ export function AnalyticsPageContent({
 							</div>
 						</div>
 
-						{/* (c) Top merchants + (d) Where it goes donut */}
+						{/* (c) Top merchants + cards + (d) Where it goes donut */}
 						<div className="grid gap-4 lg:grid-cols-2">
-							<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
-								<div className="flex items-center gap-2">
-									<Store className="size-4 text-muted-foreground" />
-									<p className="text-sm font-semibold text-foreground">
-										Top merchants
-									</p>
-								</div>
-								<p className="mt-1 text-xs text-muted-foreground">
-									Where most of your money went
-								</p>
-								{/* TODO(api): replace STUBBED_TOP_MERCHANTS with a real merchants aggregate. */}
-								<ul className="mt-4 space-y-2">
-									{STUBBED_TOP_MERCHANTS.map((merchant, index) => (
-										<li
-											key={merchant.label}
-											className="hover:bg-row-hover flex items-center gap-3 rounded-lg px-2 py-2 transition-colors"
-										>
-											<span className="bg-soft-accent text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
-												{index + 1}
-											</span>
-											<SensitiveText
-												text={merchant.label}
-												className="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
-											/>
-											<span className="font-num text-sm font-bold tabular-nums text-foreground">
-												{formatSensitiveCurrency(
-													merchant.amount,
-													currency,
-													isPrivacyMode,
-												)}
-											</span>
-										</li>
-									))}
-								</ul>
-							</div>
+							<InsightTable
+								title="Top merchants"
+								description="Grouped by transaction title — stores, subscriptions, and payees you log"
+								rows={topTitles}
+								currency={currency}
+								colors={[...chartColors.series]}
+								isPrivacyMode={isPrivacyMode}
+							/>
+							<RankedSpendPanel
+								icon={<CreditCard className="size-4" />}
+								title="Spending by card"
+								subtitle="Which accounts you paid from most"
+								rows={spendingByCard}
+								currency={currency}
+								isPrivacyMode={isPrivacyMode}
+								emptyMessage="No card or account spending in this range."
+							/>
+						</div>
 
-							<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
+						<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
 								<p className="text-sm font-semibold text-foreground">
 									Where it goes
 								</p>
@@ -398,27 +416,18 @@ export function AnalyticsPageContent({
 										<PageEmptyState message="No expense categories yet." />
 									</div>
 								)}
-							</div>
 						</div>
 
 						{hasExpenseData ? (
 							<>
-								<div className="grid gap-4 lg:grid-cols-2">
-									<InsightTable
-										title="Top categories"
-										rows={topCategories}
-										currency={currency}
-										colors={[...chartColors.series]}
-										isPrivacyMode={isPrivacyMode}
-									/>
-									<InsightTable
-										title="Top expense titles"
-										rows={topTitles}
-										currency={currency}
-										colors={[...chartColors.series]}
-										isPrivacyMode={isPrivacyMode}
-									/>
-								</div>
+								<InsightTable
+									title="Top categories"
+									description="Grouped by category — how spending splits across your budget"
+									rows={topCategories}
+									currency={currency}
+									colors={[...chartColors.series]}
+									isPrivacyMode={isPrivacyMode}
+								/>
 
 								<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
 									<p className="text-sm font-semibold text-foreground">
@@ -519,37 +528,6 @@ const tooltipStyle = {
 	color: "var(--fg)",
 } as const;
 
-interface KpiTileProps {
-	icon: React.ReactNode;
-	label: string;
-	value: string;
-	hint: string;
-	isSensitive?: boolean;
-}
-
-function KpiTile({
-	icon,
-	label,
-	value,
-	hint,
-	isSensitive = false,
-}: KpiTileProps) {
-	return (
-		<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
-			<div className="flex items-center gap-2 text-muted-foreground">
-				<span className="bg-soft-accent text-primary flex size-7 items-center justify-center rounded-full">
-					{icon}
-				</span>
-				<p className="text-xs font-medium uppercase tracking-wide">{label}</p>
-			</div>
-			<p className="font-num mt-4 text-2xl font-extrabold tracking-tight tabular-nums text-foreground">
-				{isSensitive ? <SensitiveText text={value} /> : value}
-			</p>
-			<p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-		</div>
-	);
-}
-
 function LegendDot({ color, label }: { color: string; label: string }) {
 	return (
 		<span className="flex items-center gap-1.5">
@@ -559,5 +537,61 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 			/>
 			{label}
 		</span>
+	);
+}
+
+interface RankedSpendPanelProps {
+	icon: React.ReactNode;
+	title: string;
+	subtitle: string;
+	rows: AnalyticsInsightRow[];
+	currency: string;
+	isPrivacyMode: boolean;
+	emptyMessage: string;
+}
+
+/** Ranked spend list used for merchants and card analytics panels. */
+function RankedSpendPanel({
+	icon,
+	title,
+	subtitle,
+	rows,
+	currency,
+	isPrivacyMode,
+	emptyMessage,
+}: RankedSpendPanelProps) {
+	return (
+		<div className="bg-panel rounded-panel border border-border p-[22px] shadow-sm">
+			<div className="flex items-center gap-2">
+				<span className="text-muted-foreground">{icon}</span>
+				<p className="text-sm font-semibold text-foreground">{title}</p>
+			</div>
+			<p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+			{rows.length ? (
+				<ul className="mt-4 space-y-2">
+					{rows.map((row, index) => (
+						<li
+							key={row.label}
+							className="hover:bg-row-hover flex items-center gap-3 rounded-lg px-2 py-2 transition-colors"
+						>
+							<span className="bg-soft-accent text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+								{index + 1}
+							</span>
+							<SensitiveText
+								text={row.label}
+								className="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
+							/>
+							<span className="font-num text-sm font-bold tabular-nums text-foreground">
+								{formatSensitiveCurrency(row.amount, currency, isPrivacyMode)}
+							</span>
+						</li>
+					))}
+				</ul>
+			) : (
+				<div className="mt-4 flex min-h-32 items-center justify-center">
+					<PageEmptyState message={emptyMessage} />
+				</div>
+			)}
+		</div>
 	);
 }
