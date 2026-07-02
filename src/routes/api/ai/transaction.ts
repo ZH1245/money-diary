@@ -16,6 +16,7 @@ import {
   rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
+import { enforceUserRateLimit } from '#/lib/server/auth-rate-limit'
 import { parseJsonBody } from '#/lib/server/request-body'
 import { slugifyCategoryName } from '#/features/categories/utils/category-slug'
 import {
@@ -34,6 +35,14 @@ export const Route = createFileRoute('/api/ai/transaction')({
         // Session-based auth: only the logged-in user can trigger this
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const rateLimited = await enforceUserRateLimit({
+          userId: userContext.id,
+          scope: 'tx',
+          windowMs: 60_000,
+          maxRequests: 30,
+        })
+        if (rateLimited) return rateLimited
 
         const userIdRejected = rejectClientSuppliedUserId(request)
         if (userIdRejected) return userIdRejected

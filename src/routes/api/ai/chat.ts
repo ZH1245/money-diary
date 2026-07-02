@@ -17,6 +17,7 @@ import {
   rejectClientSuppliedUserId,
   requireUserContext,
 } from '#/lib/server/api-guards'
+import { enforceUserRateLimit } from '#/lib/server/auth-rate-limit'
 import { parseJsonBody } from '#/lib/server/request-body'
 import { sanitizeAssistantUserFacingMessage } from '#/features/ai/server/ai-security'
 import { formatAiProviderError, resolveUnexpectedChatError } from '#/features/ai/server/format-ai-provider-error'
@@ -30,6 +31,14 @@ export const Route = createFileRoute('/api/ai/chat')({
 
         const userContext = await requireUserContext(request)
         if (userContext instanceof Response) return userContext
+
+        const rateLimited = await enforceUserRateLimit({
+          userId: userContext.id,
+          scope: 'chat',
+          windowMs: 60_000,
+          maxRequests: 20,
+        })
+        if (rateLimited) return rateLimited
 
         const userIdRejected = rejectClientSuppliedUserId(request)
         if (userIdRejected) return userIdRejected
