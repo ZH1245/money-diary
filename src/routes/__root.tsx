@@ -20,6 +20,7 @@ import { AppUpdateNotifier } from "#/components/app/app-update-notifier";
 import { TooltipProvider } from "#/components/ui/tooltip";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
+import fontsCss from "../fonts.css?url";
 import { LANDING_SEO, SITE_NAME } from "#/lib/seo/public-seo";
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
@@ -70,15 +71,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		],
 		links: [
 			{
-				rel: "preload",
-				href: appCss,
-				as: "style",
-			},
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-			{
 				rel: "icon",
 				href: "/favicon.ico",
 			},
@@ -105,6 +97,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
+				{/* Fonts + app CSS load in parallel; links are first for earliest discovery. */}
+				<link rel="preload" href={fontsCss} as="style" />
+				<link
+					rel="preload"
+					href={appCss}
+					as="style"
+					fetchPriority="high"
+				/>
+				<link rel="stylesheet" href={fontsCss} />
+				<link rel="stylesheet" href={appCss} />
 				<HeadContent />
 				<script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
 				<GoogleAnalyticsScripts />
