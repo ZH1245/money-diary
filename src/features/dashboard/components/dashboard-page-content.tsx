@@ -18,8 +18,8 @@ import { Button } from "#/components/ui/button";
 import { useCategoriesQuery } from "#/features/categories/hooks/use-categories";
 import { AccountCardsRow } from "#/features/dashboard/components/account-cards-row";
 import { DashboardWealthRow } from "#/features/dashboard/components/dashboard-wealth-row";
-import { UpcomingSection } from "#/features/dashboard/components/upcoming-section";
 import { InsightMiniCard } from "#/features/dashboard/components/insight-mini-card";
+import { UpcomingSection } from "#/features/dashboard/components/upcoming-section";
 import { dashboardDateRangeStore } from "#/features/dashboard/store/dashboard-date-range-store";
 import { isDateInRange } from "#/features/dashboard/utils/dashboard-date-range";
 import { buildDashboardStats } from "#/features/dashboard/utils/dashboard-stats";
@@ -33,6 +33,7 @@ import {
 import { useSavingsQuery } from "#/features/savings/hooks/use-savings";
 import { useTransactionsQuery } from "#/features/transactions/hooks/use-transactions";
 import { useWishlistQuery } from "#/features/wishlist/hooks/use-wishlist";
+import { getCalendarToday } from "#/lib/date-input";
 import {
 	formatSensitiveCompactAmount,
 	formatSensitiveCurrency,
@@ -192,18 +193,37 @@ export function DashboardPageContent({
 		],
 	);
 
-	// Period-over-period change: compare net flow of the latest trend bucket
-	// against the previous one, derived from existing stats (no new API).
+	// Headline shows a real running balance (matching the account cards), not
+	// the date-range net flow: all accounts summed, or the selected account.
+	const headlineBalance = useMemo(() => {
+		if (selectedAccountId != null) {
+			return accountBalances[selectedAccountId] ?? 0;
+		}
+		return Object.values(accountBalances).reduce(
+			(sum, balance) => sum + balance,
+			0,
+		);
+	}, [accountBalances, selectedAccountId]);
+
+	// Period-over-period change: compare net flow of the latest COMPLETED trend
+	// bucket against the one before it. When the range's end is today, the last
+	// bucket covers an in-progress period, so it's skipped to keep the label
+	// ("vs previous period") truthful.
 	const changePercent = useMemo(() => {
 		const trend = stats.weeklyTrend;
-		if (trend.length < 2) return 0;
-		const latest = trend[trend.length - 1];
-		const prev = trend[trend.length - 2];
+		const latestBucketIsPartial = dateRange.to === getCalendarToday();
+		const latestIndex = latestBucketIsPartial
+			? trend.length - 2
+			: trend.length - 1;
+		const prevIndex = latestIndex - 1;
+		if (latestIndex < 0 || prevIndex < 0) return 0;
+		const latest = trend[latestIndex];
+		const prev = trend[prevIndex];
 		const latestNet = latest.income - latest.expense;
 		const prevNet = prev.income - prev.expense;
 		if (prevNet === 0) return latestNet === 0 ? 0 : 100;
 		return ((latestNet - prevNet) / Math.abs(prevNet)) * 100;
-	}, [stats.weeklyTrend]);
+	}, [stats.weeklyTrend, dateRange.to]);
 
 	const maxTrendValue = useMemo(
 		() =>
@@ -294,7 +314,7 @@ export function DashboardPageContent({
 									<p className="mt-2 font-num text-4xl font-extrabold tracking-tight tabular-nums text-foreground sm:text-5xl">
 										<SensitiveText
 											text={formatSensitiveCurrency(
-												stats.balance,
+												headlineBalance,
 												userCurrency,
 												isPrivacyMode,
 											)}
@@ -316,7 +336,7 @@ export function DashboardPageContent({
 											{changePercent.toFixed(1)}%
 										</span>
 										<span className="text-muted-foreground">
-											vs previous period
+											net flow vs previous period
 										</span>
 									</div>
 
@@ -371,7 +391,15 @@ export function DashboardPageContent({
 											</span>
 										</div>
 									</div>
-									<div className="mt-4 flex h-40 items-end gap-1.5 sm:gap-2">
+									<div
+										className="mt-4 flex h-40 items-end gap-1.5 sm:gap-2"
+										role="img"
+										aria-label={
+											stats.weeklyTrend.length === 0
+												? "Income vs spending chart with no activity in range"
+												: `Income vs spending across ${stats.weeklyTrend.length} periods`
+										}
+									>
 										{stats.weeklyTrend.length === 0 ? (
 											<p className="m-auto text-sm text-muted-foreground">
 												No activity in range.
@@ -382,6 +410,7 @@ export function DashboardPageContent({
 													key={bucket.week}
 													className="flex h-full flex-1 flex-col items-center justify-end gap-1"
 													title={`${bucket.week}`}
+													aria-hidden="true"
 												>
 													<div className="flex h-full w-full items-end justify-center gap-0.5">
 														<div

@@ -49,19 +49,19 @@ Helper component classes in `styles.css`: `.md-panel` (panel surface), `.md-row`
 
 ### Exact palette values (for reference; already in styles.css)
 
-**C light**: canvas #F4F3EF, sidebar/panel #FCFCFA, fg #15201a, muted #9aa09a, border #E7E7E1,
-border-faint #EEEEE8, accent #1f6b4a, accent-on #f0f4f1, soft-accent #E3EDE6, income #1f6b4a,
-expense #b0473d, nav-active #E3EDE6, nav-active-fg #1f6b4a, track #E9E9E3, row-hover #F4F4EF,
-input-bg #F4F4EF, avatar-bg #1f6b4a, avatar-fg #f0f4f1, shell-bg #E4E3DE.
-**C dark**: canvas #141714, sidebar/panel #1A1E1A, fg #EAF0EA, muted #7d847d, border #2A2F2A,
+**C light**: canvas #F5F5F4, sidebar/panel #FCFCFA, fg #15201a, muted #6b736b, border #E8E8E5,
+border-faint #EFEFED, accent #1f6b4a, accent-on #f0f4f1, soft-accent #E3EDE6, income #1f6b4a,
+expense #b0473d, nav-active #E3EDE6, nav-active-fg #1f6b4a, track #EAEAE8, row-hover #F4F4F3,
+input-bg #F4F4F3, avatar-bg #1f6b4a, avatar-fg #f0f4f1, shell-bg #E5E4E2.
+**C dark**: canvas #141714, sidebar/panel #1A1E1A, fg #EAF0EA, muted #a0a8a0, border #2A2F2A,
 border-faint #23271F, accent #3a9b6f, accent-on #0c130f, soft-accent #23311F, income #4fc18c,
 expense #e07a6f, nav-active #23311F, nav-active-fg #4fc18c, track #2A2F2A, row-hover #21261F,
 input-bg #21261F, avatar-bg #3a9b6f, avatar-fg #0c130f, shell-bg #0a0c0a.
-**A light**: canvas #F5F5F7, sidebar/panel #ffffff, fg #16161c, muted #9a9aa4, border #ECECEF,
+**A light**: canvas #F5F5F7, sidebar/panel #ffffff, fg #16161c, muted #6d6d78, border #ECECEF,
 border-faint #F2F2F5, accent #4f46e5, accent-on #ffffff, soft-accent #ECEBFC, income #1f9d5b,
 expense #d4493f, nav-active #ECEBFC, nav-active-fg #4f46e5, track #EEEEF1, row-hover #FAFAFB,
 input-bg #F5F5F7, avatar-bg #4f46e5, avatar-fg #ffffff, shell-bg #E4E4E8.
-**A dark**: canvas #0E0E12, sidebar/panel #16161C, fg #F2F2F5, muted #7a7a85, border #26262E,
+**A dark**: canvas #0E0E12, sidebar/panel #16161C, fg #F2F2F5, muted #a2a2b2, border #26262E,
 border-faint #1E1E25, accent #6c63ff, accent-on #ffffff, soft-accent #23223A, income #34d680,
 expense #f06a5d, nav-active #23223A, nav-active-fg #9b94ff, track #26262E, row-hover #1C1C23,
 input-bg #1C1C23, avatar-bg #6c63ff, avatar-fg #ffffff, shell-bg #070709.

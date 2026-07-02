@@ -47,7 +47,7 @@ export function AccountCardsRow({
 								: "opacity-95 hover:opacity-100",
 						)}
 					>
-						<div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/70">
+						<div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)]">
 							<SensitiveText text={account.name} className="truncate" />
 							<span>
 								{account.lastFour
@@ -55,7 +55,7 @@ export function AccountCardsRow({
 									: account.accountType}
 							</span>
 						</div>
-						<p className="mt-6 block truncate font-num text-xl font-extrabold tracking-tight tabular-nums">
+						<p className="mt-6 block truncate font-num text-xl font-extrabold tracking-tight tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)]">
 							{isPrivacyMode ? (
 								<SensitiveText
 									text={formatSensitiveCurrency(balance, currency, true)}
@@ -64,7 +64,7 @@ export function AccountCardsRow({
 								formatSensitiveCurrency(balance, currency, false)
 							)}
 						</p>
-						<p className="mt-1 text-xs text-white/60 capitalize">
+						<p className="mt-1 text-xs text-white/75 capitalize">
 							{account.accountType}
 						</p>
 					</button>
