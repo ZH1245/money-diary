@@ -8,6 +8,8 @@
  *   pnpm dev
  *   pnpm seed:demo
  *
+ * Output is PNG; run `pnpm optimize:landing` to convert to WebP + srcset variants.
+ *
  * Usage:
  *   pnpm capture:landing
  *   HEADLESS=1 pnpm capture:landing
@@ -285,7 +287,7 @@ async function main() {
 
 		for (const feature of FEATURES) {
 			for (const viewport of VIEWPORTS) {
-				const filename = `${feature.id}-${viewport.slug}-${theme.slug}.webp`;
+				const filename = `${feature.id}-${viewport.slug}-${theme.slug}.png`;
 				console.log(`  ${filename}`);
 
 				await page.setViewportSize({
@@ -303,8 +305,7 @@ async function main() {
 				await page.screenshot({
 					path: join(OUT_DIR, filename),
 					fullPage: false,
-					type: "webp",
-					quality: 82,
+					type: "png",
 				});
 				shotCount += 1;
 			}
@@ -317,7 +318,8 @@ async function main() {
 	}
 
 	await browser.close();
-	console.log(`\nSaved ${shotCount} screenshots to ${OUT_DIR}`);
+	console.log(`\nSaved ${shotCount} PNG screenshots to ${OUT_DIR}`);
+	console.log("Run `pnpm optimize:landing` to convert to WebP and generate srcset variants.");
 }
 
 main().catch((error) => {

@@ -1,14 +1,20 @@
 /**
- * Resizes landing screenshots to 1× viewport dimensions for faster LCP.
+ * Converts captured PNG landing screenshots to WebP + responsive srcset variants.
  *
- * Desktop: 1280×800 · Mobile: 390×844
- * Requires `cwebp` on PATH (ships with libwebp).
+ * Input:  `{feature}-{viewport}-{themeSlug}.png` from `pnpm capture:landing`
+ * Output: `{feature}-{viewport}-{themeSlug}.webp` (max width)
+ *         `{feature}-{viewport}-{themeSlug}-{width}.webp` (smaller variants)
+ *
+ * Desktop: 1280×800 (base) + 768×480
+ * Mobile:  390×844 (base) + 240×519
+ *
+ * Source PNGs are deleted after conversion. Requires `cwebp` on PATH.
  *
  * Usage: pnpm optimize:landing
  */
 import { execFile } from "node:child_process";
 import { readdir, rename, unlink } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
@@ -18,55 +24,99 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const OUT_DIR = join(__dirname, "../public/landing");
 const QUALITY = "82";
 
-interface ResizeSpec {
+/** Keep in sync with `LANDING_SCREENSHOT_WIDTHS` in landing-screenshots.ts */
+const DESKTOP_VARIANTS = [
+	{ width: 1280, height: 800, suffix: "" },
+	{ width: 768, height: 480, suffix: "-768" },
+] as const;
+
+const MOBILE_VARIANTS = [
+	{ width: 390, height: 844, suffix: "" },
+	{ width: 240, height: 519, suffix: "-240" },
+] as const;
+
+interface VariantSpec {
 	width: number;
 	height: number;
+	suffix: string;
 }
 
-function resizeForFilename(filename: string): ResizeSpec | null {
+const CANONICAL_PNG =
+	/^[a-z0-9-]+-(desktop|mobile)-(calm|aurora)-(light|dark)\.png$/;
+
+function isCanonicalPng(filename: string): boolean {
+	return CANONICAL_PNG.test(filename);
+}
+
+function variantsForFilename(filename: string): VariantSpec[] | null {
 	if (filename.includes("-desktop-")) {
-		return { width: 1280, height: 800 };
+		return [...DESKTOP_VARIANTS];
 	}
 	if (filename.includes("-mobile-")) {
-		return { width: 390, height: 844 };
+		return [...MOBILE_VARIANTS];
 	}
 	return null;
 }
 
-/** Re-encodes a WebP at the target pixel size via a temp file. */
-async function resizeWebp(filePath: string, spec: ResizeSpec) {
-	const tmpPath = `${filePath}.tmp.webp`;
+function webpOutputPath(pngPath: string, suffix: string): string {
+	const base = pngPath.replace(/\.png$/, "");
+	return `${base}${suffix}.webp`;
+}
+
+/** Encodes a resized WebP from a PNG source. */
+async function writeVariant(
+	sourcePath: string,
+	targetPath: string,
+	spec: VariantSpec,
+) {
+	const tmpPath = `${targetPath}.tmp.webp`;
 	await execFileAsync("cwebp", [
 		"-resize",
 		String(spec.width),
 		String(spec.height),
-		filePath,
+		sourcePath,
 		"-o",
 		tmpPath,
 		"-q",
 		QUALITY,
 	]);
-	await unlink(filePath);
-	await rename(tmpPath, filePath);
+	await rename(tmpPath, targetPath);
 }
 
 async function main() {
-	const files = (await readdir(OUT_DIR)).filter((name) => name.endsWith(".webp"));
-	let optimized = 0;
+	const pngFiles = (await readdir(OUT_DIR))
+		.filter((name) => name.endsWith(".png"))
+		.filter(isCanonicalPng);
 
-	for (const filename of files.sort()) {
-		const spec = resizeForFilename(filename);
-		if (!spec) {
+	if (pngFiles.length === 0) {
+		console.log("No canonical PNG screenshots found — run `pnpm capture:landing` first.");
+		return;
+	}
+
+	let written = 0;
+
+	for (const filename of pngFiles.sort()) {
+		const variants = variantsForFilename(filename);
+		if (!variants) {
 			continue;
 		}
 
-		const filePath = join(OUT_DIR, filename);
-		console.log(`  ${filename} → ${spec.width}×${spec.height}`);
-		await resizeWebp(filePath, spec);
-		optimized += 1;
+		const sourcePath = join(OUT_DIR, filename);
+		console.log(`  ${basename(filename)}`);
+
+		for (const variant of variants) {
+			const targetPath = webpOutputPath(sourcePath, variant.suffix);
+			const label = variant.suffix ? variant.suffix.slice(1) : "base";
+			console.log(`    → ${label} (${variant.width}×${variant.height})`);
+			await writeVariant(sourcePath, targetPath, variant);
+			written += 1;
+		}
+
+		await unlink(sourcePath);
+		console.log("    ✓ removed PNG");
 	}
 
-	console.log(`\nOptimized ${optimized} landing screenshots in ${OUT_DIR}`);
+	console.log(`\nWrote ${written} WebP variants in ${OUT_DIR}`);
 }
 
 main().catch((error) => {

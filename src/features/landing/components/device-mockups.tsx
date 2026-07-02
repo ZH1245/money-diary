@@ -7,6 +7,7 @@
 
 import { useTheme } from "#/components/layout/theme-provider";
 import {
+	buildThemedScreenshotSrcSet,
 	getLandingDesktopSizes,
 	getLandingPhoneSizes,
 	LANDING_SCREENSHOT_DIMENSIONS,
@@ -46,6 +47,7 @@ export function DeviceMockups() {
 					<img
 						key={`desktop-${themeKey}`}
 						src={desktopImage}
+						srcSet={buildThemedScreenshotSrcSet(desktopImage)}
 						alt="Money Diary dashboard on desktop — demo balances"
 						className="block w-full bg-canvas transition-opacity duration-300"
 						width={desktopDims.width}
@@ -65,6 +67,7 @@ export function DeviceMockups() {
 						<img
 							key={`mobile-${themeKey}`}
 							src={mobileImage}
+							srcSet={buildThemedScreenshotSrcSet(mobileImage)}
 							alt="Money Diary dashboard on mobile — demo balances"
 							className="block w-full bg-canvas transition-opacity duration-300"
 							width={mobileDims.width}

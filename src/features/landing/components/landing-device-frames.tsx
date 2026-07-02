@@ -3,6 +3,7 @@
  */
 
 import {
+	buildThemedScreenshotSrcSet,
 	getLandingDesktopSizes,
 	getLandingPhoneSizes,
 	LANDING_SCREENSHOT_DIMENSIONS,
@@ -33,6 +34,7 @@ export function BrowserFrame({
 			</div>
 			<img
 				src={image}
+				srcSet={buildThemedScreenshotSrcSet(image)}
 				alt={alt}
 				className="block w-full bg-canvas"
 				width={LANDING_SCREENSHOT_DIMENSIONS.desktop.width}
@@ -60,6 +62,7 @@ export function PhoneFrame({
 				</div>
 				<img
 					src={image}
+					srcSet={buildThemedScreenshotSrcSet(image)}
 					alt={alt}
 					className="block w-full bg-canvas"
 					width={LANDING_SCREENSHOT_DIMENSIONS.mobile.width}
