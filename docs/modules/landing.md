@@ -30,8 +30,8 @@ landing/
 ## Rules & gotchas
 
 - Must render for crawlers/SSR (SEO) — keep it server-renderable, avoid auth-gated data.
-- Screenshots captured via `pnpm capture:landing` scripts; `landing-screenshots.ts` refs
-  those assets.
+- Screenshots captured via `pnpm capture:landing` (1× WebP at viewport size); run
+  `pnpm optimize:landing` to re-encode existing assets after capture.
 - No DB/API. Pure presentation.
 
 ## Cross-module deps

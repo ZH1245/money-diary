@@ -18,6 +18,21 @@ export type LandingThemeSlug =
 
 export type LandingViewport = "desktop" | "mobile";
 
+export const LANDING_SCREENSHOT_DIMENSIONS = {
+	desktop: { width: 1280, height: 800 },
+	mobile: { width: 390, height: 844 },
+} as const;
+
+/** `sizes` hint for hero desktop screenshots (max content width ~1024px). */
+export function getLandingDesktopSizes(): string {
+	return "(max-width: 640px) 100vw, min(1024px, 80vw)";
+}
+
+/** `sizes` hint for hero phone mockup (stacked vs overlap layouts). */
+export function getLandingPhoneSizes(): string {
+	return "(max-width: 640px) 210px, 185px";
+}
+
 export interface LandingScreenshot {
 	id: string;
 	title: string;

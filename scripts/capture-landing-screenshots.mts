@@ -263,7 +263,7 @@ async function main() {
 	);
 
 	const browser = await chromium.launch(getBrowserLaunchOptions());
-	const context = await browser.newContext({ deviceScaleFactor: 2 });
+	const context = await browser.newContext({ deviceScaleFactor: 1 });
 
 	await context.addInitScript(
 		({ storageKey }) => {
@@ -285,7 +285,7 @@ async function main() {
 
 		for (const feature of FEATURES) {
 			for (const viewport of VIEWPORTS) {
-				const filename = `${feature.id}-${viewport.slug}-${theme.slug}.png`;
+				const filename = `${feature.id}-${viewport.slug}-${theme.slug}.webp`;
 				console.log(`  ${filename}`);
 
 				await page.setViewportSize({
@@ -303,6 +303,8 @@ async function main() {
 				await page.screenshot({
 					path: join(OUT_DIR, filename),
 					fullPage: false,
+					type: "webp",
+					quality: 82,
 				});
 				shotCount += 1;
 			}

@@ -2,6 +2,12 @@
  * Browser and phone frames for landing-page screenshot mockups.
  */
 
+import {
+	getLandingDesktopSizes,
+	getLandingPhoneSizes,
+	LANDING_SCREENSHOT_DIMENSIONS,
+} from "./landing-screenshots";
+
 export function BrowserFrame({
 	urlLabel,
 	image,
@@ -20,7 +26,7 @@ export function BrowserFrame({
 					<span className="block size-2.5 rounded-full bg-income/80" />
 				</div>
 				<div className="flex min-w-0 flex-1 justify-center">
-					<span className="max-w-[260px] truncate rounded-full border border-border bg-input-bg px-3 py-0.5 text-[11px] text-muted-foreground">
+					<span className="max-w-[260px] truncate rounded-full border border-border bg-input-bg px-3 py-0.5 text-[11px] text-foreground/70">
 						{urlLabel}
 					</span>
 				</div>
@@ -29,8 +35,9 @@ export function BrowserFrame({
 				src={image}
 				alt={alt}
 				className="block w-full bg-canvas"
-				width={1280}
-				height={800}
+				width={LANDING_SCREENSHOT_DIMENSIONS.desktop.width}
+				height={LANDING_SCREENSHOT_DIMENSIONS.desktop.height}
+				sizes={getLandingDesktopSizes()}
 				loading="lazy"
 				decoding="async"
 			/>
@@ -55,8 +62,9 @@ export function PhoneFrame({
 					src={image}
 					alt={alt}
 					className="block w-full bg-canvas"
-					width={390}
-					height={844}
+					width={LANDING_SCREENSHOT_DIMENSIONS.mobile.width}
+					height={LANDING_SCREENSHOT_DIMENSIONS.mobile.height}
+					sizes={getLandingPhoneSizes()}
 					loading="lazy"
 					decoding="async"
 				/>

@@ -1,15 +1,32 @@
 import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { LandingPage } from "#/features/landing/components/landing-page";
-import { buildPublicPageHead, LANDING_SEO } from "#/lib/seo/public-seo";
+import {
+	buildPublicPageHead,
+	DEFAULT_OG_IMAGE_PATH,
+	LANDING_SEO,
+} from "#/lib/seo/public-seo";
 import { useAuthSession } from "#/lib/use-auth-session";
 
 export const Route = createFileRoute("/")({
 	component: Home,
-	head: () =>
-		buildPublicPageHead({
+	head: () => {
+		const base = buildPublicPageHead({
 			...LANDING_SEO,
 			path: "/",
-		}),
+		});
+		return {
+			...base,
+			links: [
+				...base.links,
+				{
+					rel: "preload",
+					href: DEFAULT_OG_IMAGE_PATH,
+					as: "image",
+					fetchPriority: "high",
+				},
+			],
+		};
+	},
 });
 
 function Home() {

@@ -21,7 +21,7 @@ function HeroThemeSwitcher() {
 
 	return (
 		<div className="mt-8 flex flex-col items-center gap-2">
-			<p className="text-xs font-medium text-muted-foreground">
+			<p className="text-xs font-medium text-foreground/75">
 				Try a theme →
 			</p>
 			<div className="flex flex-wrap items-center justify-center gap-2">
@@ -40,7 +40,7 @@ function HeroThemeSwitcher() {
 								"inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all",
 								active
 									? "border-primary bg-primary text-primary-foreground shadow-sm"
-									: "border-border bg-panel text-muted-foreground hover:border-primary/40 hover:text-foreground",
+									: "border-border bg-panel text-foreground/75 hover:border-primary/40 hover:text-foreground",
 							)}
 						>
 							<span
@@ -65,6 +65,7 @@ export function LandingPage() {
 		<div className="min-h-screen bg-canvas text-foreground">
 			<LandingNav />
 
+			<main>
 			{/* ── Hero ───────────────────────────────────────────────── */}
 			<section className="relative overflow-hidden">
 				{/* decorative backdrop glow */}
@@ -74,7 +75,7 @@ export function LandingPage() {
 				/>
 				<div className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-16 sm:pb-16 sm:pt-24">
 					<div className="mx-auto max-w-3xl text-center">
-						<span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm">
+						<span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-foreground/80 shadow-sm">
 							<Sparkles className="size-3.5 text-primary" />
 							Personal finance, made simple
 						</span>
@@ -82,7 +83,7 @@ export function LandingPage() {
 							Your money,{" "}
 							<span className="text-primary">finally in focus.</span>
 						</h1>
-						<p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-foreground/70 sm:text-lg">
+						<p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-foreground/80 sm:text-lg">
 							Track income, expenses, and savings goals, stay ahead of recurring
 							bills, and log transactions in plain English with AI — all in one
 							beautifully simple app.
@@ -99,7 +100,7 @@ export function LandingPage() {
 								</Link>
 							</Button>
 						</div>
-						<p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+						<p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-foreground/75">
 							<ShieldCheck className="size-3.5" />
 							Free to start · No card required · Your data stays private
 						</p>
@@ -148,7 +149,7 @@ export function LandingPage() {
 					<h2 className="relative text-2xl font-bold tracking-tight sm:text-3xl">
 						Take control of your finances today
 					</h2>
-					<p className="relative mx-auto mt-3 max-w-md text-sm text-primary-foreground/80 sm:text-base">
+					<p className="relative mx-auto mt-3 max-w-md text-sm text-primary-foreground/90 sm:text-base">
 						Join people who use Money Diary to understand, plan, and grow their
 						money.
 					</p>
@@ -167,6 +168,8 @@ export function LandingPage() {
 				</div>
 			</section>
 			</ScrollReveal>
+
+			</main>
 
 			{/* ── Footer ─────────────────────────────────────────────── */}
 			<footer className="border-t border-border">

@@ -27,6 +27,7 @@
     "ai:chain:prod": "DRIZZLE_ENV=prod tsx scripts/set-openrouter-chain.ts",
     "capture:landing": "tsx scripts/capture-landing-screenshots.mts",
     "capture:landing:headless": "HEADLESS=1 tsx scripts/capture-landing-screenshots.mts",
+    "optimize:landing": "tsx scripts/optimize-landing-screenshots.mts",
     "issue:feature": "bash scripts/gh-new-issue.sh feature",
     "issue:bug": "bash scripts/gh-new-issue.sh bug",
     "issue:chore": "bash scripts/gh-new-issue.sh chore",
