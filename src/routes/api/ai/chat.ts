@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { runAiChat } from '#/features/ai/server/ai-chat-service'
+import { appendAiProviderCalls } from '#/features/ai/server/ai-provider-calls-repository'
 import {
   appendAiConversationMessage,
   closeUserAiConversation,
@@ -102,6 +103,7 @@ export const Route = createFileRoute('/api/ai/chat')({
 
         const result = await runAiChat({
           userId: userContext.id,
+          conversationId,
           currency: userContext.currency,
           timezone: userContext.timezone,
           messages,
@@ -113,7 +115,7 @@ export const Route = createFileRoute('/api/ai/chat')({
 
         const assistantMetadata: AiMessageMetadata =
           result.action === 'provider_error' || (userFacingError && !result.success)
-            ? { action: 'provider_error', ok: false }
+            ? { action: 'provider_error', ok: false, usage: result.usageSummary }
             : {
                 action: result.action,
                 ok:
@@ -123,6 +125,7 @@ export const Route = createFileRoute('/api/ai/chat')({
                   action: step.action,
                   success: step.success,
                 })),
+                usage: result.usageSummary,
               }
 
         const assistantContent = sanitizeAssistantUserFacingMessage(
@@ -131,13 +134,26 @@ export const Route = createFileRoute('/api/ai/chat')({
             (result.action === 'clarification' ? 'Could you clarify?' : 'Something went wrong.'),
         )
 
-        await appendAiConversationMessage({
+        const assistantMessage = await appendAiConversationMessage({
           userId: userContext.id,
           conversationId,
           role: 'assistant',
           content: assistantContent,
           metadata: assistantMetadata,
         })
+
+        if (assistantMessage && result.providerCalls?.length) {
+          try {
+            await appendAiProviderCalls({
+              userId: userContext.id,
+              conversationId,
+              assistantMessageId: assistantMessage.id,
+              calls: result.providerCalls,
+            })
+          } catch (error) {
+            console.error('[ai] failed to persist provider calls', error)
+          }
+        }
 
         await trimAiConversationMessages(userContext.id, conversationId)
 

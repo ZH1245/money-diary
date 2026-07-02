@@ -92,6 +92,10 @@ export function resolveUnexpectedChatError(error: unknown): string {
     error instanceof Error && error.cause instanceof Error ? error.cause.message : ''
   const combined = `${raw} ${cause}`
 
+  if (/unable to authenticate data|unsupported state|bad decrypt|auth tag/i.test(combined)) {
+    return 'Saved AI provider credentials could not be decrypted. ENV_SECRETS likely changed. Restore the previous ENV_SECRETS value or re-save AI provider settings in Admin → AI provider.'
+  }
+
   if (/rate_limit_buckets|42P01/i.test(combined)) {
     return 'AI chat is temporarily unavailable because a server database update is pending. Try again after the app is migrated, or contact the admin.'
   }

@@ -47,14 +47,28 @@ function toResolvedSettings({
 const DEFAULT_OLLAMA_BASE_URL = 'http://127.0.0.1:11434'
 const DEFAULT_OLLAMA_MODEL = 'qwen3.5:4b'
 
+function isSecretDecryptError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  return /unable to authenticate data|unsupported state|bad decrypt|auth tag/i.test(error.message)
+}
+
 /**
  * Resolves which AI provider credentials to use: user custom, global app service, or defaults.
  */
 export async function resolveAiProviderForUser(userId: string): Promise<ResolvedAiProviderSettings> {
-  const [userSettings, globalSettings] = await Promise.all([
-    getUserAiSettingsForRuntime({ userId }),
-    getGlobalAiSettingsForRuntime(),
-  ])
+  let userSettings: Awaited<ReturnType<typeof getUserAiSettingsForRuntime>> = null
+  try {
+    userSettings = await getUserAiSettingsForRuntime({ userId })
+  } catch (error) {
+    if (!isSecretDecryptError(error)) throw error
+  }
+
+  let globalSettings: Awaited<ReturnType<typeof getGlobalAiSettingsForRuntime>> = null
+  try {
+    globalSettings = await getGlobalAiSettingsForRuntime()
+  } catch (error) {
+    if (!isSecretDecryptError(error)) throw error
+  }
 
   const globalReady = Boolean(globalSettings?.isEnabled && globalSettings.baseUrl && globalSettings.model)
   const userPrefersGlobal = userSettings?.useGlobalProvider !== false

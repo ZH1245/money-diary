@@ -28,6 +28,7 @@ import {
   callOpenRouterChat,
   DEFAULT_OPENROUTER_BASE_URL,
   type OpenRouterChatMessage,
+  type OpenRouterUsage,
 } from '#/features/ai/server/openrouter-client'
 import type { LiveAiProviderId } from '#/features/settings/constants/ai-provider-ids'
 import {
@@ -63,6 +64,38 @@ export interface AiChatServiceResult {
   closeChat?: boolean
   warning?: string
   error?: string
+  usageSummary?: AiUsageSummary
+  providerCalls?: AiProviderCallRecord[]
+}
+
+export interface AiProviderCallRecord {
+  provider: LiveAiProviderId
+  model: string
+  sessionId: string | null
+  generationId: string | null
+  roundIndex: number
+  roundType: 'assistant' | 'tool_followup'
+  toolCallCount: number
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  cachedTokens: number
+  modelPromptPricePerTokenUsd: number | null
+  modelCompletionPricePerTokenUsd: number | null
+  promptCostUsd: number
+  completionCostUsd: number
+  costUsd: number
+}
+
+export interface AiUsageSummary {
+  provider: LiveAiProviderId
+  callCount: number
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  cachedTokens: number
+  costUsd: number
+  models: string[]
 }
 
 interface OllamaToolCall {
@@ -190,6 +223,7 @@ async function callProviderChat({
   settings,
   tools,
   generationLimits,
+  sessionId,
 }: {
   provider: LiveAiProviderId
   systemPrompt: string
@@ -202,12 +236,21 @@ async function callProviderChat({
   }
   tools: ReturnType<typeof getAiToolsForProvider>
   generationLimits: ProviderGenerationLimits
+  sessionId?: string
 }): Promise<
-  | { ok: true; assistantText: string; toolCalls: ProviderToolCall[]; truncated: boolean }
+  | {
+      ok: true
+      assistantText: string
+      toolCalls: ProviderToolCall[]
+      truncated: boolean
+      usage: OpenRouterUsage | null
+      generationId: string | null
+      resolvedModel: string
+    }
   | { ok: false; error: string; status?: number }
 > {
   if (provider === 'gemini') {
-    return callGeminiChat({
+    const result = await callGeminiChat({
       baseUrl: settings.baseUrl || DEFAULT_GEMINI_BASE_URL,
       model: settings.model,
       apiKey: settings.apiKey ?? '',
@@ -216,6 +259,13 @@ async function callProviderChat({
       tools,
       maxOutputTokens: generationLimits.maxOutputTokens,
     })
+    if (!result.ok) return result
+    return {
+      ...result,
+      usage: null,
+      generationId: null,
+      resolvedModel: settings.model,
+    }
   }
 
   if (provider === 'openrouter') {
@@ -226,6 +276,7 @@ async function callProviderChat({
       messages: state.openrouterMessages,
       tools,
       maxTokens: generationLimits.maxOutputTokens,
+      sessionId,
     })
 
     if (!result.ok) return result
@@ -239,10 +290,13 @@ async function callProviderChat({
         arguments: toolCall.arguments,
       })),
       truncated: result.truncated,
+      usage: result.usage,
+      generationId: result.generationId,
+      resolvedModel: settings.model,
     }
   }
 
-  return callOllamaChat({
+  const result = await callOllamaChat({
     baseUrl: settings.baseUrl,
     model: settings.model,
     apiKey: settings.apiKey,
@@ -250,6 +304,13 @@ async function callProviderChat({
     tools,
     numPredict: generationLimits.ollamaNumPredict,
   })
+  if (!result.ok) return result
+  return {
+    ...result,
+    usage: null,
+    generationId: null,
+    resolvedModel: settings.model,
+  }
 }
 
 /**
@@ -470,11 +531,13 @@ async function emitAiProgress(
  */
 export async function runAiChat({
   userId,
+  conversationId,
   currency,
   timezone,
   messages,
 }: {
   userId: string
+  conversationId: number
   currency: string
   timezone: string
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
@@ -556,6 +619,7 @@ export async function runAiChat({
     models: resolved.models,
     apiKey: resolved.apiKey,
   }
+  const sessionId = runtime.provider === 'openrouter' ? `md:conv:${conversationId}` : undefined
   const isOllamaProvider = runtime.provider === 'ollama'
   const aiTools = getAiToolsForProvider(runtime.provider)
 
@@ -580,6 +644,7 @@ export async function runAiChat({
   })
 
   const executedSteps: AiChatStep[] = []
+  const providerCalls: AiProviderCallRecord[] = []
   let truncationWarning: string | undefined
 
   void emitAiProgress(userId, { phase: 'thinking' })
@@ -592,6 +657,7 @@ export async function runAiChat({
       settings: runtime,
       tools: aiTools,
       generationLimits,
+      sessionId,
     })
 
     if (!providerResult.ok) {
@@ -611,6 +677,8 @@ export async function runAiChat({
         action: 'provider_error',
         error: formatAiProviderError(rawError, runtime.provider),
         steps: executedSteps.length > 0 ? executedSteps : undefined,
+        usageSummary: buildUsageSummary(providerCalls),
+        providerCalls,
       }
     }
 
@@ -621,6 +689,28 @@ export async function runAiChat({
     }
 
     const toolCalls = providerResult.toolCalls
+
+    if (providerResult.usage) {
+      providerCalls.push({
+        provider: runtime.provider,
+        model: providerResult.resolvedModel,
+        sessionId: sessionId ?? null,
+        generationId: providerResult.generationId,
+        roundIndex: step + 1,
+        roundType: step === 0 ? 'assistant' : 'tool_followup',
+        toolCallCount: toolCalls.length,
+        promptTokens: providerResult.usage.promptTokens,
+        completionTokens: providerResult.usage.completionTokens,
+        totalTokens: providerResult.usage.totalTokens,
+        cachedTokens: providerResult.usage.cachedTokens,
+        modelPromptPricePerTokenUsd: providerResult.usage.modelPromptPricePerTokenUsd,
+        modelCompletionPricePerTokenUsd: providerResult.usage.modelCompletionPricePerTokenUsd,
+        promptCostUsd: providerResult.usage.promptCostUsd,
+        completionCostUsd: providerResult.usage.completionCostUsd,
+        costUsd: providerResult.usage.costUsd,
+      })
+    }
+
     const reply = sanitizeAssistantUserFacingMessage(providerResult.assistantText)
 
     if (toolCalls.length === 0) {
@@ -633,6 +723,8 @@ export async function runAiChat({
           steps: executedSteps,
           navigateTo: pickNavigateTo(executedSteps),
           warning: truncationWarning,
+          usageSummary: buildUsageSummary(providerCalls),
+          providerCalls,
         }
       }
 
@@ -666,6 +758,8 @@ export async function runAiChat({
               message: stepResult.message,
               steps: [stepResult],
               warning: truncationWarning,
+              usageSummary: buildUsageSummary(providerCalls),
+              providerCalls,
             }
           }
         }
@@ -679,6 +773,8 @@ export async function runAiChat({
         action: 'clarification',
         message: reply || fallbackMessage,
         warning: truncationWarning,
+        usageSummary: buildUsageSummary(providerCalls),
+        providerCalls,
       }
     }
 
@@ -686,7 +782,8 @@ export async function runAiChat({
     const total = toolCalls.length
 
     for (let toolIndex = 0; toolIndex < toolCalls.length; toolIndex += 1) {
-      const toolCall = toolCalls[toolIndex]!
+      const toolCall = toolCalls[toolIndex]
+      if (!toolCall) continue
 
       void emitAiProgress(userId, {
         phase: 'step',
@@ -747,6 +844,8 @@ export async function runAiChat({
       (bulkRuntime.isBulkPaste
         ? 'Logged what fit in this batch. Say "continue" to process remaining rows from your list.'
         : 'Stopped after maximum tool steps. Review results and continue if needed.'),
+    usageSummary: buildUsageSummary(providerCalls),
+    providerCalls,
   }
 }
 
@@ -778,6 +877,24 @@ function resolveClarificationFallback(
 function pickNavigateTo(steps: AiChatStep[]): string | undefined {
   const successfulWrites = steps.filter((step) => step.success && step.navigateTo)
   return successfulWrites.at(-1)?.navigateTo
+}
+
+/**
+ * Aggregates per-call provider usage into one assistant-message summary.
+ */
+function buildUsageSummary(calls: AiProviderCallRecord[]): AiUsageSummary | undefined {
+  if (calls.length === 0) return undefined
+  const first = calls[0]
+  return {
+    provider: first.provider,
+    callCount: calls.length,
+    promptTokens: calls.reduce((sum, call) => sum + call.promptTokens, 0),
+    completionTokens: calls.reduce((sum, call) => sum + call.completionTokens, 0),
+    totalTokens: calls.reduce((sum, call) => sum + call.totalTokens, 0),
+    cachedTokens: calls.reduce((sum, call) => sum + call.cachedTokens, 0),
+    costUsd: calls.reduce((sum, call) => sum + call.costUsd, 0),
+    models: [...new Set(calls.map((call) => call.model))],
+  }
 }
 
 /**

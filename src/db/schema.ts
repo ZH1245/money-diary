@@ -3,6 +3,7 @@ import {
 	boolean,
 	index,
 	integer,
+	numeric,
 	pgTable,
 	serial,
 	text,
@@ -283,6 +284,68 @@ export const aiMessages = pgTable(
 			table.conversationId,
 		),
 		createdAtIdx: index("ai_messages_created_at_idx").on(table.createdAt),
+	}),
+);
+
+export const aiProviderCalls = pgTable(
+	"ai_provider_calls",
+	{
+		id: serial().primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, {
+				onDelete: "cascade",
+			}),
+		conversationId: integer("conversation_id")
+			.notNull()
+			.references(() => aiConversations.id, {
+				onDelete: "cascade",
+			}),
+		assistantMessageId: integer("assistant_message_id").references(
+			() => aiMessages.id,
+			{
+				onDelete: "set null",
+			},
+		),
+		provider: text().notNull(),
+		model: text().notNull(),
+		sessionId: text("session_id"),
+		generationId: text("generation_id"),
+		roundIndex: integer("round_index").notNull().default(1),
+		roundType: text("round_type").notNull().default("assistant"),
+		toolCallCount: integer("tool_call_count").notNull().default(0),
+		promptTokens: integer("prompt_tokens").notNull().default(0),
+		completionTokens: integer("completion_tokens").notNull().default(0),
+		totalTokens: integer("total_tokens").notNull().default(0),
+		cachedTokens: integer("cached_tokens").notNull().default(0),
+		modelPromptPricePerToken: numeric("model_prompt_price_per_token", {
+			precision: 18,
+			scale: 12,
+		}),
+		modelCompletionPricePerToken: numeric("model_completion_price_per_token", {
+			precision: 18,
+			scale: 12,
+		}),
+		promptCostUsd: numeric("prompt_cost_usd", { precision: 18, scale: 8 })
+			.notNull()
+			.default("0"),
+		completionCostUsd: numeric("completion_cost_usd", { precision: 18, scale: 8 })
+			.notNull()
+			.default("0"),
+		costUsd: numeric("cost_usd", { precision: 18, scale: 8 })
+			.notNull()
+			.default("0"),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => ({
+		userIdIdx: index("ai_provider_calls_user_id_idx").on(table.userId),
+		conversationIdIdx: index("ai_provider_calls_conversation_id_idx").on(
+			table.conversationId,
+		),
+		assistantMessageIdIdx: index("ai_provider_calls_assistant_message_id_idx").on(
+			table.assistantMessageId,
+		),
+		createdAtIdx: index("ai_provider_calls_created_at_idx").on(table.createdAt),
 	}),
 );
 

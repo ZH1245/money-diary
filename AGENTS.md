@@ -139,3 +139,12 @@ Each links to its full context file. `→ table` means the module owns a DB tabl
 - [Domain knowledge](docs/domain-knowledge.md) — entity semantics + business rules
 - [AI agent reference](docs/ai-agent-reference.md) — AI internals, UI patterns, git workflow
 - [Feature modules index](docs/modules/README.md) — same index, doc-side
+
+## External dependency docs
+
+- [OpenRouter TypeScript SDK](https://openrouter.ai/docs/client-sdks/typescript/overview) —
+  official `@openrouter/sdk` (ESM-only, typed, generated from OpenRouter's OpenAPI spec).
+  Migration target for `src/features/ai/server/openrouter-client.ts` (see
+  [AI features plan](docs/plans/AI_FEATURES_PLAN.md)).
+  [GitHub](https://github.com/OpenRouterTeam/typescript-sdk) ·
+  [npm](https://www.npmjs.com/package/@openrouter/sdk)

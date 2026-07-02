@@ -220,10 +220,38 @@
       "breakpoints": true
     },
     {
+      "idx": 31,
+      "version": "7",
+      "when": 1782890000000,
+      "tag": "0032_ticket_messages",
+      "breakpoints": true
+    },
+    {
       "idx": 32,
       "version": "7",
       "when": 1782891000000,
       "tag": "0033_utc_timestamptz_user_timezone",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1782892000000,
+      "tag": "0034_ai_provider_calls",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1782893000000,
+      "tag": "0035_ai_provider_calls_round_context",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1782894000000,
+      "tag": "0036_ai_provider_calls_pricing",
       "breakpoints": true
     }
   ]

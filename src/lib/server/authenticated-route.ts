@@ -239,7 +239,17 @@ export async function runAuthenticatedRouteRequest(input: {
     throw redirect({ to: '/dashboard' })
   }
 
-  const queries = await fetchRouteQueryData(input.prefetchKey, user.id)
+  let queries: RouteQuerySeed[]
+  try {
+    queries = await fetchRouteQueryData(input.prefetchKey, user.id)
+  } catch (error) {
+    console.error('[authenticated-route] prefetch failed', {
+      prefetchKey: input.prefetchKey,
+      userId: user.id,
+      error,
+    })
+    throw new Error('Unable to load page data. Please try again.')
+  }
 
   return {
     user: toSessionUser(user),

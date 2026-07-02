@@ -23,6 +23,9 @@ importers:
       '@neondatabase/serverless':
         specifier: ^1.0.2
         version: 1.1.0
+      '@openrouter/sdk':
+        specifier: ^0.13.22
+        version: 0.13.22
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.11(typescript@6.0.3)(zod@4.4.3)
@@ -1054,6 +1057,9 @@ packages:
   '@oozcitak/util@10.0.0':
     resolution: {integrity: sha512-hAX0pT/73190NLqBPPWSdBVGtbY6VOhWYK3qqHqtXQ1gK7kS2yz4+ivsN07hpJ6I3aeMtKP6J6npsEKOAzuTLA==}
     engines: {node: '>=20.0'}
+
+  '@openrouter/sdk@0.13.22':
+    resolution: {integrity: sha512-BLf0CQ5eWUDse/d9phlwbj4o7X7F5x7Whdcj07lxBN5Q3R3g08OpjmgyDT/8c0Bd77CsrR8nqSjhRMK5p2sFzg==}
 
   '@opentelemetry/semantic-conventions@1.41.1':
     resolution: {integrity: sha512-/UhIkaZgPutTFmQ7RnIJGgDXZmtEJ7Dvi86xNTFWcnRxVRNk/aotsqDJYeEvDP+FSMB2SdW+pQzNMcWP0rwuNA==}
@@ -5305,6 +5311,10 @@ snapshots:
       '@oozcitak/util': 10.0.0
 
   '@oozcitak/util@10.0.0': {}
+
+  '@openrouter/sdk@0.13.22':
+    dependencies:
+      zod: 4.4.3
 
   '@opentelemetry/semantic-conventions@1.41.1': {}
 

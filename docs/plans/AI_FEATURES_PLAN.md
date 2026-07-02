@@ -7,6 +7,8 @@
 
 ## Recommended sequencing
 
+0. **Phase 0 — OpenRouter SDK migration** (infra, no user-facing change). Land before
+   new AI features so they build on the typed client instead of raw fetch.
 1. **Phase 1 — AI Insight Cards** (low risk, reuses existing data + cron). Ship first.
 2. **Phase 2 — AI Advisor** (stocks/investments + in-app logging). Bigger; depends on
    a market-data provider decision and a legal/disclaimer posture.
@@ -15,6 +17,57 @@ Rationale: Insight Cards need only data we already store, are immediately demoab
 and the per-user cost can be kept low with Haiku. The Advisor adds external data
 dependencies, recurring data costs, and regulatory considerations — better to validate
 the paid AI value-prop with Insights first.
+
+---
+
+## Phase 0 — Migrate raw OpenRouter API → `@openrouter/sdk`
+
+Official typed TypeScript SDK, generated from OpenRouter's OpenAPI spec.
+Docs: <https://openrouter.ai/docs/client-sdks/typescript/overview> ·
+GitHub: <https://github.com/OpenRouterTeam/typescript-sdk> ·
+npm: `@openrouter/sdk` (**ESM-only** — fine, repo is `"type": "module"`).
+Also linked from AGENTS.md → "External dependency docs" so agents can research the API.
+
+### Current state (what gets replaced)
+
+`src/features/ai/server/openrouter-client.ts` (457 lines, hand-rolled `fetch`):
+- `probeOpenRouterApiKey` — key validation via `GET /models`
+- `fetchOpenRouterModels` — model catalog for Admin → AI Provider
+- `callOpenRouterChat` — chat completions incl. tool calls
+- `prepareOpenRouterMessages` / `toOpenRouterTools` — request shaping
+- provider-error extraction feeding `format-ai-provider-error.ts`
+
+Callers: `ai-chat-service.ts`, `settings/server/ai-connection-test.ts`.
+NOT part of this migration: Gemini/Ollama providers, the DB-configured model
+failover chain (`aiProviderSettings`, `scripts/set-openrouter-chain.ts`), AI rate
+limits, `ai-security.ts` sanitization — all stay as-is on top of the new client.
+
+### Migration map
+
+| Today (fetch) | SDK |
+|---|---|
+| `GET /models` probe + catalog | SDK models API (one client, per-request API key from DB settings) |
+| `POST /chat/completions` | SDK chat completions (typed params/response) |
+| hand-built tool JSON | SDK tool types; keep `toOpenRouterTools` as thin adapter from `getAiToolsForProvider` |
+| manual error-body parsing | SDK typed errors; keep `format-ai-provider-error.ts` user-facing messages, feed it from SDK error fields |
+
+### Constraints
+
+- API keys are **per-deployment DB settings** (admin-configurable), not env-only —
+  client must be instantiated per request/settings read, or cached keyed by key hash.
+- Custom `baseUrl` support must survive (self-hosted/proxy setups use it today).
+- Response-shape drift is the main risk: tool-call arguments and provider-metadata
+  fields must map 1:1 — keep existing unit-testable adapters, migrate internals only.
+- `callModel`/agent helpers live in `@openrouter/agent`, NOT `@openrouter/sdk` —
+  we don't need them; plain chat completions suffice.
+- Public exports of `openrouter-client.ts` keep their signatures so callers don't churn.
+
+### Verification
+
+- `npx tsc --noEmit` clean; scoped biome on touched files.
+- Live: Admin → AI Provider "Test connection" (probe), model catalog loads,
+  AI chat end-to-end with a tool call (e.g. "add expense 500 lunch"), failover
+  chain still advances on a forced bad model id.
 
 ---
 
